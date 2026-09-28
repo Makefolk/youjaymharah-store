@@ -60,7 +60,5 @@ future direct call works.
   daily. To lengthen it, raise `projectConfig.http.jwtExpiresIn` in the
   backend's `medusa-config.ts` and `AUTH_MAX_AGE_SECONDS` in
   `lib/medusa/session.ts` together.
-- **Preview deployments** work without extra configuration: the browser SDK
-  builds its URL from the page's own origin.
 - **Measuring the proxy.** Every proxied response carries a `Server-Timing`
   header; the browser's Network tab shows how long Medusa took.
