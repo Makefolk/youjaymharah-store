@@ -22,13 +22,16 @@ The store manager can't do these; whoever deploys must.
    database, not `youjaymharah-dev`. Set strong `JWT_SECRET` /
    `COOKIE_SECRET` (independent random values, at least 32 characters), configure
    production Redis, set the CORS variables to the real domains, and set
-   `STORE_NAME`, `SUPPORT_EMAIL`, `STOREFRONT_URL` and `ADMIN_URL`.
-2. **First admin.** Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` before migrating;
-   the first migration creates this user as Super Admin. Hand the credentials
+   `STORE_NAME`, `SUPPORT_EMAIL`, `STOREFRONT_URL` and `ADMIN_URL`. Production
+   refuses to start without Redis, these two secrets and a 64-character
+   `EMAIL_DELIVERY_ENCRYPTION_KEY`.
+2. **First admin.** Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` before the first
+   deploy; its seed step creates this user as Super Admin. Hand the credentials
    to the store owner and have them change the password.
-3. **Run `pnpm exec medusa db:migrate`.** The initial seed runs once and
-   creates the records in section 2. Do **not** run `seed:demo` against
-   production.
+3. **Deploy.** Follow [Production deployment](deployment.md). The deploy runs
+   the database migrations, then the seed scripts as a separate step that
+   stops the deploy if a seed fails. The initial seed runs once and creates the
+   records in section 2. Do **not** run `seed:demo` against production.
 4. **Storefront key.** Copy the "Web Storefront" key from
    `Settings › Publishable API Keys` into the storefront's
    `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY`.
@@ -42,7 +45,9 @@ The store manager can't do these; whoever deploys must.
 6. **Image storage.** Fill the `S3_*` variables for Cloudflare R2 (see
    `apps/backend/.env.template`), or product image uploads will fail.
 7. **Email.** Set `RESEND_API_KEY` and a `RESEND_FROM_EMAIL` on a domain
-   verified in Resend. Every email depends on it: order confirmation,
+   verified in Resend, plus `EMAIL_DELIVERY_ENCRYPTION_KEY` from step 1:
+   without that key every email fails before it is sent. Every email depends
+   on these: order confirmation,
    shipping, delivery, changes and cancellation; returns, exchanges, claims and
    refunds; email verification and password resets; and team invites.
    Configure the [Resend webhook](resend-webhooks.md) and its separate signing
@@ -63,17 +68,23 @@ they are not counted for trending or collected into a pending-approval queue.
 The initial seed provides 20 common clothing/fabric phrases unless a vocabulary
 is already saved or explicitly configured. Review the list for your catalog;
 re-running the focused seed will not overwrite your changes or an empty list.
+
+On the same page, **Suggested searches** holds up to 10 phrases to show while
+nothing is trending yet, such as on a new store. The search box labels them
+**Suggestions** rather than **Trending searches**, hides any that don't
+currently match a published product, and stops showing them as soon as real
+trending phrases exist. They don't need to be on the approved list above.
 See [Search privacy](search-privacy.md).
 
-| Record                  | Created as                                                         | You still need to                                                         |
-| ----------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| Store                   | "Youjaymharah", NGN default, USD secondary                         | Check the name; remove USD if you won't sell in dollars                   |
-| Region                  | Nigeria, NGN, payment providers: Manual, Credo, Paystack           | Decide on tax-inclusive pricing; remove Manual Payment                    |
-| Tax region              | Nigeria, no rate set (0%)                                          | Set 7.5% VAT                                                              |
-| Location                | Lagos Warehouse, city only, manual fulfilment                      | Add the full address; set up delivery options                             |
-| Sales channel           | Default Sales Channel, linked to the warehouse and storefront key  | Nothing, but every product must be in it                                  |
-| Team roles              | Store Manager, Support / Fulfillment, Marketing (plus Super Admin) | Invite people with the right role                                         |
-| Storefront & newsletter | Brand filled from environment settings on first open               | Upload the logo, browser icon and share image; review the newsletter text |
+| Record                  | Created as                                                         | You still need to                                                                               |
+| ----------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| Store                   | "Youjaymharah", NGN default, USD secondary                         | Check the name; remove USD if you won't sell in dollars                                         |
+| Region                  | Nigeria, NGN, payment providers: Manual, Credo, Paystack           | Decide on tax-inclusive pricing; remove Manual Payment                                          |
+| Tax region              | Nigeria, no rate set (0%)                                          | Set 7.5% VAT                                                                                    |
+| Location                | Lagos Warehouse, city only, manual fulfilment                      | Add the full address; set up delivery options                                                   |
+| Sales channel           | Default Sales Channel, linked to the warehouse and storefront key  | Nothing, but every product must be in it                                                        |
+| Team roles              | Store Manager, Support / Fulfillment, Marketing (plus Super Admin) | Invite people with the right role                                                               |
+| Storefront & newsletter | Brand filled from environment settings on first open               | Upload the logo, browser icon and share image; switch on newsletter sign-up and review its text |
 
 ## 3. First-day setup
 
@@ -141,9 +152,23 @@ Work through these in order; each relies on the ones before it.
      Default Sales Channel, or has no stock at Lagos Warehouse.
    - Many products: `Products › Import` with a CSV (export one finished
      product first to copy its columns).
-9. **Review newsletter sign-up.** `Settings › Newsletter`: consent text,
-   success message, reply-to and the checkout label.
-   Confirmation links expire after 24 hours; the shopper can sign up again for
+9. **Set up newsletter sign-up.** `Settings › Newsletter`. Sign-up is **off**
+   until you switch it on, and until then the sign-up form doesn't appear in
+   the site's footer. Then review:
+   - **Heading** and **Description**: the text above the sign-up field in the
+     footer. Leave either empty to use the default shown in grey.
+   - **Consent text**: shown under the field, and saved with each subscriber
+     as the wording they agreed to.
+   - **Audience**: the Resend audience confirmed subscribers are added to.
+     Without one, subscribers are kept in the store but not added to Resend.
+   - **Reply-to** and the checkout label. The **Success message** is not shown
+     on the site: after signing up, shoppers see a "Check your inbox" message
+     explaining the confirmation email.
+
+   The confirmation email opens a page on the site where the shopper presses a
+   button to confirm; opening the link alone does nothing, so email scanners
+   can't sign anyone up. Unsubscribe links work the same way. Confirmation
+   links expire after 24 hours; the shopper can sign up again for
    a new link. Signing up repeatedly within a minute does not send more emails.
    The **Contact sync** row shows contacts waiting for Resend. Retries run every
    five minutes; a persistent backlog needs a developer to check the selected
@@ -154,6 +179,7 @@ Work through these in order; each relies on the ones before it.
    sign someone up again to bypass a block; ask a developer to review it.
    **Webhook processing** counts received provider updates still being
    processed. Recovery runs every minute; report a persistent backlog.
+
 10. **Run one real test order end to end.** Buy a cheap item on the live site
     through Paystack; confirm the order, the captured payment and the
     confirmation email; fulfil, ship with tracking (check the shipping email),
@@ -347,12 +373,14 @@ leave items in their shopping bag.
 
 ### Search & sharing
 
-The search dropdown's trending phrases come from a reviewed list configured
-by the developer, not arbitrary shopper messages. Ask Marketing or the owner
-to approve ordinary catalogue phrases such as "dresses" and "linen". A phrase
-appears only after five searches in seven days and while it still finds visible
-products. An empty trending list does not mean product search is broken.
-There is no admin editor for this list yet. See [Search privacy](search-privacy.md).
+The search box's **Trending searches** come from shoppers' own searches,
+limited to phrases approved in `Settings › Trending searches` (see section 2).
+Ask Marketing or the owner to approve ordinary catalogue phrases such as
+"dresses" and "linen". A phrase appears only after five searches in seven days
+and while it still finds visible products. Until one qualifies, the box shows
+the **Suggested searches** from the same page, labelled **Suggestions**. An
+empty list does not mean product search is broken.
+See [Search privacy](search-privacy.md).
 
 `Settings › Storefront` controls how the store looks in Google and when a link
 is shared on WhatsApp, Instagram or X. Marketing edits **Sharing & search**; the
@@ -456,6 +484,7 @@ failed, ask the developer to review it before repeatedly resending. See
 | Gift cards, store credit, loyalty points | Not available | One-off promo codes as a substitute                                                                  |
 | Abandoned-cart reminders                 | Built         | Settings › Bag reminders (see "Bag reminders")                                                       |
 | Newsletter checkbox at checkout          | Not built     | The "Show opt-in at checkout" setting has no effect yet; the site's signup form and "Notify me" work |
+| Newsletter success message               | Not shown     | The footer shows its own "Check your inbox" message after sign-up                                    |
 
 ## 7. Medusa guides
 

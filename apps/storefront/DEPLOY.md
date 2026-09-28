@@ -35,8 +35,9 @@ local build:
 
 `output: "standalone"` is switched on only by the Docker build
 (`NEXT_OUTPUT_STANDALONE=true`), so `pnpm start` keeps working locally.
-`GET /api/health` answers without calling Medusa; the container health check
-and the deploy use it.
+`GET /api/health` answers without calling Medusa, so a backend restart doesn't
+also mark the storefront down. The deploy's checks use it; the container has no
+Docker health check.
 
 ## Backend settings that depend on the storefront URL
 

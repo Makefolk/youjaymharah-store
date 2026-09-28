@@ -227,7 +227,7 @@ From an empty Neon database to a live store:
    backend and admin images, then on the VPS:
    - starts Redis and Caddy (certificates are issued now);
    - runs `medusa db:migrate --skip-scripts --execute-safe-links
-     --all-or-nothing`, which creates the schema and the search index tables;
+--all-or-nothing`, which creates the schema and the search index tables;
    - runs `medusa db:migrate:scripts`, the seed scripts. These create the
      sales channel, the publishable API key, NGN/USD, the Nigeria region with
      Credo and Paystack, the Lagos stock location, RBAC roles, the search
@@ -320,6 +320,7 @@ instead of going live. `redis` reads `not_configured` without `REDIS_URL`
 
 The storefront's `/api/health` stays a liveness check: it answers without
 calling Medusa, so a backend restart does not also mark the storefront down.
+
 - **Migrations run before the new code starts**, so for a short time the old
   code runs against the new schema. Keep migrations backward compatible: add
   columns and tables first, remove them in a later release. Migrations are
@@ -364,7 +365,7 @@ add a `log` directive to a site block temporarily and reload.
 **Status and restarts.**
 
 ```sh
-docker compose ps                    # health of every service
+docker compose ps                    # state of every service (only caddy and redis report health)
 docker compose restart medusa-worker # one service, same version
 docker compose up -d                 # after a reboot or edit, recreate what changed
 ```
@@ -406,7 +407,7 @@ VPS through OVH if you want faster rebuilds.
 | Symptom                                        | Look at                                                                                                                            |
 | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Certificates not issued                        | `docker compose logs caddy`. DNS must point at the VPS, port 80 must be reachable, and Cloudflare's Always Use HTTPS must be off   |
-| 502 from one hostname                          | `docker compose ps`; the upstream is unhealthy or restarting                                                                       |
+| 502 from one hostname                          | `docker compose ps`; the upstream is restarting or stopped. For the API, `https://api.<domain>/health` names what it can't reach   |
 | Deploy fails at migrations                     | Workflow log of "Migrate and roll out"; the old version is still serving                                                           |
 | Admin sign-in fails, CORS error in the browser | `ADMIN_CORS` and `AUTH_CORS` must be exactly `https://admin.<domain>`. The admin image must have been built for the right `DOMAIN` |
 | Search returns nothing                         | `docker compose logs medusa-worker \| grep Search`; the worker seeds the index at start                                            |
