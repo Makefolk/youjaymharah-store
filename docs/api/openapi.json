@@ -7044,6 +7044,16 @@
                           "email": {
                             "type": "string"
                           },
+                          "first_name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "status": {
                             "type": "string",
                             "enum": [
@@ -7170,6 +7180,7 @@
                         "required": [
                           "id",
                           "email",
+                          "first_name",
                           "status",
                           "source",
                           "consent_text",
@@ -7452,7 +7463,7 @@
           "Newsletter"
         ],
         "summary": "Confirm a subscription",
-        "description": "Takes the single-use token from the confirmation email.",
+        "description": "Takes the token from the confirmation email and the subscriber’s first name. Saves the name when confirming; repeat confirmations leave it unchanged.",
         "security": [
           {
             "publishableKey": []
@@ -7469,10 +7480,16 @@
                     "type": "string",
                     "minLength": 16,
                     "maxLength": 256
+                  },
+                  "first_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
                   }
                 },
                 "required": [
-                  "token"
+                  "token",
+                  "first_name"
                 ]
               }
             }
@@ -7505,7 +7522,17 @@
             }
           },
           "400": {
-            "description": "Missing, unknown or used token.",
+            "description": "Missing or invalid token or first name.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown, expired or revoked token.",
             "content": {
               "application/json": {
                 "schema": {

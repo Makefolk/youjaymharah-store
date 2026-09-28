@@ -62,6 +62,12 @@ export const StoreNewsletterToken = z.object({
   token: z.string().min(16).max(256),
 });
 
+export const StoreNewsletterConfirm = StoreNewsletterToken.extend({
+  first_name: z.string().trim().min(1).max(100),
+});
+
+export type StoreNewsletterConfirmType = z.infer<typeof StoreNewsletterConfirm>;
+
 export const AdminNewsletterSubscribersQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).max(1_000_000).default(0),
@@ -503,7 +509,7 @@ export default defineMiddlewares({
     {
       matcher: "/store/newsletter/confirm",
       method: ["POST"],
-      middlewares: [validateAndTransformBody(StoreNewsletterToken)],
+      middlewares: [validateAndTransformBody(StoreNewsletterConfirm)],
     },
     {
       matcher: "/store/newsletter/unsubscribe",

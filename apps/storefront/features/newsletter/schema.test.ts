@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { newsletterSignupSchema } from "./schema"
+import { newsletterSignupSchema, newsletterConfirmSchema } from "./schema"
 
 const errorFor = (email: string) =>
   newsletterSignupSchema.safeParse({ email }).error?.issues[0]?.message
@@ -28,4 +28,24 @@ describe("newsletterSignupSchema", () => {
     expect(result.success).toBe(true)
     expect(result.data?.email).toBe("ada@example.com")
   })
+})
+
+describe("newsletterConfirmSchema", () => {
+  it.each(["", "   ", "a".repeat(101)])(
+    "rejects an invalid first name",
+    (first_name) => {
+      expect(newsletterConfirmSchema.safeParse({ first_name }).success).toBe(
+        false,
+      )
+    },
+  )
+
+  it.each(["Ada", "Ọlá", "Anne-Marie", "D’Arcy", "Mary Jane"])(
+    "accepts and trims %s",
+    (first_name) => {
+      expect(
+        newsletterConfirmSchema.parse({ first_name: ` ${first_name} ` }),
+      ).toEqual({ first_name })
+    },
+  )
 })

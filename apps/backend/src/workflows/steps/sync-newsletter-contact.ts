@@ -62,6 +62,7 @@ export async function syncNewsletterContact(
           (await client.addContact({
             audienceId: settings.audience_id,
             email: subscriber.email,
+            firstName: subscriber.first_name ?? undefined,
           })) ?? null;
       }
       await service.updateNewsletterSubscribers([

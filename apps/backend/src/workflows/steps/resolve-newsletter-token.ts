@@ -11,6 +11,7 @@ import { canConfirm, newsletterLockKey } from "../../modules/newsletter/tokens";
 export type ResolveNewsletterTokenInput = {
   token: string;
   action: "confirm" | "unsubscribe";
+  first_name?: string;
 };
 
 export async function resolveNewsletterToken(
@@ -48,7 +49,11 @@ export async function resolveNewsletterToken(
           status,
           sync_pending: true,
           ...(status === "subscribed"
-            ? { confirmed_at: new Date(), unsubscribed_at: null }
+            ? {
+                confirmed_at: new Date(),
+                unsubscribed_at: null,
+                first_name: input.first_name?.trim() ?? subscriber.first_name,
+              }
             : { unsubscribed_at: new Date() }),
         },
       ]);

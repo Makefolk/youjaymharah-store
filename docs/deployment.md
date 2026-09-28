@@ -226,12 +226,13 @@ From an empty Neon database to a live store:
    the environment and **backend_only** ticked. It runs CI, builds the
    backend and admin images, then on the VPS:
    - starts Redis and Caddy (certificates are issued now);
-   - runs `medusa db:migrate --execute-safe-links --all-or-nothing`, which
-     creates the schema, the search index tables, and runs the seed scripts.
-     These create the sales channel, the publishable API key, NGN/USD, the
-     Nigeria region with Credo and Paystack, the Lagos stock location, RBAC
-     roles, the search vocabulary, and the Super Admin from
-     `ADMIN_EMAIL`/`ADMIN_PASSWORD`;
+   - runs `medusa db:migrate --skip-scripts --execute-safe-links
+     --all-or-nothing`, which creates the schema and the search index tables;
+   - runs `medusa db:migrate:scripts`, the seed scripts. These create the
+     sales channel, the publishable API key, NGN/USD, the Nigeria region with
+     Credo and Paystack, the Lagos stock location, RBAC roles, the search
+     vocabulary, and the Super Admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD`. A
+     failed seed stops the deploy here (see [Migrations](#migrations));
    - starts `medusa-server`, `medusa-worker` (which fills the search index)
      and `admin`, then checks `api.` and `admin.` publicly.
 3. **Publishable key:** copy the `Publishable API key token: pk_...` line from
@@ -260,10 +261,12 @@ Merge to `main`, then run the Deploy workflow for the environment. It:
    migrations twice on a scratch database, HTTP integration tests;
    storefront type-check, lint and tests);
 2. builds and pushes `backend:<sha>` and `admin:<sha>-<env>`;
-3. on the VPS (`deploy.sh backend <sha>`): pulls, migrates with a one-off
-   container of the new image while the old version keeps serving, restarts
-   server, worker and admin, waits for their health checks, checks routes
-   through Caddy, then checks `api.` and `admin.` publicly;
+3. on the VPS (`deploy.sh backend <sha>`): pulls, migrates and then runs the
+   migration scripts with a one-off container of the new image while the old
+   version keeps serving, restarts server, worker and admin, checks the API's
+   readiness (`/health`, see [Health checks](#health-checks)) and the admin
+   through Caddy, rolling back if either fails, then checks `api.` and
+   `admin.` publicly;
 4. builds `storefront:<sha>-<env>` against the API just deployed;
 5. on the VPS (`deploy.sh storefront <sha>`): same pattern, then checks all
    three hostnames publicly.
@@ -289,6 +292,34 @@ To deploy automatically on every merge later, add a `push` trigger to
   after checking what it drops.
 - Search-index changes (a new field in `src/search/*.ts`) are rebuilt by
   `db:migrate`; the worker refills the index when it starts.
+- **Migration scripts run as their own step** (`db:migrate:scripts`), after
+  the schema migrations. Medusa 2.20 runs them from `db:migrate` too, but
+  discards their exit code, so a failed seed would otherwise let the release
+  go out on a half-seeded database. A failure stops the deploy with the old
+  version still serving. The schema migrations before it stay applied, which
+  backward-compatible migrations make safe. Completed scripts are recorded
+  and skipped; a failed one runs again on the next deploy, so write scripts
+  that can be re-run after a partial failure.
+
+## Health checks
+
+`https://api.<domain>/health` answers `200` only when the server can reach
+both Postgres (`select 1`) and Redis (taking and releasing a lock), each within
+two seconds; otherwise `503`. The body names each dependency's state and
+nothing else:
+
+```json
+{ "status": "ok", "checks": { "database": "ok", "redis": "ok" } }
+```
+
+It replaces Medusa's built-in `/health`, which answers `200` whenever the
+process is up. The deploy's rollback, the public checks and the uptime probe
+all read it, so a release that cannot reach its database now fails the deploy
+instead of going live. `redis` reads `not_configured` without `REDIS_URL`
+(local development). The worker has no HTTP route and is not covered yet.
+
+The storefront's `/api/health` stays a liveness check: it answers without
+calling Medusa, so a backend restart does not also mark the storefront down.
 - **Migrations run before the new code starts**, so for a short time the old
   code runs against the new schema. Keep migrations backward compatible: add
   columns and tables first, remove them in a later release. Migrations are

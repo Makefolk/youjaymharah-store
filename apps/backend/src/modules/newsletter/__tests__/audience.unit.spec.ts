@@ -94,3 +94,73 @@ it("does not create a contact if the consent lookup fails", async () => {
   ).rejects.toThrow("Could not check");
   expect(global.fetch).toHaveBeenCalledTimes(1);
 });
+
+it("includes the first name when creating a contact", async () => {
+  global.fetch = jest
+    .fn()
+    .mockResolvedValueOnce(
+      new Response(JSON.stringify({ name: "not_found", message: "Missing" }), {
+        status: 404,
+      }),
+    )
+    .mockResolvedValueOnce(new Response(JSON.stringify({ id: "contact" })));
+  await new ResendAudienceClient("re_test").addContact({
+    email: "buyer@example.com",
+    audienceId: "segment",
+    firstName: "Ada",
+  });
+  expect(JSON.parse((global.fetch as jest.Mock).mock.calls[1][1].body)).toEqual(
+    {
+      email: "buyer@example.com",
+      first_name: "Ada",
+      segments: [{ id: "segment" }],
+    },
+  );
+});
+
+it("updates an existing contact's name without rewriting consent", async () => {
+  global.fetch = jest
+    .fn()
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: "contact",
+          first_name: "Old",
+          unsubscribed: false,
+        }),
+      ),
+    )
+    .mockImplementation(
+      async () => new Response(JSON.stringify({ id: "contact" })),
+    );
+  await new ResendAudienceClient("re_test").addContact({
+    email: "buyer@example.com",
+    audienceId: "segment",
+    firstName: "Ada",
+  });
+  expect((global.fetch as jest.Mock).mock.calls[1][1].method).toBe("PATCH");
+  expect(JSON.parse((global.fetch as jest.Mock).mock.calls[1][1].body)).toEqual(
+    { first_name: "Ada" },
+  );
+});
+
+it("fails the sync when updating an existing name fails, so it can be retried", async () => {
+  global.fetch = jest
+    .fn()
+    .mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: "contact", unsubscribed: false })),
+    )
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ name: "application_error", message: "Unavailable" }),
+        { status: 500 },
+      ),
+    );
+  await expect(
+    new ResendAudienceClient("re_test").addContact({
+      email: "buyer@example.com",
+      audienceId: "segment",
+      firstName: "Ada",
+    }),
+  ).rejects.toThrow("Could not update");
+});

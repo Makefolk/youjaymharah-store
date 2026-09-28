@@ -26,6 +26,7 @@ export const GET = async (
       select: [
         "id",
         "email",
+        "first_name",
         "status",
         "source",
         "consent_text",

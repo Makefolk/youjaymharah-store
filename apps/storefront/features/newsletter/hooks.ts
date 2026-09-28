@@ -1,7 +1,10 @@
 "use client"
 
 import { useMutation, useQuery } from "@tanstack/react-query"
-import type { StoreNewsletterAckResponse } from "@youjaymharah/api-types"
+import type {
+  StoreNewsletterConfirmBody,
+  StoreNewsletterAckResponse,
+} from "@youjaymharah/api-types"
 
 import { getBrowserSdk } from "@/lib/medusa/browser"
 
@@ -27,10 +30,10 @@ export function useSubscribeToNewsletter(source: string) {
 
 export function useConfirmNewsletter() {
   return useMutation({
-    mutationFn: (token: string) =>
+    mutationFn: (input: StoreNewsletterConfirmBody) =>
       getBrowserSdk().client.fetch<StoreNewsletterAckResponse>(
         "/store/newsletter/confirm",
-        { method: "POST", body: { token } },
+        { method: "POST", body: input },
       ),
   })
 }

@@ -181,7 +181,13 @@ module.exports = defineConfig({
             },
           },
         ]
-      : []),
+      : [
+          {
+            // Rate limiting needs the Caching Module even without Redis.
+            resolve: "@medusajs/medusa/caching",
+            options: { in_memory: { enable: true } },
+          },
+        ]),
     {
       // Storefront and admin product search. The Search Module is not one of
       // Medusa's defaults, so declaring it here is what turns it on; the
@@ -312,6 +318,12 @@ module.exports = defineConfig({
               channels: ["email"],
               api_key: process.env.RESEND_API_KEY,
               from: process.env.RESEND_FROM_EMAIL,
+              from_addresses: {
+                onboarding: process.env.RESEND_FROM_ONBOARDING_EMAIL,
+                accounts: process.env.RESEND_FROM_ACCOUNTS_EMAIL,
+                orders: process.env.RESEND_FROM_ORDERS_EMAIL,
+                marketing: process.env.RESEND_FROM_MARKETING_EMAIL,
+              },
               encryption_key: process.env.EMAIL_DELIVERY_ENCRYPTION_KEY,
             },
           },

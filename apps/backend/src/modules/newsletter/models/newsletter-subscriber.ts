@@ -11,6 +11,7 @@ export const NewsletterSubscriber = model
   .define("newsletter_subscriber", {
     id: model.id({ prefix: "nlsub" }).primaryKey(),
     email: model.text().searchable(),
+    first_name: model.text().nullable(),
     // pending -> confirmed via the emailed link -> subscribed
     // unsubscribed is terminal until the address signs up again
     status: model.enum(["pending", "subscribed", "unsubscribed"]),

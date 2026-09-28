@@ -1,9 +1,8 @@
 import type { Metadata } from "next"
 
-import { ConfirmSubscriptionButton } from "./confirm-subscription-button"
+import { fetchCustomerOnServer } from "@/features/customer/server"
 
-// Stub: the page the confirmation email links to. Replace with the designed
-// page.
+import { ConfirmSubscriptionForm } from "./confirm-subscription-form"
 
 export const metadata: Metadata = {
   title: "Confirm your subscription",
@@ -14,6 +13,8 @@ export default async function ConfirmNewsletterPage({
   searchParams,
 }: PageProps<"/newsletter/confirm">) {
   const { token } = await searchParams
+  const customer =
+    typeof token === "string" && token ? await fetchCustomerOnServer() : null
 
   return (
     <main className="container-wrapper max-w-xl px-5 py-16 sm:px-6">
@@ -23,10 +24,14 @@ export default async function ConfirmNewsletterPage({
       {typeof token === "string" && token ? (
         <>
           <p className="mt-3 text-[15px] text-muted-foreground">
-            One more step: confirm this address to start receiving The YJ Edit.
+            One more step: tell us your first name and confirm your subscription
+            to The YJ Edit.
           </p>
           <div className="mt-6">
-            <ConfirmSubscriptionButton token={token} />
+            <ConfirmSubscriptionForm
+              token={token}
+              firstName={customer?.first_name ?? ""}
+            />
           </div>
         </>
       ) : (

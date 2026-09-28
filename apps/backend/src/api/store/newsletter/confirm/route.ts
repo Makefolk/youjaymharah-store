@@ -1,14 +1,14 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 
-import type { StoreNewsletterTokenType } from "../../../middlewares";
+import type { StoreNewsletterConfirmType } from "../../../middlewares";
 import { confirmNewsletterSubscriptionWorkflow } from "../../../../workflows/newsletter";
 
 export const POST = async (
-  req: MedusaRequest<StoreNewsletterTokenType>,
+  req: MedusaRequest<StoreNewsletterConfirmType>,
   res: MedusaResponse,
 ) => {
   await confirmNewsletterSubscriptionWorkflow(req.scope).run({
-    input: { token: req.validatedBody.token },
+    input: req.validatedBody,
   });
 
   res.json({ success: true, status: "subscribed" });

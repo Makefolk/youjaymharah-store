@@ -51,9 +51,10 @@ export const subscribeToNewsletterWorkflow = createWorkflow(
 
 export const confirmNewsletterSubscriptionWorkflow = createWorkflow(
   "confirm-newsletter-subscription",
-  function (input: { token: string }) {
+  function (input: { token: string; first_name: string }) {
     const subscriber = resolveNewsletterTokenStep({
       token: input.token,
+      first_name: input.first_name,
       action: "confirm",
     });
 

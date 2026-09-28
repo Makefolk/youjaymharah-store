@@ -3,6 +3,7 @@ import Image from "next/image"
 import Link from "next/link"
 
 import { formatPrice, getProductPrice } from "@/lib/medusa/price"
+import { isNew } from "@/lib/medusa/product"
 import { productPath } from "@/lib/seo/routes"
 
 /**
@@ -11,8 +12,10 @@ import { productPath } from "@/lib/seo/routes"
  */
 export function ProductList({
   products,
+  newBadgeDays,
 }: {
   products: HttpTypes.StoreProduct[]
+  newBadgeDays?: number
 }) {
   if (!products.length) {
     return (
@@ -26,6 +29,7 @@ export function ProductList({
     <ul className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:grid-cols-4">
       {products.map((product) => {
         const price = getProductPrice(product)
+        const isNewProduct = newBadgeDays != null && isNew(product, newBadgeDays)
 
         return (
           <li key={product.id}>
@@ -41,7 +45,14 @@ export function ProductList({
                   />
                 )}
               </span>
-              <span className="mt-3 block text-[15px]">{product.title}</span>
+              <span className="mt-3 block text-[15px]">
+                {isNewProduct && (
+                  <span className="mr-2 text-[11px] font-medium uppercase tracking-wider text-primary">
+                    New
+                  </span>
+                )}
+                {product.title}
+              </span>
               {price && (
                 <span className="mt-1 flex gap-2 text-[13px] tabular-nums">
                   <span>

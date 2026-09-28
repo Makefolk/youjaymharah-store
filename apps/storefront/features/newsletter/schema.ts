@@ -14,3 +14,11 @@ export const newsletterSignupSchema = z.object({
 })
 
 export type NewsletterSignupValues = z.input<typeof newsletterSignupSchema>
+
+export const newsletterConfirmSchema = z.object({
+  first_name: z
+    .string()
+    .trim()
+    .min(1, "Enter your first name.")
+    .max(100, "Use 100 characters or fewer."),
+})

@@ -24,6 +24,7 @@ import {
   StoreCreateProductAlert,
   StoreCreateSocialCustomer,
   StoreMergeWishlist,
+  StoreNewsletterConfirm,
   StoreNewsletterSubscribe,
   StoreNewsletterToken,
   StoreSetCustomerPassword,
@@ -101,6 +102,7 @@ const StoreNewsletter = z.object({
 const NewsletterSubscriber = z.object({
   id: z.string(),
   email: z.string(),
+  first_name: z.string().nullable(),
   status: z.enum(["pending", "subscribed", "unsubscribed"]),
   source: z.string().nullable(),
   consent_text: z.string().nullable(),
@@ -485,6 +487,11 @@ export const TYPES: {
   {
     name: "StoreNewsletterSubscribeBody",
     schema: StoreNewsletterSubscribe,
+    io: "input",
+  },
+  {
+    name: "StoreNewsletterConfirmBody",
+    schema: StoreNewsletterConfirm,
     io: "input",
   },
   {
@@ -1346,11 +1353,15 @@ export const ROUTES: RouteDoc[] = [
     path: "/store/newsletter/confirm",
     tag: "Newsletter",
     summary: "Confirm a subscription",
-    description: "Takes the single-use token from the confirmation email.",
+    description:
+      "Takes the token from the confirmation email and the subscriber’s first name. Saves the name when confirming; repeat confirmations leave it unchanged.",
     auth: "public",
-    body: StoreNewsletterToken,
+    body: StoreNewsletterConfirm,
     response: { description: "Subscription confirmed.", schema: Acknowledged },
-    errors: [{ status: 400, description: "Missing, unknown or used token." }],
+    errors: [
+      { status: 400, description: "Missing or invalid token or first name." },
+      { status: 404, description: "Unknown, expired or revoked token." },
+    ],
   },
   {
     method: "POST",

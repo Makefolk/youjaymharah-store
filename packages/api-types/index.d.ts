@@ -26,6 +26,7 @@ export type NewsletterSettings = {
 export type NewsletterSubscriber = {
   id: string;
   email: string;
+  first_name: string | null;
   status: "pending" | "subscribed" | "unsubscribed";
   source: string | null;
   consent_text: string | null;
@@ -92,6 +93,11 @@ export type StoreNewsletterSubscribeBody = {
   source?: string;
 };
 
+export type StoreNewsletterConfirmBody = {
+  token: string;
+  first_name: string;
+};
+
 export type StoreNewsletterTokenBody = {
   token: string;
 };
@@ -151,6 +157,7 @@ export type AdminNewsletterSubscribersResponse = {
   subscribers: {
     id: string;
     email: string;
+    first_name: string | null;
     status: "pending" | "subscribed" | "unsubscribed";
     source: string | null;
     consent_text: string | null;

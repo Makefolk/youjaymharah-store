@@ -28,7 +28,11 @@ export class ResendAudienceClient {
     return data?.data ?? [];
   }
 
-  async addContact(args: { audienceId: string; email: string }) {
+  async addContact(args: {
+    audienceId: string;
+    email: string;
+    firstName?: string;
+  }) {
     const existing = await this.client.contacts.get({ email: args.email });
     if (
       existing.error &&
@@ -47,6 +51,21 @@ export class ResendAudienceClient {
       );
     }
     if (existing.data?.id) {
+      if (
+        args.firstName !== undefined &&
+        existing.data.first_name !== args.firstName
+      ) {
+        const { error } = await this.client.contacts.update({
+          id: existing.data.id,
+          firstName: args.firstName,
+        });
+        if (error) {
+          throw new MedusaError(
+            MedusaError.Types.UNEXPECTED_STATE,
+            "Could not update the Resend contact's first name.",
+          );
+        }
+      }
       const { error } = await this.client.contacts.segments.add({
         contactId: existing.data.id,
         segmentId: args.audienceId,
@@ -61,6 +80,7 @@ export class ResendAudienceClient {
     }
     const { data, error } = await this.client.contacts.create({
       email: args.email,
+      firstName: args.firstName,
       segments: [{ id: args.audienceId }],
     });
 

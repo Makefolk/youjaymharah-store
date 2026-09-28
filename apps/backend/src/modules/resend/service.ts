@@ -16,11 +16,11 @@ import type EmailDeliveryModuleService from "../email-delivery/service";
 import { deliverEmail } from "./delivery";
 import { describeSendFailure } from "./send-failure";
 import { snapshotKey } from "./snapshot";
+import { resolveEmailSender, type EmailSenderOptions } from "./email-sender";
 import type { CreateEmailOptions } from "resend";
 
-type ResendOptions = {
+type ResendOptions = EmailSenderOptions & {
   api_key: string;
-  from: string;
   encryption_key?: string;
 };
 
@@ -139,7 +139,11 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
     }
 
     const base = {
-      from: notification.from?.trim() || this.options.from,
+      from: resolveEmailSender(
+        notification.template,
+        this.options,
+        notification.from,
+      ),
       to: notification.to,
       replyTo:
         typeof notification.data?.reply_to === "string"

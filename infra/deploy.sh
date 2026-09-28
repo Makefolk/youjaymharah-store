@@ -116,8 +116,17 @@ if [[ "$target" == "backend" ]]; then
   # anything destructive is reported and left for a person to run deliberately.
   log "Running database migrations"
   compose run --rm -T --no-deps medusa-server \
-    medusa db:migrate --execute-safe-links --all-or-nothing \
+    medusa db:migrate --skip-scripts --execute-safe-links --all-or-nothing \
     || fail "migrations failed; the running version was left untouched."
+
+  # A separate step, not left to db:migrate: Medusa 2.20 runs the migration
+  # scripts from db:migrate but discards their exit code, so a failed seed
+  # would still let the release go out on a half-seeded database. Completed
+  # scripts are recorded and skipped; a failed one runs again next deploy.
+  log "Running migration scripts"
+  compose run --rm -T --no-deps medusa-server \
+    medusa db:migrate:scripts \
+    || fail "migration scripts failed; the schema migrations above were applied, but the running version was left untouched."
 fi
 
 rollback() {

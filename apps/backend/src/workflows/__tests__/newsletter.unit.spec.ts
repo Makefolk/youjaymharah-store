@@ -11,6 +11,7 @@ function fixture() {
   const subscriber = {
     id: "nlsub_1",
     email: "buyer@example.com",
+    first_name: null as string | null,
     status: "pending",
     token: "a".repeat(64),
     consent_at: new Date(),
@@ -29,13 +30,11 @@ function fixture() {
     }),
   };
   const service = {
-    retrieveSettings: jest
-      .fn()
-      .mockResolvedValue({
-        enabled: true,
-        double_opt_in: true,
-        audience_id: "audience",
-      }),
+    retrieveSettings: jest.fn().mockResolvedValue({
+      enabled: true,
+      double_opt_in: true,
+      audience_id: "audience",
+    }),
     listNewsletterSubscribers: jest.fn(async (filter) =>
       Object.entries(filter).every(([key, value]) => subscriber[key] === value)
         ? [{ ...subscriber }]
@@ -90,6 +89,54 @@ describe("newsletter consent and synchronization", () => {
     ).rejects.toThrow("no longer valid");
     expect(subscriber.status).toBe("unsubscribed");
     expect(subscriber.sync_pending).toBe(true);
+  });
+  it("saves the confirmation name and syncs it to the email contact", async () => {
+    const { container, subscriber } = fixture();
+    await resolveNewsletterToken(
+      {
+        token: confirmationToken(subscriber),
+        action: "confirm",
+        first_name: "  Ada  ",
+      },
+      container,
+    );
+    expect(subscriber.first_name).toBe("Ada");
+    await syncNewsletterContact({ subscriber_id: subscriber.id }, container);
+    expect(ResendAudienceClient.prototype.addContact).toHaveBeenCalledWith({
+      audienceId: "audience",
+      email: subscriber.email,
+      firstName: "Ada",
+    });
+  });
+  it("does not overwrite the name when a confirmation is replayed", async () => {
+    const { container, subscriber, service } = fixture();
+    const token = confirmationToken(subscriber);
+    await resolveNewsletterToken(
+      { token, action: "confirm", first_name: "Ada" },
+      container,
+    );
+    service.updateNewsletterSubscribers.mockClear();
+    await resolveNewsletterToken(
+      { token, action: "confirm", first_name: "Another name" },
+      container,
+    );
+    expect(subscriber.first_name).toBe("Ada");
+    expect(service.updateNewsletterSubscribers).not.toHaveBeenCalled();
+  });
+  it("does not save a name from an invalid confirmation", async () => {
+    const { container, subscriber, service } = fixture();
+    await expect(
+      resolveNewsletterToken(
+        {
+          token: confirmationToken(subscriber) + "invalid",
+          action: "confirm",
+          first_name: "Ada",
+        },
+        container,
+      ),
+    ).rejects.toThrow("no longer valid");
+    expect(subscriber.first_name).toBeNull();
+    expect(service.updateNewsletterSubscribers).not.toHaveBeenCalled();
   });
   it("keeps failed syncs queued and clears the flag after recovery", async () => {
     const { container, subscriber } = fixture();

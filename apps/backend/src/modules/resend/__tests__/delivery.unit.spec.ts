@@ -35,16 +35,22 @@ function ledger() {
   } as ILockingModule;
   return { service, locking, rows };
 }
-function setup() {
+function setup(
+  overrides: Partial<
+    ConstructorParameters<typeof ResendNotificationProviderService>[1]
+  > = {},
+) {
   const store = ledger();
   const logger = { error: jest.fn() } as unknown as Logger;
+  const options = {
+    api_key: "re_test",
+    from: "verified@example.com",
+    encryption_key: "ab".repeat(32),
+    ...overrides,
+  };
   const provider = new ResendNotificationProviderService(
     { logger, emailDelivery: store.service, locking: store.locking },
-    {
-      api_key: "re_test",
-      from: "verified@example.com",
-      encryption_key: "ab".repeat(32),
-    },
+    options,
   );
   const notification = {
     to: "buyer@example.com",
@@ -54,11 +60,117 @@ function setup() {
     data: { reply_to: "support@example.com" },
     ...emailIdempotency("order:123"),
   };
-  return { ...store, provider, notification, logger };
+  return { ...store, provider, notification, logger, options };
 }
 afterEach(() => {
   global.fetch = originalFetch;
   jest.restoreAllMocks();
+});
+
+it.each([
+  ["email-verification", "Youjaymharah <onboarding@shop.example.com>"],
+  ["password-reset", "Youjaymharah <accounts@shop.example.com>"],
+  ["invite-user", "Youjaymharah <accounts@shop.example.com>"],
+  ["order-placed", "Youjaymharah Orders <orders@shop.example.com>"],
+  ["order-updated", "Youjaymharah Orders <orders@shop.example.com>"],
+  ["order-shipped", "Youjaymharah Orders <orders@shop.example.com>"],
+  ["order-delivered", "Youjaymharah Orders <orders@shop.example.com>"],
+  ["order-canceled", "Youjaymharah Orders <orders@shop.example.com>"],
+  ["refund-issued", "Youjaymharah Orders <orders@shop.example.com>"],
+  ["return-requested", "Youjaymharah Orders <orders@shop.example.com>"],
+  ["return-received", "Youjaymharah Orders <orders@shop.example.com>"],
+  ["exchange-created", "Youjaymharah Orders <orders@shop.example.com>"],
+  ["claim-created", "Youjaymharah Orders <orders@shop.example.com>"],
+  ["newsletter-confirm", "The YJ Edit <hello@shop.example.com>"],
+  ["newsletter-welcome", "The YJ Edit <hello@shop.example.com>"],
+  ["product-back-in-stock", "The YJ Edit <hello@shop.example.com>"],
+  ["product-launched", "The YJ Edit <hello@shop.example.com>"],
+  ["cart-reminder", "The YJ Edit <hello@shop.example.com>"],
+])(
+  "sends %s with its sender and the configured Reply-To",
+  async (template, from) => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ id: "email_1" })));
+    const { provider, notification } = setup({
+      from: "Old Sender <onboarding@shop.example.com>",
+    });
+    await provider.send({ ...notification, template });
+    expect(
+      JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body),
+    ).toMatchObject({
+      from,
+      reply_to: "support@example.com",
+    });
+  },
+);
+
+it.each([
+  ["email-verification", "onboarding"],
+  ["password-reset", "accounts"],
+  ["order-placed", "orders"],
+  ["newsletter-confirm", "marketing"],
+] as const)(
+  "uses the configured %s sender override",
+  async (template, group) => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ id: "email_1" })));
+    const { provider, notification } = setup({
+      from_addresses: { [group]: "  Custom <hello@other.example.com>  " },
+    });
+    await provider.send({ ...notification, template });
+    expect(
+      JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body).from,
+    ).toBe("Custom <hello@other.example.com>");
+  },
+);
+
+it("honors an explicit notification sender before the group override", async () => {
+  global.fetch = jest
+    .fn()
+    .mockResolvedValue(new Response(JSON.stringify({ id: "email_1" })));
+  const { provider, notification } = setup({
+    from_addresses: { marketing: "hello@marketing.example.com" },
+  });
+  await provider.send({
+    ...notification,
+    template: "newsletter-confirm",
+    from: "  Personal <personal@example.com>  ",
+  });
+  expect(
+    JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body).from,
+  ).toBe("Personal <personal@example.com>");
+});
+
+it("ignores blank sender overrides and derives from a bare email address", async () => {
+  global.fetch = jest
+    .fn()
+    .mockResolvedValue(new Response(JSON.stringify({ id: "email_1" })));
+  const { provider, notification } = setup({
+    from_addresses: { marketing: "   " },
+  });
+  await provider.send({
+    ...notification,
+    template: "newsletter-confirm",
+    from: "  ",
+  });
+  expect(
+    JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body).from,
+  ).toBe("The YJ Edit <hello@example.com>");
+});
+
+it("preserves Resend's shared testing sender", async () => {
+  global.fetch = jest
+    .fn()
+    .mockResolvedValue(new Response(JSON.stringify({ id: "email_1" })));
+  const { provider, notification } = setup({
+    from: "Test <onboarding@resend.dev>",
+  });
+  await provider.send({ ...notification, template: "newsletter-confirm" });
+  expect(
+    JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body).from,
+  ).toBe("Test <onboarding@resend.dev>");
 });
 it("sends the same provider idempotency key on retries and keeps Reply-To separate", async () => {
   global.fetch = jest
@@ -92,7 +204,8 @@ it("sends the same provider idempotency key on retries and keeps Reply-To separa
 });
 
 it("persists an encrypted snapshot and reuses the original content after an ambiguous failure", async () => {
-  const { provider, notification, rows } = setup();
+  const { provider, notification, rows, options } = setup();
+  notification.template = "newsletter-confirm";
   global.fetch = jest
     .fn()
     .mockRejectedValueOnce(new Error("request timed out for buyer@example.com"))
@@ -106,6 +219,7 @@ it("persists an encrypted snapshot and reuses the original content after an ambi
   expect(JSON.stringify(saved)).not.toContain("buyer@example.com");
   notification.content.html = "Changed template";
   notification.to = "changed@example.com";
+  options.from_addresses = { marketing: "Changed <hello@new.example.com>" };
   await provider.send(notification);
   const calls = (global.fetch as jest.Mock).mock.calls;
   expect(calls[1][1].body).toBe(calls[0][1].body);
