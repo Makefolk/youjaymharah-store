@@ -211,7 +211,7 @@ export type ProductImage = { id: string; url: string }
  * The photos to show for the current selection: the chosen variant's, or,
  * with only a colour chosen, the first variant in that colour. Falls back to
  * the product gallery when the variant has none. Needs `*variants.images` and
- * `*images` in `fields`.
+ * `*images` and `+variants.thumbnail` in `fields`.
  */
 export function getSelectionImages(
   product: Product,
@@ -232,6 +232,39 @@ export function getSelectionImages(
 
   return {
     images: variantImages.length ? variantImages : (product.images ?? []),
-    thumbnail: variant?.thumbnail ?? product.thumbnail ?? null,
+    thumbnail:
+      variant?.thumbnail ||
+      variantImages[0]?.url ||
+      product.thumbnail ||
+      product.images?.[0]?.url ||
+      null,
   }
+}
+
+/**
+ * Carousel slides for the chosen colour/variant, with its thumbnail first and
+ * duplicate URLs removed. Falls back to product media, then an empty array
+ * for an image placeholder. Use PRODUCT_CARD_MEDIA_FIELDS for listing reads.
+ */
+export function getProductCardImages(
+  product: Product,
+  selection: OptionSelection = {},
+): ProductImage[] {
+  const { images, thumbnail } = getSelectionImages(product, selection)
+  const seen = new Set<string>()
+  const cover = thumbnail
+    ? (images.find((image) => image.url === thumbnail) ?? {
+        id: "thumbnail",
+        url: thumbnail,
+      })
+    : null
+
+  return (cover ? [cover, ...images] : images).filter((image) => {
+    if (!image.url || seen.has(image.url)) {
+      return false
+    }
+
+    seen.add(image.url)
+    return true
+  })
 }

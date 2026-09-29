@@ -5,6 +5,7 @@ import {
   findVariant,
   getColourChoices,
   getOptionChoices,
+  getProductCardImages,
   getSelectionImages,
   getSizeChoices,
   getVariantStock,
@@ -254,5 +255,30 @@ describe("getSelectionImages", () => {
       thumbnail: "https://pub.r2.dev/main-thumb.jpg",
     })
     expect(getSelectionImages(p).images[0].id).toBe("img_main")
+  })
+
+  it("keeps the selected colour when a variant has photos but no thumbnail", () => {
+    expect(
+      getSelectionImages(p, { Colour: "Black", Size: "M" }).thumbnail,
+    ).toBe(blackImages[0].url)
+  })
+
+  it("puts the variant thumbnail first without repeating it in the carousel", () => {
+    expect(getProductCardImages(p, { Colour: "Black", Size: "S" })).toEqual([
+      { id: "thumbnail", url: "https://pub.r2.dev/black-thumb.jpg" },
+      ...blackImages,
+    ])
+    expect(getProductCardImages(p, { Colour: "Black", Size: "M" })).toEqual(
+      blackImages,
+    )
+  })
+
+  it("supports product-only media and products with no images", () => {
+    expect(getProductCardImages(product([], { thumbnail: null }))).toEqual([
+      { id: "img_main", url: "https://pub.r2.dev/main.jpg" },
+    ])
+    expect(
+      getProductCardImages(product([], { thumbnail: null, images: [] })),
+    ).toEqual([])
   })
 })

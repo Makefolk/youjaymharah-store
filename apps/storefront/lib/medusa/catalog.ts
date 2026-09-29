@@ -46,14 +46,20 @@ export const PRODUCT_CARD_FIELDS = [
   "*variants.options",
 ].join(",")
 
+/** Pass as listProducts' fields when cards render a swipe/variant gallery. */
+export const PRODUCT_CARD_MEDIA_FIELDS = [
+  PRODUCT_CARD_FIELDS,
+  "*images",
+  "*variants.images",
+  "+variants.thumbnail",
+].join(",")
+
 /** Everything a product page needs, including per-colour photos. */
 export const PRODUCT_PAGE_FIELDS = [
-  PRODUCT_CARD_FIELDS,
+  PRODUCT_CARD_MEDIA_FIELDS,
   "subtitle",
   "description",
   "material",
-  "*images",
-  "*variants.images",
   "*categories",
   "*collection",
   "*tags",
