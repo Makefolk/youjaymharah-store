@@ -4,8 +4,15 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 
 import { formatPrice, getProductPrice } from "@/lib/medusa/price"
-import { isNew } from "@/lib/medusa/product"
+import { isComingSoon, isNew } from "@/lib/medusa/product"
+import {
+  getColourChoices,
+  getProductCardImages,
+  isVariantPurchasable,
+  type OptionChoice,
+} from "@/lib/medusa/variants"
 import { productPath } from "@/lib/seo/routes"
+import { cn } from "@/lib/util/cn"
 
 export type ProductCardProps = {
   /** Use listProducts/listNewArrivals/searchProducts for region-priced data. */
@@ -18,11 +25,32 @@ export type ProductCardProps = {
    * It sits outside the product link so interactive controls are not nested.
    */
   quickView?: ReactNode
+  /** false renders the photo alone; the title and price stay for screen readers. */
+  showDetails?: boolean
+  showPrice?: boolean
+  /** New, Coming soon and Sold out labels. */
+  showBadges?: boolean
+  /** Swatches or a colour count, shown only for more than one colour. */
+  showColours?: boolean
+  /** Crossfade to the second gallery photo on hover. Needs `*images`. */
+  showHoverImage?: boolean
+  /**
+   * Pad the details away from the card's edges, for grids with no gutters
+   * where the text would otherwise touch its neighbours.
+   */
+  inset?: boolean
+  /** For cards above the fold, typically the first row of a listing. */
+  priority?: boolean
+  /** The rendered width of the photo; override to match the actual grid. */
+  sizes?: string
 }
 
+const MAX_SWATCHES = 5
+
 /**
- * Bare product card: photo, title, New badge and price. Render on the server
- * so isNew uses the server clock. Interactive features belong in small Client
+ * Product card: photo with a hover crossfade to the second photo, then a
+ * quiet status label, title, colours and price. Render on the server so isNew
+ * uses the server clock. Interactive features belong in small Client
  * Components, supplied through slots such as quickView.
  *
  * Control visibility contract (to implement alongside the controls): callers
@@ -44,8 +72,8 @@ export type ProductCardProps = {
  *
  * - Identity: id for actions, title for the label, handle for productPath.
  *   PRODUCT_CARD_FIELDS in lib/medusa/catalog supplies the baseline payload.
- * - Photos: thumbnail, with a first-gallery-image fallback when images were
- *   fetched. Hover photos/galleries need *images; colour-specific photos need
+ * - Photos: thumbnail, with a first-gallery-image fallback; the hover photo
+ *   is the next distinct gallery image. Colour-specific photos need
  *   *variants.images (and +variants.thumbnail for variant thumbnails). Use
  *   getSelectionImages from lib/medusa/variants after choosing options. Keep
  *   the image frame when no photo exists; size images for their actual grid.
@@ -143,52 +171,156 @@ export function ProductCard({
   product,
   newBadgeDays,
   quickView,
+  showDetails = true,
+  showPrice = true,
+  showBadges = true,
+  showColours = true,
+  showHoverImage = true,
+  inset = false,
+  priority = false,
+  sizes = "(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw",
 }: ProductCardProps) {
-  const price = getProductPrice(product)
-  const isNewProduct = newBadgeDays != null && isNew(product, newBadgeDays)
-  const image = product.thumbnail || product.images?.[0]?.url
+  const [cover, second] = getProductCardImages(product)
+  const hoverImage = showHoverImage ? second : undefined
+  const price = showPrice ? getProductPrice(product) : null
+  const status = showBadges ? getStatus(product, newBadgeDays) : null
+  const colours = showColours ? getColourChoices(product) : []
+
+  const priceLabel = price && (
+    <>
+      <span className={cn(price.price.isOnSale && "text-sale")}>
+        {price.isRange && "From "}
+        {formatPrice(price.price.amount, price.price.currencyCode)}
+      </span>
+      {price.price.isOnSale && (
+        <s className="text-muted-foreground">
+          <span className="sr-only">Original price: </span>
+          {formatPrice(price.price.originalAmount, price.price.currencyCode)}
+        </s>
+      )}
+    </>
+  )
 
   return (
-    <article>
-      <Link href={productPath(product.handle)} className="group block">
-        <span className="relative block aspect-3/4 overflow-hidden bg-muted">
-          {image && (
+    <article className="group/card relative">
+      <Link
+        href={productPath(product.handle)}
+        className="block outline-none focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-foreground"
+      >
+        <div className="relative aspect-3/4 overflow-hidden bg-muted">
+          {cover && (
             <Image
-              src={image}
+              src={cover.url}
               alt={product.title}
               fill
-              sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+              sizes={sizes}
+              loading={priority ? "eager" : undefined}
+              fetchPriority={priority ? "high" : undefined}
               className="object-cover"
             />
           )}
-        </span>
-        <h3 className="mt-3 text-[15px]">
-          {isNewProduct && (
-            <span className="mr-2 text-[11px] font-medium tracking-wider text-primary uppercase">
-              New
-            </span>
+          {hoverImage && (
+            <Image
+              src={hoverImage.url}
+              alt=""
+              fill
+              sizes={sizes}
+              className="object-cover opacity-0 transition-opacity duration-700 ease-out group-hover/card:opacity-100"
+            />
           )}
-          {product.title}
-        </h3>
-        {price && (
-          <p className="mt-1 flex gap-2 text-[13px] tabular-nums">
-            <span>
-              {price.isRange && "From "}
-              {formatPrice(price.price.amount, price.price.currencyCode)}
-            </span>
-            {price.price.isOnSale && (
-              <s className="text-muted-foreground">
-                <span className="sr-only">Original price: </span>
-                {formatPrice(
-                  price.price.originalAmount,
-                  price.price.currencyCode,
+        </div>
+
+        {showDetails ? (
+          <div className={cn("pt-3 pb-8", inset && "px-3 sm:px-4")}>
+            {status && (
+              <p
+                className={cn(
+                  "mb-1.5 text-[10px] font-medium tracking-[0.18em] uppercase",
+                  status.muted ? "text-muted-foreground" : "text-foreground",
                 )}
-              </s>
+              >
+                {status.label}
+              </p>
             )}
-          </p>
+            <h3 className="line-clamp-2 text-[13px] leading-snug">
+              {product.title}
+            </h3>
+            {priceLabel && (
+              <p className="mt-1 flex flex-wrap gap-x-2 text-[13px] leading-snug tabular-nums">
+                {priceLabel}
+              </p>
+            )}
+            {colours.length > 1 && <Colours colours={colours} />}
+          </div>
+        ) : (
+          <div className="sr-only">
+            <h3>{product.title}</h3>
+            {status && <p>{status.label}</p>}
+            {priceLabel && <p>{priceLabel}</p>}
+          </div>
         )}
       </Link>
       {quickView}
     </article>
+  )
+}
+
+function getStatus(
+  product: HttpTypes.StoreProduct,
+  newBadgeDays: number | undefined,
+): { label: string; muted: boolean } | null {
+  if (isComingSoon(product)) {
+    return { label: "Coming soon", muted: false }
+  }
+
+  const variants = product.variants ?? []
+
+  if (
+    variants.length &&
+    !variants.some((variant) => isVariantPurchasable(variant, product))
+  ) {
+    return { label: "Sold out", muted: true }
+  }
+
+  if (newBadgeDays != null && isNew(product, newBadgeDays)) {
+    return { label: "New", muted: false }
+  }
+
+  return null
+}
+
+function Colours({ colours }: { colours: OptionChoice[] }) {
+  const label = `${colours.length} colours`
+
+  // A row of blank squares reads as broken, so fall back to the count
+  // unless every colour has a swatch configured.
+  if (colours.some((colour) => !colour.hex && !colour.swatchImage)) {
+    return <p className="mt-2 text-[11px] text-muted-foreground">{label}</p>
+  }
+
+  const extra = colours.length - MAX_SWATCHES
+
+  return (
+    <div className="mt-2.5 flex items-center gap-1.5">
+      <span className="sr-only">Available in {label}</span>
+      {colours.slice(0, MAX_SWATCHES).map((colour) => (
+        <span
+          key={colour.value}
+          aria-hidden
+          className="size-2.5 bg-cover bg-center ring-1 ring-foreground/10 ring-inset"
+          style={{
+            backgroundColor: colour.hex ?? undefined,
+            backgroundImage: colour.swatchImage
+              ? `url(${JSON.stringify(colour.swatchImage)})`
+              : undefined,
+          }}
+        />
+      ))}
+      {extra > 0 && (
+        <span aria-hidden className="text-[11px] text-muted-foreground">
+          +{extra}
+        </span>
+      )}
+    </div>
   )
 }

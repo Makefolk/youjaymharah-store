@@ -30,12 +30,16 @@ export const CATALOG_TAGS = {
 const PRODUCT_REVALIDATE_SECONDS = 60
 const TAXONOMY_REVALIDATE_SECONDS = 300
 
-/** What a product card needs: price, sale, stock, swatches and the New badge. */
+/**
+ * What a product card needs: price, sale, stock, swatches, the New badge and
+ * the gallery for its hover photo.
+ */
 export const PRODUCT_CARD_FIELDS = [
   "id",
   "title",
   "handle",
   "thumbnail",
+  "*images",
   "created_at",
   "+metadata",
   "*options",
@@ -49,7 +53,6 @@ export const PRODUCT_CARD_FIELDS = [
 /** Pass as listProducts' fields when cards render a swipe/variant gallery. */
 export const PRODUCT_CARD_MEDIA_FIELDS = [
   PRODUCT_CARD_FIELDS,
-  "*images",
   "*variants.images",
   "+variants.thumbnail",
 ].join(",")
