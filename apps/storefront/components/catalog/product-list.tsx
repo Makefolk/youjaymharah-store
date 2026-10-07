@@ -7,7 +7,18 @@ import { cn } from "@/lib/util/cn"
 
 type CardOptions = Pick<
   ProductCardProps,
-  "showDetails" | "showPrice" | "showBadges" | "showColours" | "showHoverImage"
+  | "showDetails"
+  | "detailsPlacement"
+  | "showPrice"
+  | "showBadges"
+  | "badgePlacement"
+  | "showWishlist"
+  | "showNotifyMe"
+  | "showColours"
+  | "showColourSelector"
+  | "showCarouselArrows"
+  | "showCarouselDots"
+  | "sizes"
 >
 
 /** How many cards load eagerly: the first row at the widest breakpoint. */
@@ -44,11 +55,11 @@ export function ProductList({
     <ul
       className={cn(
         "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
-        !gapless && "gap-x-4 lg:gap-x-6",
+        !gapless && "gap-x-3 gap-y-6 sm:gap-x-5 lg:gap-x-6",
       )}
     >
       {products.map((product, index) => (
-        <li key={product.id}>
+        <li key={product.id} className="min-w-0">
           <ProductCard
             product={product}
             newBadgeDays={newBadgeDays}

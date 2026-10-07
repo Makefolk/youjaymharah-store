@@ -31,8 +31,8 @@ const PRODUCT_REVALIDATE_SECONDS = 60
 const TAXONOMY_REVALIDATE_SECONDS = 300
 
 /**
- * What a product card needs: price, sale, stock, swatches, the New badge and
- * the gallery for its hover photo.
+ * Baseline card data: price, sale, stock, swatches, the New badge and product
+ * gallery. The media preset adds variant thumbnails and gallery photos.
  */
 export const PRODUCT_CARD_FIELDS = [
   "id",
@@ -50,7 +50,7 @@ export const PRODUCT_CARD_FIELDS = [
   "*variants.options",
 ].join(",")
 
-/** Pass as listProducts' fields when cards render a swipe/variant gallery. */
+/** Default listing fields for the swipe gallery and colour thumbnail jumps. */
 export const PRODUCT_CARD_MEDIA_FIELDS = [
   PRODUCT_CARD_FIELDS,
   "*variants.images",
@@ -129,7 +129,7 @@ export type ListProductsParams = {
   /** Defaults to 24. */
   limit?: number
   offset?: number
-  /** Defaults to PRODUCT_CARD_FIELDS. */
+  /** Defaults to PRODUCT_CARD_MEDIA_FIELDS for the card carousel. */
   fields?: string
   /**
    * Any other Store API filter, passed through as-is, such as
@@ -160,7 +160,7 @@ export async function listProducts(
       query: {
         ...params.query,
         region_id: region.id,
-        fields: params.fields ?? PRODUCT_CARD_FIELDS,
+        fields: params.fields ?? PRODUCT_CARD_MEDIA_FIELDS,
         limit,
         offset,
         ...(params.categoryId ? { category_id: params.categoryId } : {}),

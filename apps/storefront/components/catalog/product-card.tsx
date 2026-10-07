@@ -1,18 +1,8 @@
 import type { HttpTypes } from "@medusajs/types"
-import Image from "next/image"
-import Link from "next/link"
 import type { ReactNode } from "react"
 
-import { formatPrice, getProductPrice } from "@/lib/medusa/price"
-import { isComingSoon, isNew } from "@/lib/medusa/product"
-import {
-  getColourChoices,
-  getProductCardImages,
-  isVariantPurchasable,
-  type OptionChoice,
-} from "@/lib/medusa/variants"
-import { productPath } from "@/lib/seo/routes"
-import { cn } from "@/lib/util/cn"
+import { isNew } from "@/lib/medusa/product"
+import { ProductCardView } from "./product-card-view"
 
 export type ProductCardProps = {
   /** Use listProducts/listNewArrivals/searchProducts for region-priced data. */
@@ -25,15 +15,23 @@ export type ProductCardProps = {
    * It sits outside the product link so interactive controls are not nested.
    */
   quickView?: ReactNode
+  /** Defaults to showDetails; false also suppresses a supplied slot. */
+  showQuickView?: boolean
   /** false renders the photo alone; the title and price stay for screen readers. */
   showDetails?: boolean
+  /** Overlay keeps the photograph grid continuous, including between rows. */
+  detailsPlacement?: "below" | "overlay"
   showPrice?: boolean
   /** New, Coming soon and Sold out labels. */
   showBadges?: boolean
-  /** Swatches or a colour count, shown only for more than one colour. */
+  badgePlacement?: "details" | "image"
+  showWishlist?: boolean
+  showNotifyMe?: boolean
+  /** Colour choices or a count, shown only for more than one colour. */
   showColours?: boolean
-  /** Crossfade to the second gallery photo on hover. Needs `*images`. */
-  showHoverImage?: boolean
+  showColourSelector?: boolean
+  showCarouselArrows?: boolean
+  showCarouselDots?: boolean
   /**
    * Pad the details away from the card's edges, for grids with no gutters
    * where the text would otherwise touch its neighbours.
@@ -45,13 +43,9 @@ export type ProductCardProps = {
   sizes?: string
 }
 
-const MAX_SWATCHES = 5
-
 /**
- * Product card: photo with a hover crossfade to the second photo, then a
- * quiet status label, title, colours and price. Render on the server so isNew
- * uses the server clock. Interactive features belong in small Client
- * Components, supplied through slots such as quickView.
+ * Newness is computed on the server to avoid browser clock differences.
+ * Gallery position and colour selection are local to each card.
  *
  * Control visibility contract (to implement alongside the controls): callers
  * must be able to hide any control, or any combination, independently via
@@ -66,26 +60,21 @@ const MAX_SWATCHES = 5
  * solely by it. showQuickView={false} must also suppress a supplied quickView
  * slot. Hiding carousel arrows/dots must not disable swipe gestures. Hiding
  * option selectors must never silently choose a size for quick add. These
- * boolean props are a documented requirement, not implemented in this stub.
+ * showQuickView, showWishlist, showNotifyMe, showColourSelector,
+ * showCarouselArrows and showCarouselDots are implemented.
  *
  * Backend-supported presentation and extension points:
  *
  * - Identity: id for actions, title for the label, handle for productPath.
  *   PRODUCT_CARD_FIELDS in lib/medusa/catalog supplies the baseline payload.
- * - Photos: thumbnail, with a first-gallery-image fallback; the hover photo
- *   is the next distinct gallery image. Colour-specific photos need
+ * - Photos: thumbnail, with a first-gallery-image fallback. Colour photos need
  *   *variants.images (and +variants.thumbnail for variant thumbnails). Use
  *   getSelectionImages from lib/medusa/variants after choosing options. Keep
  *   the image frame when no photo exists; size images for their actual grid.
- * - Swipe carousel (stub): request PRODUCT_CARD_MEDIA_FIELDS via listProducts
- *   or listNewArrivals' fields; searchProducts currently uses baseline fields
- *   and must opt into the media preset when its cards gain a carousel. Use
- *   getProductCardImages from lib/medusa/variants for thumbnail-first slides
- *   without repeated URLs, and components/ui/carousel for touch/drag plus
- *   keyboard/previous/next controls. Keep the gallery and its controls outside
- *   the title link, suppress link activation after dragging, lazy-load photos
- *   and reset to the first slide when the colour changes. No detail view is
- *   needed to swipe; a single photo needs no carousel controls or autoplay.
+ * - Carousel: use PRODUCT_CARD_MEDIA_FIELDS for product and variant media.
+ *   getCardGallery keeps every distinct photo; colour swatches jump to that
+ *   colour's thumbnail without changing the route or selecting a size.
+ *   Arrow/dot visibility never disables swipe. There is no autoplay.
  * - Price: getProductPrice returns the cheapest priced variant and isRange
  *   for a "From" prefix; pass a chosen variant id for its exact price.
  *   formatPrice uses Medusa amounts as-is, without dividing by 100. A sale
@@ -167,160 +156,11 @@ const MAX_SWATCHES = 5
  * those when wiring this up. Give the overlay an accessible title, trap focus
  * and return focus to its trigger. No route or modal behavior is active yet.
  */
-export function ProductCard({
-  product,
-  newBadgeDays,
-  quickView,
-  showDetails = true,
-  showPrice = true,
-  showBadges = true,
-  showColours = true,
-  showHoverImage = true,
-  inset = false,
-  priority = false,
-  sizes = "(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw",
-}: ProductCardProps) {
-  const [cover, second] = getProductCardImages(product)
-  const hoverImage = showHoverImage ? second : undefined
-  const price = showPrice ? getProductPrice(product) : null
-  const status = showBadges ? getStatus(product, newBadgeDays) : null
-  const colours = showColours ? getColourChoices(product) : []
-
-  const priceLabel = price && (
-    <>
-      <span className={cn(price.price.isOnSale && "text-sale")}>
-        {price.isRange && "From "}
-        {formatPrice(price.price.amount, price.price.currencyCode)}
-      </span>
-      {price.price.isOnSale && (
-        <s className="text-muted-foreground">
-          <span className="sr-only">Original price: </span>
-          {formatPrice(price.price.originalAmount, price.price.currencyCode)}
-        </s>
-      )}
-    </>
-  )
-
+export function ProductCard({ newBadgeDays, ...props }: ProductCardProps) {
   return (
-    <article className="group/card relative">
-      <Link
-        href={productPath(product.handle)}
-        className="block outline-none focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-foreground"
-      >
-        <div className="relative aspect-3/4 overflow-hidden bg-muted">
-          {cover && (
-            <Image
-              src={cover.url}
-              alt={product.title}
-              fill
-              sizes={sizes}
-              loading={priority ? "eager" : undefined}
-              fetchPriority={priority ? "high" : undefined}
-              className="object-cover"
-            />
-          )}
-          {hoverImage && (
-            <Image
-              src={hoverImage.url}
-              alt=""
-              fill
-              sizes={sizes}
-              className="object-cover opacity-0 transition-opacity duration-700 ease-out group-hover/card:opacity-100"
-            />
-          )}
-        </div>
-
-        {showDetails ? (
-          <div className={cn("pt-3 pb-8", inset && "px-3 sm:px-4")}>
-            {status && (
-              <p
-                className={cn(
-                  "mb-1.5 text-[10px] font-medium tracking-[0.18em] uppercase",
-                  status.muted ? "text-muted-foreground" : "text-foreground",
-                )}
-              >
-                {status.label}
-              </p>
-            )}
-            <h3 className="line-clamp-2 text-[13px] leading-snug">
-              {product.title}
-            </h3>
-            {priceLabel && (
-              <p className="mt-1 flex flex-wrap gap-x-2 text-[13px] leading-snug tabular-nums">
-                {priceLabel}
-              </p>
-            )}
-            {colours.length > 1 && <Colours colours={colours} />}
-          </div>
-        ) : (
-          <div className="sr-only">
-            <h3>{product.title}</h3>
-            {status && <p>{status.label}</p>}
-            {priceLabel && <p>{priceLabel}</p>}
-          </div>
-        )}
-      </Link>
-      {quickView}
-    </article>
-  )
-}
-
-function getStatus(
-  product: HttpTypes.StoreProduct,
-  newBadgeDays: number | undefined,
-): { label: string; muted: boolean } | null {
-  if (isComingSoon(product)) {
-    return { label: "Coming soon", muted: false }
-  }
-
-  const variants = product.variants ?? []
-
-  if (
-    variants.length &&
-    !variants.some((variant) => isVariantPurchasable(variant, product))
-  ) {
-    return { label: "Sold out", muted: true }
-  }
-
-  if (newBadgeDays != null && isNew(product, newBadgeDays)) {
-    return { label: "New", muted: false }
-  }
-
-  return null
-}
-
-function Colours({ colours }: { colours: OptionChoice[] }) {
-  const label = `${colours.length} colours`
-
-  // A row of blank squares reads as broken, so fall back to the count
-  // unless every colour has a swatch configured.
-  if (colours.some((colour) => !colour.hex && !colour.swatchImage)) {
-    return <p className="mt-2 text-[11px] text-muted-foreground">{label}</p>
-  }
-
-  const extra = colours.length - MAX_SWATCHES
-
-  return (
-    <div className="mt-2.5 flex items-center gap-1.5">
-      <span className="sr-only">Available in {label}</span>
-      {colours.slice(0, MAX_SWATCHES).map((colour) => (
-        <span
-          key={colour.value}
-          aria-hidden
-          className="size-2.5 bg-cover bg-center ring-1 ring-foreground/10 ring-inset"
-          style={{
-            backgroundColor: colour.hex ?? undefined,
-            backgroundImage: colour.swatchImage
-              ? `url(${JSON.stringify(colour.swatchImage)})`
-              : undefined,
-          }}
-        />
-      ))}
-      {extra > 0 && (
-        <span aria-hidden className="text-[11px] text-muted-foreground">
-          +{extra}
-        </span>
-      )}
-    </div>
+    <ProductCardView
+      {...props}
+      newProduct={newBadgeDays != null && isNew(props.product, newBadgeDays)}
+    />
   )
 }
