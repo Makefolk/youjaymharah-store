@@ -6,9 +6,7 @@ import type { SearchTypes } from "@medusajs/framework/types";
 import { MedusaError, Modules, ProductStatus } from "@medusajs/framework/utils";
 
 import type { StoreSearchProductsType } from "../../middlewares";
-import { SEARCH_PERFORMED_EVENT } from "../../../subscribers/search-performed";
-import { SEARCH_INSIGHTS_MODULE } from "../../../modules/search-insights";
-import type SearchInsightsModuleService from "../../../modules/search-insights/service";
+import { recordSearchTerm } from "../../../lib/record-search-term";
 
 /**
  * Faceting is off. It was switched off under the earlier in-memory (Orama)
@@ -78,7 +76,7 @@ export const GET = async (
   });
 
   if (q) {
-    await recordTerm(req, q, result.metadata.count ?? 0);
+    await recordSearchTerm(req.scope, q, result.metadata.count ?? 0);
   }
 
   res.json({
@@ -88,30 +86,4 @@ export const GET = async (
     limit: result.metadata.take,
     facets: result.facets ?? {},
   });
-};
-
-/**
- * Counts the search towards the trending terms. Emitted rather than written
- * here so the shopper's response does not wait on it, and swallowed because a
- * tally is never worth failing a search over.
- */
-const recordTerm = async (
-  req: MedusaStoreRequest<unknown, StoreSearchProductsType>,
-  term: string,
-  resultCount: number,
-) => {
-  try {
-    const service: SearchInsightsModuleService = req.scope.resolve(
-      SEARCH_INSIGHTS_MODULE,
-    );
-    const approved = await service.approveTerm(term);
-    if (!approved || !Number.isSafeInteger(resultCount) || resultCount < 0)
-      return;
-    await req.scope.resolve(Modules.EVENT_BUS).emit({
-      name: SEARCH_PERFORMED_EVENT,
-      data: { term: approved, result_count: resultCount },
-    });
-  } catch {
-    // The search itself succeeded; the tally is not worth a 500.
-  }
 };

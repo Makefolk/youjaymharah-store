@@ -40,6 +40,15 @@ describe("loadListingState", () => {
 })
 
 describe("catalogQuery", () => {
+  it("sends a search term with the listing", () => {
+    expect(
+      catalogQuery({ q: "linen" }, emptyListingState(), {
+        regionId: "reg_1",
+        defaultSort: "recommended",
+      }),
+    ).toMatchObject({ q: "linen", sort: "recommended" })
+  })
+
   it("sends only the filters in use, in a stable order", () => {
     const state = { ...emptyListingState(), colour: ["Navy", "Black"] }
     expect(

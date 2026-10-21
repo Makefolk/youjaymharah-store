@@ -54,6 +54,25 @@ describe("listCatalog sorting", () => {
     );
   });
 
+  it("keeps a search's relevance order for recommended, but not other sorts", () => {
+    const rank = new Map([
+      ["sold_out_newest", 0],
+      ["old_cheap", 1],
+      ["new_dear", 2],
+    ]);
+    const matches = catalogue.filter((p) => rank.has(p.id));
+    expect(listCatalog(matches, { rank }).ids).toEqual([
+      "sold_out_newest",
+      "old_cheap",
+      "new_dear",
+    ]);
+    expect(listCatalog(matches, { rank, sort: "price_asc" }).ids).toEqual([
+      "old_cheap",
+      "sold_out_newest",
+      "new_dear",
+    ]);
+  });
+
   it("pages without losing the total", () => {
     const page = listCatalog(catalogue, {
       sort: "newest",

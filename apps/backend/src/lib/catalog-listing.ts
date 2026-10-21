@@ -86,7 +86,7 @@ function matches(
 
 const time = (value: string) => new Date(value).getTime() || 0;
 
-function compare(sort: ListingSort) {
+function compare(sort: ListingSort, rank?: Map<string, number>) {
   const newest = (a: ListingProduct, b: ListingProduct) =>
     time(b.listed_at) - time(a.listed_at) || a.id.localeCompare(b.id);
   const byPrice =
@@ -103,6 +103,11 @@ function compare(sort: ListingSort) {
     case "price_desc":
       return byPrice(-1);
     default:
+      // A search keeps the search's own relevance order.
+      if (rank)
+        return (a: ListingProduct, b: ListingProduct) =>
+          (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity) ||
+          newest(a, b);
       // What can be bought first, then the newest.
       return (a: ListingProduct, b: ListingProduct) =>
         Number(b.available) - Number(a.available) || newest(a, b);
@@ -167,16 +172,19 @@ export function listCatalog(
     sort = "recommended",
     offset = 0,
     limit = 24,
+    rank,
   }: {
     filters?: ListingFilters;
     sort?: ListingSort;
     offset?: number;
     limit?: number;
+    /** Search relevance: product id to position, best first. */
+    rank?: Map<string, number>;
   } = {},
 ): ListingResult {
   const matching = products
     .filter((product) => matches(product, filters))
-    .sort(compare(sort));
+    .sort(compare(sort, rank));
   return {
     ids: matching.slice(offset, offset + limit).map((product) => product.id),
     count: matching.length,

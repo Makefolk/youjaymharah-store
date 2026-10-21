@@ -41,6 +41,7 @@ export type ListingTab = { label: string; href: string; active: boolean }
  */
 export function ProductListing({
   title,
+  emptyMessage = "Nothing matches these filters.",
   scope,
   defaultSort,
   regionId,
@@ -48,6 +49,8 @@ export function ProductListing({
   tabs = [],
 }: {
   title: string
+  /** Shown when nothing matches before any filter is ticked. */
+  emptyMessage?: string
   scope: ListingScope
   defaultSort: ListingSortOption
   regionId: string
@@ -204,7 +207,9 @@ export function ProductListing({
         </p>
       ) : products.length === 0 ? (
         <div className="px-5 py-16 text-center text-[15px] text-muted-foreground">
-          <p>Nothing matches these filters.</p>
+          <p>
+            {filtersInUse > 0 ? "Nothing matches these filters." : emptyMessage}
+          </p>
           {filtersInUse > 0 && (
             <button
               type="button"

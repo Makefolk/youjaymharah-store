@@ -29,6 +29,7 @@ export async function ListingPage({
   tabs,
   hero,
   footer,
+  emptyMessage,
 }: {
   title: string
   scope: ListingScope
@@ -39,6 +40,7 @@ export async function ListingPage({
   /** Above everything, e.g. a collection's banner. */
   hero?: ReactNode
   footer?: ReactNode
+  emptyMessage?: string
 }) {
   const [region, settings, params] = await Promise.all([
     getStoreRegion(),
@@ -86,6 +88,7 @@ export async function ListingPage({
             regionId={region.id}
             newBadgeDays={settings.products.new_badge_days}
             tabs={tabs}
+            emptyMessage={emptyMessage}
           />
         </Suspense>
       </HydrationBoundary>

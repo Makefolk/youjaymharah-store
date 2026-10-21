@@ -371,6 +371,8 @@ const repeatable = z
   .optional();
 
 export const StoreCatalogQuery = z.object({
+  /** A search term; narrows the listing to matches, in relevance order. */
+  q: z.string().trim().min(1).max(128).optional(),
   category: z.string().trim().min(1).max(200).optional(),
   collection: z.string().trim().min(1).max(200).optional(),
   region_id: z.string().min(1),

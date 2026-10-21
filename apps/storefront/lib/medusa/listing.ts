@@ -86,7 +86,12 @@ export type ListingState = {
   sort: ListingSortOption | null
 } & Record<ListingFacet, string[]>
 
-export type ListingScope = { category?: string; collection?: string }
+export type ListingScope = {
+  category?: string
+  collection?: string
+  /** A search term: the listing narrows to matches, in relevance order. */
+  q?: string
+}
 
 export function emptyListingState(): ListingState {
   return {
@@ -127,6 +132,7 @@ export function catalogQuery(
     limit,
     ...(scope.category ? { category: scope.category } : {}),
     ...(scope.collection ? { collection: scope.collection } : {}),
+    ...(scope.q ? { q: scope.q } : {}),
     ...Object.fromEntries(
       FACETS.filter((facet) => state[facet].length).map((facet) => [
         facet,

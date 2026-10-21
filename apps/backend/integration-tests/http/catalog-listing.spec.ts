@@ -161,6 +161,25 @@ medusaIntegrationTestRunner({
         });
       });
 
+      it("narrows to a search term, with facets for the matches only", async () => {
+        // The search index fills from product events, a moment after creation.
+        let data:
+          | { ids: string[]; count: number; facets: Record<string, unknown[]> }
+          | undefined;
+        for (let attempt = 0; attempt < 40; attempt++) {
+          ({ data } = await get("q=navy"));
+          if (data?.count) break;
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+        expect(await handlesOf(data!.ids)).toEqual(["navy-dress"]);
+        expect(data!.facets.colour).toEqual([
+          expect.objectContaining({ value: "Navy", count: 1 }),
+        ]);
+
+        const scoped = await get("q=navy&category=women&colour=Black");
+        expect(scoped.data.count).toBe(0);
+      });
+
       async function handlesOf(ids: string[]) {
         const { data } = await api.get(
           `/store/products?${ids.map((id) => `id[]=${id}`).join("&")}&fields=id,handle&limit=50`,
