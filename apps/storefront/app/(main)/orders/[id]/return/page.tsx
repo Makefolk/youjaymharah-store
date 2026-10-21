@@ -13,6 +13,7 @@ import {
 import { formatOrderNumber } from "@/lib/medusa/order"
 import { orderPath } from "@/lib/seo/routes"
 
+import { ReturnAccessRequest } from "./return-access-request"
 import { ReturnRequestForm, type ReturnableItem } from "./return-request-form"
 
 export const metadata: Metadata = {
@@ -22,8 +23,10 @@ export const metadata: Metadata = {
 
 export default async function ReturnRequestPage({
   params,
+  searchParams,
 }: PageProps<"/orders/[id]/return">) {
   const { id } = await params
+  const { access } = await searchParams
   const [order, options, reasons, customer] = await Promise.all([
     fetchOrderOnServer(id),
     fetchReturnOptionsOnServer(id),
@@ -76,26 +79,31 @@ export default async function ReturnRequestPage({
         : []
     })
 
-  // The account that placed the order needs no further proof; anyone else
-  // confirms the order's email.
+  // The account that placed the order needs no further proof; a guest needs
+  // the link emailed to the order's address. The backend checks the link.
   const ownsOrder =
     Boolean(customer) &&
     customer!.id === (order as { customer_id?: string | null }).customer_id
+  const accessToken = typeof access === "string" && access ? access : null
 
   return (
     <AccountShell
       title="Request a return"
       intro={`Order ${formatOrderNumber(order.display_id)}. Choose what you're sending back and we'll be in touch to arrange collection or drop-off.`}
     >
-      <ReturnRequestForm
-        orderId={order.id}
-        items={items}
-        reasons={reasons.map((reason) => ({
-          id: reason.id,
-          label: reason.label,
-        }))}
-        needsEmail={!ownsOrder}
-      />
+      {ownsOrder || accessToken ? (
+        <ReturnRequestForm
+          orderId={order.id}
+          items={items}
+          reasons={reasons.map((reason) => ({
+            id: reason.id,
+            label: reason.label,
+          }))}
+          access={ownsOrder ? null : accessToken}
+        />
+      ) : (
+        <ReturnAccessRequest orderId={order.id} />
+      )}
       <div className="mt-10 border-t border-border/70 pt-6">{back}</div>
     </AccountShell>
   )

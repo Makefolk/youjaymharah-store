@@ -17,7 +17,8 @@ export type RequestCustomerReturnInput = {
   /** Shown to staff on each returned item. */
   note?: string | null;
   customer_id?: string | null;
-  email?: string | null;
+  /** A guest's token from the emailed return link. */
+  access?: string | null;
 };
 
 /**

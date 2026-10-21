@@ -16,6 +16,7 @@ import { orderUpdatedEmail } from "./order-updated";
 import { passwordResetEmail } from "./password-reset";
 import { productAvailableEmail } from "./product-available";
 import { refundIssuedEmail } from "./refund-issued";
+import { returnAccessEmail } from "./return-access";
 import { returnReceivedEmail } from "./return-received";
 import { returnRequestedEmail } from "./return-requested";
 
@@ -32,6 +33,7 @@ export const EmailTemplates = {
   ORDER_CANCELED: "order-canceled",
   REFUND_ISSUED: "refund-issued",
   RETURN_REQUESTED: "return-requested",
+  RETURN_ACCESS: "return-access",
   RETURN_RECEIVED: "return-received",
   EXCHANGE_CREATED: "exchange-created",
   CLAIM_CREATED: "claim-created",
@@ -160,6 +162,15 @@ const registry: Record<EmailTemplate, TemplateEntry> = {
         ? `We are sorting out order ${number}`
         : "We are sorting out your order",
       react: claimCreatedEmail(data as Parameters<typeof claimCreatedEmail>[0]),
+    };
+  },
+  [EmailTemplates.RETURN_ACCESS]: (data) => {
+    const number = orderNumber(data);
+    return {
+      subject: number
+        ? `Your link to return items from order ${number}`
+        : "Your link to return items",
+      react: returnAccessEmail(data as Parameters<typeof returnAccessEmail>[0]),
     };
   },
   [EmailTemplates.PASSWORD_RESET]: (data) => ({

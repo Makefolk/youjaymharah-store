@@ -18,6 +18,7 @@ const templateSenders = {
   "order-canceled": "orders",
   "refund-issued": "orders",
   "return-requested": "orders",
+  "return-access": "orders",
   "return-received": "orders",
   "exchange-created": "orders",
   "claim-created": "orders",

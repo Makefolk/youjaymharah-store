@@ -3,6 +3,8 @@ import {
   defineMiddlewares,
   validateAndTransformBody,
   validateAndTransformQuery,
+  type MedusaRequest,
+  type MedusaResponse,
 } from "@medusajs/framework/http";
 import type { BaseEntity } from "@medusajs/framework/types";
 import { z } from "@medusajs/framework/zod";
@@ -437,8 +439,11 @@ export const StoreRequestReturn = z.object({
     .min(1)
     .max(50),
   note: z.string().trim().max(1000).nullable().optional(),
-  /** Required for guests: the order's email, as proof it is theirs. */
-  email: z.email().nullable().optional(),
+  /**
+   * Required for guests: the token from the emailed return link, as proof
+   * they can read the order's inbox.
+   */
+  access: z.string().trim().min(1).max(200).nullable().optional(),
 });
 
 export type StoreRequestReturnType = z.infer<typeof StoreRequestReturn>;
@@ -676,6 +681,29 @@ export default defineMiddlewares({
         rateLimit("order-lookup", 10),
         validateAndTransformBody(StoreOrderLookup),
       ],
+    },
+    {
+      // Medusa's own return route takes any order ID without checking who is
+      // asking, ignores the store's return policy, and lets the caller mark
+      // the return received (receive_now). Customers request returns through
+      // /store/orders/:id/return-requests instead.
+      matcher: "/store/returns",
+      method: ["POST"],
+      middlewares: [
+        (_req: MedusaRequest, res: MedusaResponse) => {
+          res.status(404).json({
+            type: "not_found",
+            message:
+              "Request a return with POST /store/orders/{id}/return-requests.",
+          });
+        },
+      ],
+    },
+    {
+      // Each call sends an email to the order's address.
+      matcher: "/store/orders/:id/return-access",
+      method: ["POST"],
+      middlewares: [rateLimit("return-access", 5)],
     },
     {
       matcher: "/store/orders/:id/return-requests",

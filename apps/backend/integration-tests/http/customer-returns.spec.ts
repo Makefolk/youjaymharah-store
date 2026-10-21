@@ -22,13 +22,20 @@ medusaIntegrationTestRunner({
     describe("customer order lookup and return requests", () => {
       let headers: Record<string, string>;
       const sentEmails: string[] = [];
+      const returnLinks: string[] = [];
 
       beforeEach(async () => {
         sentEmails.length = 0;
+        returnLinks.length = 0;
         jest.spyOn(global, "fetch").mockImplementation(async (url, options) => {
           const target = new URL(String(url));
           if (target.origin === "https://api.resend.com") {
-            sentEmails.push(String(JSON.parse(String(options?.body)).subject));
+            const email = JSON.parse(String(options?.body));
+            sentEmails.push(String(email.subject));
+            const access = String(email.html ?? "").match(
+              /return\?access=([^"&<\s]+)/,
+            );
+            if (access) returnLinks.push(decodeURIComponent(access[1]));
             return new Response(JSON.stringify({ id: "returns-test-email" }));
           }
           if (target.origin !== "https://api.paystack.co")
@@ -132,13 +139,33 @@ medusaIntegrationTestRunner({
           items: [{ item_id: itemId, returnable_quantity: 1 }],
         });
 
+        // Knowing the order's email is no proof: the order's link shows it.
         await expect(
           api.post(
             `/store/orders/${order.id}/return-requests`,
-            {
-              email: "wrong@example.com",
-              items: [{ id: itemId, quantity: 1 }],
-            },
+            { email: order.email, items: [{ id: itemId, quantity: 1 }] },
+            { headers },
+          ),
+        ).rejects.toMatchObject({ response: { status: 400 } });
+
+        const sent = await api.post(
+          `/store/orders/${order.id}/return-access`,
+          {},
+          { headers },
+        );
+        expect(sent.data.sent_to).toMatch(/^.•••@example\.com$/);
+        let access: string | undefined;
+        for (let attempt = 0; attempt < 40 && !access; attempt++) {
+          await utils.waitWorkflowExecutions();
+          access = returnLinks[0];
+          if (!access) await new Promise((r) => setTimeout(r, 250));
+        }
+        expect(access).toBeDefined();
+
+        await expect(
+          api.post(
+            `/store/orders/${order.id}/return-requests`,
+            { access: `${access}x`, items: [{ id: itemId, quantity: 1 }] },
             { headers },
           ),
         ).rejects.toMatchObject({ response: { status: 400 } });
@@ -146,7 +173,7 @@ medusaIntegrationTestRunner({
         const requested = await api.post(
           `/store/orders/${order.id}/return-requests`,
           {
-            email: order.email,
+            access,
             items: [{ id: itemId, quantity: 1, reason_id: reason.id }],
             note: "Runs small",
           },
@@ -173,10 +200,43 @@ medusaIntegrationTestRunner({
         await expect(
           api.post(
             `/store/orders/${order.id}/return-requests`,
-            { email: order.email, items: [{ id: itemId, quantity: 1 }] },
+            { access, items: [{ id: itemId, quantity: 1 }] },
             { headers },
           ),
         ).rejects.toMatchObject({ response: { status: 400 } });
+      });
+
+      it("refuses Medusa's own return route, which skips every check", async () => {
+        const order = await deliveredOrder();
+        const settings = getContainer().resolve("storefrontSettings");
+        const row = await settings.retrieveSettings();
+        await settings.updateStorefrontSettings([
+          { id: row.id, returns_enabled: false },
+        ]);
+
+        await expect(
+          api.post(
+            "/store/returns",
+            {
+              order_id: order.id,
+              items: [{ id: order.items![0]!.id, quantity: 1 }],
+              return_shipping: { option_id: "so_any" },
+              receive_now: true,
+            },
+            { headers },
+          ),
+        ).rejects.toMatchObject({ response: { status: 404 } });
+
+        const {
+          data: [after],
+        } = await getContainer()
+          .resolve(ContainerRegistrationKeys.QUERY)
+          .graph({
+            entity: "order",
+            fields: ["returns.id"],
+            filters: { id: order.id },
+          });
+        expect(after.returns ?? []).toEqual([]);
       });
 
       it("closes returns when the store turns them off", async () => {

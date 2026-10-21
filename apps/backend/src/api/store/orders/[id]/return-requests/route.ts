@@ -8,7 +8,7 @@ import { requestCustomerReturnWorkflow } from "../../../../../workflows/request-
 
 /**
  * Requests a return. Signed in, the order must be the customer's own; as a
- * guest, `email` must be the order's.
+ * guest, `access` must be the token from the emailed return link.
  */
 export const POST = async (
   req: AuthenticatedMedusaRequest<StoreRequestReturnType>,
@@ -19,7 +19,7 @@ export const POST = async (
       order_id: req.params.id,
       items: req.validatedBody.items,
       note: req.validatedBody.note,
-      email: req.validatedBody.email,
+      access: req.validatedBody.access,
       customer_id: req.auth_context?.actor_id ?? null,
     },
   });

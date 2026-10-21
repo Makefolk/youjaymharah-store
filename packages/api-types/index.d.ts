@@ -541,7 +541,7 @@ export type StoreRequestReturnBody = {
     reason_id?: string | null;
   }[];
   note?: string | null;
-  email?: string | null;
+  access?: string | null;
 };
 
 export type StoreRequestReturnResponse = {

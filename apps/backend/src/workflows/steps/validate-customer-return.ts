@@ -1,6 +1,7 @@
 import { MedusaError } from "@medusajs/framework/utils";
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk";
 
+import { isValidReturnAccessToken } from "../../lib/return-access";
 import { findIneligibleRequest } from "../../lib/return-eligibility";
 import { loadReturnContext } from "../utils/order-returns";
 
@@ -9,14 +10,14 @@ export type ValidateCustomerReturnInput = {
   items: { id: string; quantity: number }[];
   /** The signed-in customer, if any. */
   customer_id?: string | null;
-  /** What a guest typed as the order's email. */
-  email?: string | null;
+  /** A guest's token from the emailed return link. */
+  access?: string | null;
 };
 
 /**
- * Only the order's own customer, or someone who knows the order's email, may
- * request a return. The order ID alone is not enough: it travels in links
- * that can be forwarded.
+ * Only the order's own customer, or a guest holding the link emailed to the
+ * order's address, may request a return. Neither the order ID nor its email
+ * is proof: both are visible to anyone with the order's link.
  */
 export const validateCustomerReturnStep = createStep(
   "validate-customer-return",
@@ -29,13 +30,15 @@ export const validateCustomerReturnStep = createStep(
     const { order, eligibility } = context;
     const ownsOrder =
       Boolean(input.customer_id) && input.customer_id === order.customer_id;
-    const knowsEmail =
-      Boolean(input.email && order.email) &&
-      input.email!.trim().toLowerCase() === order.email!.trim().toLowerCase();
-    if (!ownsOrder && !knowsEmail) {
+    const hasAccess = isValidReturnAccessToken(
+      input.access,
+      order.id,
+      order.email,
+    );
+    if (!ownsOrder && !hasAccess) {
       throw new MedusaError(
         MedusaError.Types.NOT_ALLOWED,
-        "That email doesn't match this order.",
+        "This return link has expired or isn't for this order. Ask for a new one from the order page.",
       );
     }
 

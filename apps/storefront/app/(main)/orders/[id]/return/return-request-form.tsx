@@ -9,10 +9,11 @@ import {
   primaryButtonClass,
 } from "@/components/account/account-shell"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useRequestReturn } from "@/features/orders/hooks"
 import { orderPath } from "@/lib/seo/routes"
+
+import { ReturnAccessRequest } from "./return-access-request"
 
 export type ReturnableItem = {
   id: string
@@ -31,19 +32,19 @@ export function ReturnRequestForm({
   orderId,
   items,
   reasons,
-  needsEmail,
+  access,
 }: {
   orderId: string
   items: ReturnableItem[]
   reasons: { id: string; label: string }[]
-  needsEmail: boolean
+  /** A guest's token from the emailed return link; null when signed in. */
+  access: string | null
 }) {
   const id = useId()
   const request = useRequestReturn(orderId)
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [reasonId, setReasonId] = useState("")
   const [note, setNote] = useState("")
-  const [email, setEmail] = useState("")
   const [problem, setProblem] = useState<string | null>(null)
 
   const chosen = items
@@ -73,10 +74,6 @@ export function ReturnRequestForm({
       setProblem("Choose at least one item to return.")
       return
     }
-    if (needsEmail && !/^\S+@\S+\.\S+$/.test(email.trim())) {
-      setProblem("Enter the email you placed the order with.")
-      return
-    }
     setProblem(null)
     request.mutate({
       items: chosen.map((item) => ({
@@ -84,7 +81,7 @@ export function ReturnRequestForm({
         reason_id: reasonId || null,
       })),
       note: note.trim() || null,
-      email: needsEmail ? email.trim() : null,
+      access,
     })
   }
 
@@ -199,24 +196,6 @@ export function ReturnRequestForm({
         />
       </div>
 
-      {needsEmail && (
-        <div className="flex flex-col gap-2">
-          <label htmlFor={`${id}-email`} className="text-[13px] font-medium">
-            Email you ordered with
-          </label>
-          <Input
-            id={`${id}-email`}
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          <p className="text-[13px] text-muted-foreground">
-            So we know the order is yours.
-          </p>
-        </div>
-      )}
-
       <Button
         type="submit"
         size="lg"
@@ -232,6 +211,9 @@ export function ReturnRequestForm({
             request.error?.message ??
             "We couldn't send the request. Please try again."}
         </FormAlert>
+      )}
+      {access && request.isError && (
+        <ReturnAccessRequest orderId={orderId} again />
       )}
     </form>
   )

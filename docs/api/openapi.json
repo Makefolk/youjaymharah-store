@@ -11078,7 +11078,7 @@
           "Returns"
         ],
         "summary": "Request a return",
-        "description": "Signed in, the order must be the customer's own. As a guest, `email` must be the order's. Each item must still be returnable in the quantity asked for (see return-options). Reasons come from GET /store/return-reasons. Emails the customer that the request was received. Rate limited to 10 a minute.",
+        "description": "Signed in, the order must be the customer's own. As a guest, `access` must be the token from the link emailed by POST /store/orders/{id}/return-access (knowing the order's email is not enough: anyone with the order's id can read it). Each item must still be returnable in the quantity asked for (see return-options). Reasons come from GET /store/return-reasons. Emails the customer that the request was received. Rate limited to 10 a minute.",
         "security": [
           {
             "publishableKey": []
@@ -11147,12 +11147,12 @@
                       }
                     ]
                   },
-                  "email": {
+                  "access": {
                     "anyOf": [
                       {
                         "type": "string",
-                        "format": "email",
-                        "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                        "minLength": 1,
+                        "maxLength": 200
                       },
                       {
                         "type": "null"
@@ -11197,7 +11197,84 @@
             }
           },
           "400": {
-            "description": "Validation failed; a reason doesn't exist; the email doesn't match or the order isn't the signed-in customer's; or an item can't be returned (window closed, quantity too high, returns off). `message` says which, in words fit to show the customer.",
+            "description": "Validation failed; a reason doesn't exist; the access token is missing, expired or for another order, or the order isn't the signed-in customer's; or an item can't be returned (window closed, quantity too high, returns off). `message` says which, in words fit to show the customer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/store/orders/{id}/return-access": {
+      "post": {
+        "operationId": "postStoreOrdersIdReturnAccess",
+        "tags": [
+          "Returns"
+        ],
+        "summary": "Email a guest their return link",
+        "description": "Emails the order's own address (never one from the request) a link to /orders/{id}/return?access=<token> on the storefront, valid for 24 hours. The token is what a guest passes as `access` to request a return. Rate limited to 5 a minute.",
+        "security": [
+          {
+            "publishableKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Where it went, partly hidden: `j•••@example.com`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sent_to": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "sent_to"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The order has no email address.",
             "content": {
               "application/json": {
                 "schema": {

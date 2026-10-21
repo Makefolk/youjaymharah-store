@@ -2217,7 +2217,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Returns",
     summary: "Request a return",
     description:
-      "Signed in, the order must be the customer's own. As a guest, `email` must be the order's. Each item must still be returnable in the quantity asked for (see return-options). Reasons come from GET /store/return-reasons. Emails the customer that the request was received. Rate limited to 10 a minute.",
+      "Signed in, the order must be the customer's own. As a guest, `access` must be the token from the link emailed by POST /store/orders/{id}/return-access (knowing the order's email is not enough: anyone with the order's id can read it). Each item must still be returnable in the quantity asked for (see return-options). Reasons come from GET /store/return-reasons. Emails the customer that the request was received. Rate limited to 10 a minute.",
     auth: "public",
     body: StoreRequestReturn,
     response: {
@@ -2228,8 +2228,26 @@ export const ROUTES: RouteDoc[] = [
       {
         status: 400,
         description:
-          "Validation failed; a reason doesn't exist; the email doesn't match or the order isn't the signed-in customer's; or an item can't be returned (window closed, quantity too high, returns off). `message` says which, in words fit to show the customer.",
+          "Validation failed; a reason doesn't exist; the access token is missing, expired or for another order, or the order isn't the signed-in customer's; or an item can't be returned (window closed, quantity too high, returns off). `message` says which, in words fit to show the customer.",
       },
+      { status: 404, description: "No such order." },
+      { status: 429, description: "Too many requests." },
+    ],
+  },
+  {
+    method: "POST",
+    path: "/store/orders/{id}/return-access",
+    tag: "Returns",
+    summary: "Email a guest their return link",
+    description:
+      "Emails the order's own address (never one from the request) a link to /orders/{id}/return?access=<token> on the storefront, valid for 24 hours. The token is what a guest passes as `access` to request a return. Rate limited to 5 a minute.",
+    auth: "public",
+    response: {
+      description: "Where it went, partly hidden: `j•••@example.com`.",
+      schema: z.object({ sent_to: z.string() }),
+    },
+    errors: [
+      { status: 400, description: "The order has no email address." },
       { status: 404, description: "No such order." },
       { status: 429, description: "Too many requests." },
     ],
