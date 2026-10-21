@@ -2351,6 +2351,50 @@ export const ROUTES: RouteDoc[] = [
   },
   {
     method: "GET",
+    path: "/admin/attention",
+    tag: "Support",
+    summary: "What is waiting on a person",
+    description:
+      "`payments`: Paystack and Credo payments from the last three days (at least 20 minutes old) whose bag never became an order, as the gateway sees them now (`paid_no_order`, `amount_mismatch` or `pending`; unpaid ones are left out). Up to 15 are checked per refresh and the result is cached for five minutes. `emails_to_review`: how many sends await review. `returns`: requested returns not received after three days. `unshipped`: paid, uncanceled orders from the last 60 days with nothing shipped after three days. Up to 50 of each, oldest first.",
+    auth: "admin",
+    policies: ["order:read"],
+    response: {
+      description: "The queue.",
+      schema: z.object({
+        emails_to_review: z.number(),
+        payments: z.array(
+          z.object({
+            session_id: z.string(),
+            reference: z.string().nullable(),
+            provider_id: z.string(),
+            amount: z.number(),
+            currency_code: z.string(),
+            email: z.string().nullable(),
+            created_at: z.string(),
+            verdict: z.enum(["paid_no_order", "amount_mismatch", "pending"]),
+          }),
+        ),
+        returns: z.array(
+          z.object({
+            id: z.string(),
+            order_id: z.string(),
+            display_id: z.number(),
+            requested_at: z.string(),
+          }),
+        ),
+        unshipped: z.array(
+          z.object({
+            id: z.string(),
+            display_id: z.number(),
+            email: z.string().nullable(),
+            created_at: z.string(),
+          }),
+        ),
+      }),
+    },
+  },
+  {
+    method: "GET",
     path: "/admin/email-review",
     tag: "Support",
     summary: "Emails whose outcome is unknown",

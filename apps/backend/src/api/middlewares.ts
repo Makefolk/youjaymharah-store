@@ -752,6 +752,11 @@ export default defineMiddlewares({
       policies: [{ resource: "refund", operation: "create" }],
     },
     {
+      matcher: "/admin/attention",
+      method: ["GET"],
+      policies: [{ resource: "order", operation: "read" }],
+    },
+    {
       matcher: "/admin/email-review",
       method: ["GET"],
       policies: [{ resource: "order", operation: "read" }],

@@ -13,7 +13,7 @@ import {
 } from "@medusajs/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { usePermissions } from "../../lib/permissions";
 import { sdk } from "../../lib/sdk";
@@ -128,10 +128,13 @@ const formatDate = (value: string) =>
  */
 const PaymentLookupPage = () => {
   const { can, isPending: permissionsPending } = usePermissions();
-  const [input, setInput] = useState("");
+  // ?reference= (from Needs attention) searches straight away.
+  const [params] = useSearchParams();
+  const linked = params.get("reference");
+  const [input, setInput] = useState(linked ?? "");
   const [search, setSearch] = useState<
     { reference: string } | { email: string } | null
-  >(null);
+  >(linked ? { reference: linked } : null);
 
   const results = useQuery({
     queryKey: ["payment-lookup", search],
