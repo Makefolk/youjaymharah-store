@@ -82,7 +82,7 @@ export function ProductCardView({
       )}
     >
       <div className="flex flex-col gap-1.5 @xs/card:flex-row @xs/card:items-start @xs/card:justify-between @xs/card:gap-4">
-        <h3 className="line-clamp-2 min-w-0 text-[11px] leading-relaxed font-medium tracking-[0.08em] uppercase sm:text-xs">
+        <h3 className="line-clamp-2 min-w-0 text-[14px] leading-snug font-medium sm:text-[15px]">
           <Link
             href={href}
             tabIndex={showDetails ? undefined : -1}

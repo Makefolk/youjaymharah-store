@@ -19,8 +19,18 @@ import {
 import type { ProductImage } from "@/lib/medusa/variants"
 import { cn } from "@/lib/util/cn"
 
-const arrowClass =
-  "absolute top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center bg-background/80 text-foreground transition-opacity hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-hover/card:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within/card:opacity-100"
+/**
+ * Mouse users see the arrows and image lines on hover; touch screens have no
+ * hover, so they always show there.
+ */
+const onHover =
+  "transition-opacity [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-hover/card:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within/card:opacity-100"
+
+/** No background, so the photo stays clear; the shadow keeps it legible on light photos. */
+const arrowClass = cn(
+  "absolute top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.45)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+  onHover,
+)
 
 export function ProductCardGallery({
   images,
@@ -190,7 +200,10 @@ export function ProductCardGallery({
       {children}
       {images.length > 1 && showDots && (
         <div
-          className="absolute bottom-2 left-2 z-10 flex max-h-1/2 flex-col overflow-y-auto bg-white/75 text-black"
+          className={cn(
+            "absolute inset-x-0 bottom-0 z-10 flex gap-1 px-2",
+            onHover,
+          )}
           role="group"
           aria-label={`Choose an image of ${title}`}
         >
@@ -200,14 +213,15 @@ export function ProductCardGallery({
               type="button"
               aria-label={`Show image ${index + 1} of ${images.length}`}
               aria-current={index === current ? "true" : undefined}
-              className="flex size-6 shrink-0 items-center justify-center focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-black"
+              // The line is 2px; the button is taller so it's easy to tap.
+              className="flex h-6 min-w-0 flex-1 items-end pb-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white"
               onClick={() => goTo(index)}
             >
               <span
                 aria-hidden
                 className={cn(
-                  "size-1.5 rounded-full border border-current",
-                  index === current && "bg-current",
+                  "h-0.5 w-full shadow-[0_0_2px_rgb(0_0_0/0.3)] transition-colors duration-300",
+                  index === current ? "bg-gold" : "bg-white/80",
                 )}
               />
             </button>

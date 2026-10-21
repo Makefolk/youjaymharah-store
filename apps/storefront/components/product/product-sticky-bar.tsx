@@ -95,7 +95,7 @@ export function ProductStickyBar({
       aria-label="Quick add"
       role="region"
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur transition-transform duration-300 ease-out motion-reduce:transition-none",
+        "fixed inset-x-0 bottom-0 z-40 border-t border-border bg-secondary text-secondary-foreground shadow-[0_-10px_30px_-18px_rgb(0_0_0/0.35)] transition-transform duration-300 ease-out motion-reduce:transition-none",
         visible ? "translate-y-0" : "translate-y-full",
       )}
     >

@@ -36,7 +36,9 @@ export function SizeGuideDialog({
         Size guide
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
-        <DialogTitle className="text-xl font-medium">{guide.name}</DialogTitle>
+        <DialogTitle className="font-sans text-xl font-medium">
+          {guide.name}
+        </DialogTitle>
         {guide.description && (
           <DialogDescription className="text-[13px] leading-relaxed">
             {guide.description}
