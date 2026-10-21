@@ -10,6 +10,8 @@ import {
   type PaymentVerdict,
 } from "../../modules/payments/lookup";
 import { toMinorUnit } from "../../modules/payments/shared/amount";
+import { SUPPORT_MODULE } from "../../modules/support";
+import type SupportModuleService from "../../modules/support/service";
 import { listEmailReviewQueue } from "./email-review";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -56,6 +58,8 @@ export type AttentionOrder = {
 };
 
 export type Attention = {
+  /** Support requests waiting on staff. */
+  support_open: number;
   emails_to_review: number;
   payments: AttentionPayment[];
   returns: AttentionReturn[];
@@ -250,11 +254,23 @@ async function unshippedOrders(
 export async function listAttention(
   container: MedusaContainer,
 ): Promise<Attention> {
-  const [emails, payments, returns, unshipped] = await Promise.all([
-    listEmailReviewQueue(container),
-    paymentsNeedingAttention(container),
-    waitingReturns(container),
-    unshippedOrders(container),
-  ]);
-  return { emails_to_review: emails.count, payments, returns, unshipped };
+  const support: SupportModuleService = container.resolve(SUPPORT_MODULE);
+  const [[, supportOpen], emails, payments, returns, unshipped] =
+    await Promise.all([
+      support.listAndCountSupportRequests(
+        { status: "open" },
+        { take: 1, select: ["id"] },
+      ),
+      listEmailReviewQueue(container),
+      paymentsNeedingAttention(container),
+      waitingReturns(container),
+      unshippedOrders(container),
+    ]);
+  return {
+    support_open: supportOpen,
+    emails_to_review: emails.count,
+    payments,
+    returns,
+    unshipped,
+  };
 }

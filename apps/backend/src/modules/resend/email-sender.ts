@@ -30,8 +30,8 @@ const templateSenders = {
   "product-back-in-stock": "marketing",
   "product-launched": "marketing",
   "cart-reminder": "marketing",
-  "contact-message": "accounts",
-  "contact-received": "accounts",
+  "support-staff": "accounts",
+  "support-customer": "accounts",
 } satisfies Record<EmailTemplate, SenderGroup>;
 
 const senders: Record<SenderGroup, { name: string; mailbox: string }> = {

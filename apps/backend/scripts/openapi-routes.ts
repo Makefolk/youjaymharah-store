@@ -23,6 +23,10 @@ import {
   AdminUpdateContentPages,
   AdminResolveEmailDelivery,
   AdminRecordCredoRefund,
+  StoreOrderHelp,
+  StoreSupportReply,
+  AdminSupportReply,
+  AdminUpdateSupportRequest,
   StoreContactMessage,
   AdminCreateOrderFromPayment,
   AdminResendShippingEmail,
@@ -71,6 +75,26 @@ export type RouteDoc = {
   response: { description: string; schema: z.ZodType };
   errors?: { status: number; description: string }[];
 };
+
+const SupportPhotoOut = z.object({ url: z.string(), name: z.string() });
+const PublicSupportRequest = z.object({
+  id: z.string(),
+  reference: z.string(),
+  kind: z.string(),
+  status: z.enum(["open", "awaiting_customer", "resolved"]),
+  order_id: z.string().nullable(),
+  order_display_id: z.number().nullable(),
+  created_at: z.string(),
+  last_message_at: z.string(),
+});
+const PublicSupportMessage = z.object({
+  id: z.string(),
+  author: z.enum(["customer", "staff"]),
+  author_name: z.string().nullable(),
+  body: z.string(),
+  photos: z.array(SupportPhotoOut),
+  created_at: z.string(),
+});
 
 const EmailVerificationState = z.object({
   email: z.string(),
@@ -2323,12 +2347,16 @@ export const ROUTES: RouteDoc[] = [
     tag: "Support",
     summary: "Send a message from the contact page",
     description:
-      "Emails the message to the support address in branding, with the customer as reply-to so staff answer from their inbox, and emails the customer an acknowledgement quoting the typical reply time. With an order number, the staff email says whether it belongs to an order placed with the same email. `website` must be left empty: it is hidden from people, and a filled one is answered as sent without sending anything. Rate limited to 5 a minute.",
+      "Creates a support request (see Support inbox) and emails it to the support address in branding, with the customer as reply-to, and acknowledges to the customer with its reference, the typical reply time and the link to follow it. Only the reference is returned: the link is emailed, so typing someone else's address never shows our replies to them. Signed in with the same email, the request also shows in the account. With an order number, the staff email says whether it belongs to an order placed with the same email. `website` must be left empty: it is hidden from people, and a filled one is answered as sent without sending anything. Rate limited to 5 a minute.",
     auth: "public",
     body: StoreContactMessage,
     response: {
-      description: "Always `sent: true` once accepted.",
-      schema: z.object({ sent: z.literal(true) }),
+      description:
+        "Accepted, with the request's reference (null for a bot submission).",
+      schema: z.object({
+        sent: z.literal(true),
+        reference: z.string().nullable(),
+      }),
     },
     errors: [
       { status: 400, description: "A field is missing or invalid." },
@@ -2459,17 +2487,187 @@ export const ROUTES: RouteDoc[] = [
     ],
   },
   {
+    method: "POST",
+    path: "/store/orders/{id}/help",
+    tag: "Support",
+    summary: "Ask for help with an order",
+    description:
+      "`kind`: order (a question), cancel, change_address, exchange, damaged or missing. Creates a support request linked to the order; replies always go to the order's own email, and only the reference comes back here (the link to follow it is emailed), so someone who merely has the order's link can't read the answers. Up to 3 photos as base64 (JPEG, PNG or WebP, checked by their bytes, 3 MB each). Rate limited to 5 a minute.",
+    auth: "public",
+    body: StoreOrderHelp,
+    response: {
+      description:
+        "The request's reference and where the confirmation went, partly hidden.",
+      schema: z.object({ reference: z.string(), sent_to: z.string() }),
+    },
+    errors: [
+      {
+        status: 400,
+        description: "Invalid input or photo, or the order has no email.",
+      },
+      { status: 404, description: "No such order." },
+      { status: 429, description: "Too many requests." },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/store/support-requests",
+    tag: "Support",
+    summary: "The customer's support requests",
+    description:
+      "Requests made while signed in with the account's email, and guest ones from the same email once it is verified. Latest activity first.",
+    auth: "customer",
+    response: {
+      description: "The requests.",
+      schema: z.object({ requests: z.array(PublicSupportRequest) }),
+    },
+  },
+  {
+    method: "GET",
+    path: "/store/support-requests/{id}",
+    tag: "Support",
+    summary: "A support request and its conversation",
+    description:
+      "For the signed-in customer it belongs to, or with `access`, the key from the request's email link. Staff notes are never included. Anything else is a 404.",
+    auth: "public",
+    query: [
+      {
+        name: "access",
+        description: "The key from the email link.",
+        schema: z.string(),
+      },
+    ],
+    response: {
+      description: "The request.",
+      schema: z.object({
+        request: PublicSupportRequest.extend({
+          messages: z.array(PublicSupportMessage),
+        }),
+      }),
+    },
+    errors: [{ status: 404, description: "Not found, or not yours." }],
+  },
+  {
+    method: "POST",
+    path: "/store/support-requests/{id}/messages",
+    tag: "Support",
+    summary: "Reply on a support request",
+    description:
+      "As its owner or with `access`. Reopens the request and emails the support inbox. Up to 3 photos. Rate limited to 10 a minute.",
+    auth: "public",
+    body: StoreSupportReply,
+    response: {
+      description: "The conversation after the reply.",
+      schema: z.object({ messages: z.array(PublicSupportMessage) }),
+    },
+    errors: [
+      { status: 400, description: "Invalid input or photo." },
+      { status: 404, description: "Not found, or not yours." },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/admin/support-requests",
+    tag: "Support",
+    summary: "Support inbox",
+    description:
+      "Requests, latest activity first. Filter by `status`, `assigned_to` (a user id, or `me`) and `q` (reference, email or name). `counts` gives how many are in each status.",
+    auth: "admin",
+    policies: ["support_request:read"],
+    query: [
+      {
+        name: "status",
+        description: "open, awaiting_customer or resolved.",
+        schema: z.string(),
+      },
+      {
+        name: "assigned_to",
+        description: "A user id, or me.",
+        schema: z.string(),
+      },
+      {
+        name: "q",
+        description: "Reference, email or name.",
+        schema: z.string(),
+      },
+      { name: "offset", description: "Requests to skip.", schema: z.number() },
+      {
+        name: "limit",
+        description: "Up to 100; 50 by default.",
+        schema: z.number(),
+      },
+    ],
+    response: {
+      description: "A page of requests.",
+      schema: z.object({
+        requests: z.array(z.record(z.string(), z.unknown())),
+        count: z.number(),
+        offset: z.number(),
+        limit: z.number(),
+        counts: z.object({
+          open: z.number(),
+          awaiting_customer: z.number(),
+          resolved: z.number(),
+        }),
+      }),
+    },
+  },
+  {
+    method: "GET",
+    path: "/admin/support-requests/{id}",
+    tag: "Support",
+    summary: "A support request",
+    description: "With every message, staff notes included.",
+    auth: "admin",
+    policies: ["support_request:read"],
+    response: {
+      description: "The request.",
+      schema: z.object({ request: z.record(z.string(), z.unknown()) }),
+    },
+    errors: [{ status: 404, description: "No such request." }],
+  },
+  {
+    method: "POST",
+    path: "/admin/support-requests/{id}",
+    tag: "Support",
+    summary: "Change a support request's status, priority or assignee",
+    description: "`assigned_to` null unassigns.",
+    auth: "admin",
+    policies: ["support_request:update"],
+    body: AdminUpdateSupportRequest,
+    response: {
+      description: "The request after the change.",
+      schema: z.object({ request: z.record(z.string(), z.unknown()) }),
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/support-requests/{id}/messages",
+    tag: "Support",
+    summary: "Reply to a support request, or add a staff note",
+    description:
+      "A reply is emailed to the customer with a link to the conversation and moves the request to awaiting_customer. With `internal`, it is a note only staff see, and nobody is emailed.",
+    auth: "admin",
+    policies: ["support_request:update"],
+    body: AdminSupportReply,
+    response: {
+      description: "The new message's id.",
+      schema: z.object({ message_id: z.string() }),
+    },
+  },
+  {
     method: "GET",
     path: "/admin/attention",
     tag: "Support",
     summary: "What is waiting on a person",
     description:
-      "`payments`: Paystack and Credo payments from the last three days (at least 20 minutes old) whose bag never became an order, as the gateway sees them now (`paid_no_order`, `amount_mismatch` or `pending`; unpaid ones are left out). Up to 15 are checked per refresh and the result is cached for five minutes. `emails_to_review`: how many sends await review. `returns`: requested returns not received after three days. `unshipped`: paid, uncanceled orders from the last 60 days with nothing shipped after three days. Up to 50 of each, oldest first.",
+      "`payments`: Paystack and Credo payments from the last three days (at least 20 minutes old) whose bag never became an order, as the gateway sees them now (`paid_no_order`, `amount_mismatch` or `pending`; unpaid ones are left out). Up to 15 are checked per refresh and the result is cached for five minutes. `support_open`: support requests waiting on staff. `emails_to_review`: how many sends await review. `returns`: requested returns not received after three days. `unshipped`: paid, uncanceled orders from the last 60 days with nothing shipped after three days. Up to 50 of each, oldest first.",
     auth: "admin",
     policies: ["order:read"],
     response: {
       description: "The queue.",
       schema: z.object({
+        support_open: z.number(),
         emails_to_review: z.number(),
         payments: z.array(
           z.object({

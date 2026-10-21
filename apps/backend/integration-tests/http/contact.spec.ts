@@ -93,11 +93,14 @@ medusaIntegrationTestRunner({
           },
           { headers },
         );
-        expect(data).toEqual({ sent: true });
+        expect(data).toEqual({
+          sent: true,
+          reference: expect.stringMatching(/^SR-/),
+        });
         await utils.waitWorkflowExecutions();
 
         const toSupport = sent.find((email) =>
-          email.subject.startsWith("Contact form"),
+          email.subject.startsWith(data.reference),
         );
         expect(toSupport).toMatchObject({ reply_to: "ada@example.com" });
         expect(toSupport!.html).toContain("#1042");
@@ -130,7 +133,7 @@ medusaIntegrationTestRunner({
           },
           { headers },
         );
-        expect(data).toEqual({ sent: true });
+        expect(data).toEqual({ sent: true, reference: null });
         await utils.waitWorkflowExecutions();
         expect(sent).toEqual([]);
 

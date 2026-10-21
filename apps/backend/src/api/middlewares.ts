@@ -504,6 +504,74 @@ export const StoreChangePassword = z.object({
 
 export type StoreChangePasswordType = z.infer<typeof StoreChangePassword>;
 
+const SupportPhoto = z.object({
+  name: z.string().trim().min(1).max(120),
+  /** Base64; checked by its bytes on the server. */
+  data: z.string().min(1).max(4_300_000),
+});
+
+export const ORDER_HELP_KINDS = [
+  "order",
+  "cancel",
+  "change_address",
+  "exchange",
+  "damaged",
+  "missing",
+] as const;
+
+export const StoreOrderHelp = z.object({
+  kind: z.enum(ORDER_HELP_KINDS),
+  message: z.string().trim().min(10).max(4000),
+  photos: z.array(SupportPhoto).max(3).optional(),
+});
+
+export type StoreOrderHelpType = z.infer<typeof StoreOrderHelp>;
+
+export const StoreSupportAccess = z.object({
+  /** The key from the request's email link; not needed when signed in. */
+  access: z.string().max(200).optional(),
+});
+
+export type StoreSupportAccessType = z.infer<typeof StoreSupportAccess>;
+
+export const StoreSupportReply = StoreSupportAccess.extend({
+  body: z.string().trim().min(1).max(4000),
+  photos: z.array(SupportPhoto).max(3).optional(),
+});
+
+export type StoreSupportReplyType = z.infer<typeof StoreSupportReply>;
+
+export const AdminSupportRequestsQuery = z.object({
+  status: z.enum(["open", "awaiting_customer", "resolved"]).optional(),
+  /** "me" for the caller's own. */
+  assigned_to: z.string().optional(),
+  q: z.string().trim().max(100).optional(),
+  offset: z.coerce.number().int().min(0).default(0),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+export type AdminSupportRequestsQueryType = z.infer<
+  typeof AdminSupportRequestsQuery
+>;
+
+export const AdminUpdateSupportRequest = z.object({
+  status: z.enum(["open", "awaiting_customer", "resolved"]).optional(),
+  priority: z.enum(["normal", "high"]).optional(),
+  assigned_to: z.string().min(1).nullable().optional(),
+});
+
+export type AdminUpdateSupportRequestType = z.infer<
+  typeof AdminUpdateSupportRequest
+>;
+
+export const AdminSupportReply = z.object({
+  body: z.string().trim().min(1).max(8000),
+  /** A note for staff only; the customer isn't told. */
+  internal: z.boolean().default(false),
+});
+
+export type AdminSupportReplyType = z.infer<typeof AdminSupportReply>;
+
 export const StoreVerifyCustomerEmail = z.object({
   token: z.string().trim().min(1).max(512),
 });
@@ -966,13 +1034,80 @@ export default defineMiddlewares({
       middlewares: [validateAndTransformBody(StoreSetMarketingPreference)],
     },
     {
-      // Each message sends two emails.
+      // Each message sends two emails. Signed in, the request also shows in
+      // the account.
       matcher: "/store/contact",
       method: ["POST"],
       middlewares: [
         rateLimit("contact", 5),
+        authenticate("customer", ["session", "bearer"], {
+          allowUnauthenticated: true,
+        }),
         validateAndTransformBody(StoreContactMessage),
       ],
+    },
+    {
+      matcher: "/store/orders/:id/help",
+      method: ["POST"],
+      // Photos arrive as base64 in the body.
+      bodyParser: { sizeLimit: "15mb" },
+      middlewares: [
+        rateLimit("order-help", 5),
+        validateAndTransformBody(StoreOrderHelp),
+      ],
+    },
+    {
+      matcher: "/store/support-requests",
+      method: ["GET"],
+      middlewares: [authenticate("customer", ["session", "bearer"])],
+    },
+    {
+      matcher: "/store/support-requests/:id",
+      method: ["GET"],
+      middlewares: [
+        rateLimit("support-read", 60),
+        authenticate("customer", ["session", "bearer"], {
+          allowUnauthenticated: true,
+        }),
+        validateAndTransformQuery<BaseEntity>(StoreSupportAccess, {}),
+      ],
+    },
+    {
+      matcher: "/store/support-requests/:id/messages",
+      method: ["POST"],
+      bodyParser: { sizeLimit: "15mb" },
+      middlewares: [
+        rateLimit("support-reply", 10),
+        authenticate("customer", ["session", "bearer"], {
+          allowUnauthenticated: true,
+        }),
+        validateAndTransformBody(StoreSupportReply),
+      ],
+    },
+    {
+      matcher: "/admin/support-requests",
+      method: ["GET"],
+      middlewares: [
+        validateAndTransformQuery<BaseEntity>(AdminSupportRequestsQuery, {}),
+      ],
+      policies: [{ resource: "support_request", operation: "read" }],
+    },
+    {
+      matcher: "/admin/support-requests/:id",
+      method: ["GET"],
+      policies: [{ resource: "support_request", operation: "read" }],
+    },
+    {
+      matcher: "/admin/support-requests/:id",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(AdminUpdateSupportRequest)],
+      policies: [{ resource: "support_request", operation: "update" }],
+    },
+    {
+      matcher: "/admin/support-requests/:id/messages",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(AdminSupportReply)],
+      policies: [{ resource: "support_request", operation: "update" }],
     },
     {
       // Checks the current password, so it is rate limited like sign-in.

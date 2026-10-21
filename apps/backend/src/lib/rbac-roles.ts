@@ -120,6 +120,8 @@ const ROLES: RoleDefinition[] = [
       { resources: ["return_policy"], operations: [READ, "update"] },
       // Custom (src/policies/support-info.ts).
       { resources: ["support_info"], operations: [READ, "update"] },
+      // Custom (src/policies/support-request.ts).
+      { resources: ["support_request"], operations: [READ, "update"] },
       // Sees the Brand section of Settings -> Storefront; changing it stays
       // with the owner.
       { resources: ["branding"], operations: [READ] },
@@ -136,6 +138,8 @@ const ROLES: RoleDefinition[] = [
     grants: [
       { resources: ORDERS, operations: WRITE },
       { resources: ["customer", "customer_address"], operations: WRITE },
+      // Custom (src/policies/support-request.ts): the inbox is their job.
+      { resources: ["support_request"], operations: [READ, "update"] },
       {
         resources: [
           "fulfillment",

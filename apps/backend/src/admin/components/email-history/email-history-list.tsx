@@ -39,8 +39,8 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "product-launched": "Product launched",
   "cart-reminder": "Bag reminder",
   "return-access": "Return link",
-  "contact-message": "Contact form message",
-  "contact-received": "Contact form reply",
+  "support-staff": "Support request (to staff)",
+  "support-customer": "Support request",
 };
 
 type BadgeColor = "green" | "red" | "orange" | "blue" | "grey";

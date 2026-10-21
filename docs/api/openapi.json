@@ -11485,7 +11485,7 @@
           "Support"
         ],
         "summary": "Send a message from the contact page",
-        "description": "Emails the message to the support address in branding, with the customer as reply-to so staff answer from their inbox, and emails the customer an acknowledgement quoting the typical reply time. With an order number, the staff email says whether it belongs to an order placed with the same email. `website` must be left empty: it is hidden from people, and a filled one is answered as sent without sending anything. Rate limited to 5 a minute.",
+        "description": "Creates a support request (see Support inbox) and emails it to the support address in branding, with the customer as reply-to, and acknowledges to the customer with its reference, the typical reply time and the link to follow it. Only the reference is returned: the link is emailed, so typing someone else's address never shows our replies to them. Signed in with the same email, the request also shows in the account. With an order number, the staff email says whether it belongs to an order placed with the same email. `website` must be left empty: it is hidden from people, and a filled one is answered as sent without sending anything. Rate limited to 5 a minute.",
         "security": [
           {
             "publishableKey": []
@@ -11556,7 +11556,7 @@
         },
         "responses": {
           "200": {
-            "description": "Always `sent: true` once accepted.",
+            "description": "Accepted, with the request's reference (null for a bot submission).",
             "content": {
               "application/json": {
                 "schema": {
@@ -11565,10 +11565,21 @@
                     "sent": {
                       "type": "boolean",
                       "const": true
+                    },
+                    "reference": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "required": [
-                    "sent"
+                    "sent",
+                    "reference"
                   ],
                   "additionalProperties": false
                 }
@@ -12403,6 +12414,1022 @@
         }
       }
     },
+    "/store/orders/{id}/help": {
+      "post": {
+        "operationId": "postStoreOrdersIdHelp",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Ask for help with an order",
+        "description": "`kind`: order (a question), cancel, change_address, exchange, damaged or missing. Creates a support request linked to the order; replies always go to the order's own email, and only the reference comes back here (the link to follow it is emailed), so someone who merely has the order's link can't read the answers. Up to 3 photos as base64 (JPEG, PNG or WebP, checked by their bytes, 3 MB each). Rate limited to 5 a minute.",
+        "security": [
+          {
+            "publishableKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "order",
+                      "cancel",
+                      "change_address",
+                      "exchange",
+                      "damaged",
+                      "missing"
+                    ]
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 4000
+                  },
+                  "photos": {
+                    "maxItems": 3,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "data": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4300000
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "data"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "message"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request's reference and where the confirmation went, partly hidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "reference": {
+                      "type": "string"
+                    },
+                    "sent_to": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "reference",
+                    "sent_to"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or photo, or the order has no email.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/store/support-requests": {
+      "get": {
+        "operationId": "getStoreSupportRequests",
+        "tags": [
+          "Support"
+        ],
+        "summary": "The customer's support requests",
+        "description": "Requests made while signed in with the account's email, and guest ones from the same email once it is verified. Latest activity first.",
+        "security": [
+          {
+            "publishableKey": [],
+            "customerJwt": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "reference": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "open",
+                              "awaiting_customer",
+                              "resolved"
+                            ]
+                          },
+                          "order_id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "order_display_id": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "last_message_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "reference",
+                          "kind",
+                          "status",
+                          "order_id",
+                          "order_display_id",
+                          "created_at",
+                          "last_message_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "requests"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No customer is logged in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/store/support-requests/{id}": {
+      "get": {
+        "operationId": "getStoreSupportRequestsId",
+        "tags": [
+          "Support"
+        ],
+        "summary": "A support request and its conversation",
+        "description": "For the signed-in customer it belongs to, or with `access`, the key from the request's email link. Staff notes are never included. Anything else is a 404.",
+        "security": [
+          {
+            "publishableKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "access",
+            "in": "query",
+            "required": false,
+            "description": "The key from the email link.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "reference": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "awaiting_customer",
+                            "resolved"
+                          ]
+                        },
+                        "order_id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "order_display_id": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "last_message_at": {
+                          "type": "string"
+                        },
+                        "messages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "author": {
+                                "type": "string",
+                                "enum": [
+                                  "customer",
+                                  "staff"
+                                ]
+                              },
+                              "author_name": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "body": {
+                                "type": "string"
+                              },
+                              "photos": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "url": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "url",
+                                    "name"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "created_at": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "author",
+                              "author_name",
+                              "body",
+                              "photos",
+                              "created_at"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "reference",
+                        "kind",
+                        "status",
+                        "order_id",
+                        "order_display_id",
+                        "created_at",
+                        "last_message_at",
+                        "messages"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "request"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid publishable API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not yours.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/store/support-requests/{id}/messages": {
+      "post": {
+        "operationId": "postStoreSupportRequestsIdMessages",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Reply on a support request",
+        "description": "As its owner or with `access`. Reopens the request and emails the support inbox. Up to 3 photos. Rate limited to 10 a minute.",
+        "security": [
+          {
+            "publishableKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "access": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "photos": {
+                    "maxItems": 3,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "data": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4300000
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "data"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The conversation after the reply.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "author": {
+                            "type": "string",
+                            "enum": [
+                              "customer",
+                              "staff"
+                            ]
+                          },
+                          "author_name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "body": {
+                            "type": "string"
+                          },
+                          "photos": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "url": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "url",
+                                "name"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "author",
+                          "author_name",
+                          "body",
+                          "photos",
+                          "created_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "messages"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or photo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not yours.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/support-requests": {
+      "get": {
+        "operationId": "getAdminSupportRequests",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Support inbox",
+        "description": "Requests, latest activity first. Filter by `status`, `assigned_to` (a user id, or `me`) and `q` (reference, email or name). `counts` gives how many are in each status.",
+        "x-required-policies": [
+          "support_request:read"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "open, awaiting_customer or resolved.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assigned_to",
+            "in": "query",
+            "required": false,
+            "description": "A user id, or me.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Reference, email or name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Requests to skip.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Up to 100; 50 by default.",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "count": {
+                      "type": "number"
+                    },
+                    "offset": {
+                      "type": "number"
+                    },
+                    "limit": {
+                      "type": "number"
+                    },
+                    "counts": {
+                      "type": "object",
+                      "properties": {
+                        "open": {
+                          "type": "number"
+                        },
+                        "awaiting_customer": {
+                          "type": "number"
+                        },
+                        "resolved": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "open",
+                        "awaiting_customer",
+                        "resolved"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "requests",
+                    "count",
+                    "offset",
+                    "limit",
+                    "counts"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/support-requests/{id}": {
+      "get": {
+        "operationId": "getAdminSupportRequestsId",
+        "tags": [
+          "Support"
+        ],
+        "summary": "A support request",
+        "description": "With every message, staff notes included.",
+        "x-required-policies": [
+          "support_request:read"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "request"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postAdminSupportRequestsId",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Change a support request's status, priority or assignee",
+        "description": "`assigned_to` null unassigns.",
+        "x-required-policies": [
+          "support_request:update"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "awaiting_customer",
+                      "resolved"
+                    ]
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "normal",
+                      "high"
+                    ]
+                  },
+                  "assigned_to": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "request"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/support-requests/{id}/messages": {
+      "post": {
+        "operationId": "postAdminSupportRequestsIdMessages",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Reply to a support request, or add a staff note",
+        "description": "A reply is emailed to the customer with a link to the conversation and moves the request to awaiting_customer. With `internal`, it is a note only staff see, and nobody is emailed.",
+        "x-required-policies": [
+          "support_request:update"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8000
+                  },
+                  "internal": {
+                    "default": false,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new message's id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/attention": {
       "get": {
         "operationId": "getAdminAttention",
@@ -12410,7 +13437,7 @@
           "Support"
         ],
         "summary": "What is waiting on a person",
-        "description": "`payments`: Paystack and Credo payments from the last three days (at least 20 minutes old) whose bag never became an order, as the gateway sees them now (`paid_no_order`, `amount_mismatch` or `pending`; unpaid ones are left out). Up to 15 are checked per refresh and the result is cached for five minutes. `emails_to_review`: how many sends await review. `returns`: requested returns not received after three days. `unshipped`: paid, uncanceled orders from the last 60 days with nothing shipped after three days. Up to 50 of each, oldest first.",
+        "description": "`payments`: Paystack and Credo payments from the last three days (at least 20 minutes old) whose bag never became an order, as the gateway sees them now (`paid_no_order`, `amount_mismatch` or `pending`; unpaid ones are left out). Up to 15 are checked per refresh and the result is cached for five minutes. `support_open`: support requests waiting on staff. `emails_to_review`: how many sends await review. `returns`: requested returns not received after three days. `unshipped`: paid, uncanceled orders from the last 60 days with nothing shipped after three days. Up to 50 of each, oldest first.",
         "x-required-policies": [
           "order:read"
         ],
@@ -12430,6 +13457,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "support_open": {
+                      "type": "number"
+                    },
                     "emails_to_review": {
                       "type": "number"
                     },
@@ -12558,6 +13588,7 @@
                     }
                   },
                   "required": [
+                    "support_open",
                     "emails_to_review",
                     "payments",
                     "returns",

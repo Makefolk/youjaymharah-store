@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { sdk } from "../../lib/sdk";
 
 type Attention = {
+  support_open: number;
   emails_to_review: number;
   payments: {
     session_id: string;
@@ -84,7 +85,8 @@ const AttentionPage = () => {
     ? data.payments.length +
       data.returns.length +
       data.unshipped.length +
-      (data.emails_to_review ? 1 : 0)
+      (data.emails_to_review ? 1 : 0) +
+      (data.support_open ? 1 : 0)
     : 0;
 
   return (
@@ -116,6 +118,29 @@ const AttentionPage = () => {
         </Container>
       ) : (
         <>
+          <Section
+            title="Customers waiting for a reply"
+            hint="Support requests where the customer is waiting on us."
+            empty="None."
+            rows={
+              data.support_open
+                ? [
+                    <Row
+                      key="support"
+                      title={`${data.support_open} ${
+                        data.support_open === 1 ? "request" : "requests"
+                      } waiting`}
+                      action={
+                        <Link to="/support-inbox" className={linkClass}>
+                          Open Support inbox
+                        </Link>
+                      }
+                    />,
+                  ]
+                : []
+            }
+          />
+
           <Section
             title="Payments without an order"
             hint="The customer paid (or may have) but no order was made. Open each in Payment lookup to create the order or see what to do."

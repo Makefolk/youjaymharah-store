@@ -290,6 +290,10 @@ module.exports = defineConfig({
       resolve: "./src/modules/wishlist",
     },
     {
+      // Customer support requests and their conversations (Support inbox).
+      resolve: "./src/modules/support",
+    },
+    {
       resolve: "./src/modules/product-alert",
     },
     {
