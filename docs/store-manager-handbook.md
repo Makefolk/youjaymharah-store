@@ -227,7 +227,13 @@ Refunds are final. Guide: <https://docs.medusajs.com/user-guide/orders/payments>
 
 ### Returns, size exchanges and damaged-item claims
 
-Customers can't request these on the website yet; they contact you.
+Customers can request **returns** on the website (while Settings › Returns
+has them on): signed in from their account, or as a guest through a return
+link emailed to the order's address. A request arrives as a requested return
+on the order; arrange collection or drop-off with the customer, then receive
+and refund as below. Each shipment has its own window from its delivery
+(from dispatch if it was never marked delivered), so **Mark as delivered**
+promptly. Exchanges and claims still come to you by email.
 
 - **Return:** Summary `⋯ › Create Return`, add items, reason, location,
   **Confirm Return**. On arrival, **Receive items** (mark damaged pieces), then
@@ -477,9 +483,8 @@ failed, ask the developer to review it before repeatedly resending. See
 
 | Area                                     | Status        | Meanwhile                                                                                            |
 | ---------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------- |
-| Tracking on customer's order page        | Status only   | The shipping email carries the tracking link                                                         |
 | Credo refunds                            | Manual        | Refund in the Credo dashboard; log the reference                                                     |
-| Customer self-service returns            | Not built     | Customers contact support; you create the return                                                     |
+| Customer exchanges and claims            | Not built     | Customers email you; you create the exchange or claim                                                |
 | POS app                                  | Workaround    | Draft orders with a separate shop location                                                           |
 | Gift cards, store credit, loyalty points | Not available | One-off promo codes as a substitute                                                                  |
 | Abandoned-cart reminders                 | Built         | Settings › Bag reminders (see "Bag reminders")                                                       |

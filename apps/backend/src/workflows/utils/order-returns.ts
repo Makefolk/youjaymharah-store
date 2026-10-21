@@ -73,7 +73,8 @@ export async function loadReturnContext(
         "fulfillments.canceled_at",
         "fulfillments.shipped_at",
         "fulfillments.delivered_at",
-        "fulfillments.items.line_item_id",
+        // A full select, so BigNumber quantities are filled (see below).
+        "fulfillments.items.*",
         "returns.id",
         "returns.status",
         "returns.created_at",

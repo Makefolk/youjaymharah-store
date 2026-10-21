@@ -20,7 +20,10 @@ function order(overrides: Partial<EligibilityOrder> = {}): EligibilityOrder {
       {
         shipped_at: daysAgo(5),
         delivered_at: daysAgo(3),
-        items: [{ line_item_id: "item_dress" }, { line_item_id: "item_bag" }],
+        items: [
+          { line_item_id: "item_dress", quantity: 2 },
+          { line_item_id: "item_bag", quantity: 1 },
+        ],
       },
     ],
     ...overrides,
@@ -46,7 +49,7 @@ describe("getReturnEligibility", () => {
         fulfillments: [
           {
             shipped_at: daysAgo(8),
-            items: [{ line_item_id: "item_dress" }],
+            items: [{ line_item_id: "item_dress", quantity: 2 }],
           },
         ],
       }),
@@ -54,6 +57,49 @@ describe("getReturnEligibility", () => {
       now,
     );
     expect(result.reason).toBe("expired");
+  });
+
+  it("only offers units that were actually sent", () => {
+    // Both dresses packed, one shipped: only that one can come back.
+    const result = getReturnEligibility(
+      order({
+        fulfillments: [
+          {
+            shipped_at: daysAgo(2),
+            items: [{ line_item_id: "item_dress", quantity: 1 }],
+          },
+          { items: [{ line_item_id: "item_dress", quantity: 1 }] },
+        ],
+      }),
+      policy,
+      now,
+    );
+    expect(result.items[0].returnable_quantity).toBe(1);
+  });
+
+  it("gives each shipment its own window", () => {
+    const result = getReturnEligibility(
+      order({
+        fulfillments: [
+          {
+            delivered_at: daysAgo(10),
+            items: [{ line_item_id: "item_dress", quantity: 1 }],
+          },
+          {
+            delivered_at: daysAgo(2),
+            items: [{ line_item_id: "item_dress", quantity: 1 }],
+          },
+        ],
+      }),
+      policy,
+      now,
+    );
+    expect(result.items[0]).toMatchObject({
+      returnable_quantity: 1,
+      return_by: new Date(
+        new Date(daysAgo(2)).getTime() + 7 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+    });
   });
 
   it("subtracts quantities already being returned", () => {

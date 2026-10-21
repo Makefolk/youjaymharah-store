@@ -84,7 +84,7 @@ export function ProductView({
             </p>
             <p className="mt-2">
               {returns.enabled
-                ? `Changed your mind? Request a return from your order page within ${returns.window_days} days of delivery.`
+                ? `Changed your mind? Request a return from your order page within ${returns.window_days} days of delivery (counted from dispatch if we couldn't confirm delivery). Your order page shows the exact date for each item.`
                 : `To return something, contact us${supportEmail ? ` at ${supportEmail}` : ""} with your order number.`}
             </p>
           </Section>

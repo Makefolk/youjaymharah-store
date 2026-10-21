@@ -3,10 +3,11 @@
  * policy (Settings -> Returns). Used by the storefront's "Request a return"
  * page and, again, when the request is submitted, so both agree.
  *
- * The window runs from delivery. When staff shipped an item but never marked
- * it delivered, it runs from dispatch instead, so a missed "Mark as
- * delivered" doesn't stop the customer returning anything. An item in
- * several shipments counts from the latest.
+ * Each shipment has its own window, from its delivery. When staff shipped it
+ * but never marked it delivered, the window runs from dispatch instead, so a
+ * missed "Mark as delivered" doesn't stop the customer returning anything;
+ * the published policy says so. Only units in a shipment can be returned:
+ * packed but unsent units can't.
  */
 
 export type ReturnPolicy = { enabled: boolean; window_days: number };
@@ -34,7 +35,9 @@ export type EligibilityOrder = {
         canceled_at?: Date | string | null;
         shipped_at?: Date | string | null;
         delivered_at?: Date | string | null;
-        items?: ({ line_item_id?: string | null } | null)[] | null;
+        items?:
+          | ({ line_item_id?: string | null; quantity?: Quantity } | null)[]
+          | null;
       } | null)[]
     | null;
 };
@@ -78,7 +81,10 @@ export function getReturnEligibility(
   policy: ReturnPolicy,
   now: Date = new Date(),
 ): ReturnEligibility {
-  const startByItem = new Map<string, number>();
+  const windowMs = policy.window_days * DAY_MS;
+
+  // Each line's shipped units, by the deadline of the shipment they went in.
+  const shipmentsByItem = new Map<string, { returnBy: number; quantity: number }[]>();
   for (const fulfillment of order.fulfillments ?? []) {
     if (!fulfillment || fulfillment.canceled_at) continue;
     const start =
@@ -86,8 +92,9 @@ export function getReturnEligibility(
     if (start === null) continue;
     for (const item of fulfillment.items ?? []) {
       if (!item?.line_item_id) continue;
-      const previous = startByItem.get(item.line_item_id) ?? 0;
-      startByItem.set(item.line_item_id, Math.max(previous, start));
+      const shipments = shipmentsByItem.get(item.line_item_id) ?? [];
+      shipments.push({ returnBy: start + windowMs, quantity: num(item.quantity) });
+      shipmentsByItem.set(item.line_item_id, shipments);
     }
   }
 
@@ -96,27 +103,39 @@ export function getReturnEligibility(
   const items = (order.items ?? [])
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
     .map((item) => {
-      const start = startByItem.get(item.id);
-      if (start === undefined)
+      const shipments = shipmentsByItem.get(item.id) ?? [];
+      if (!shipments.length)
         return { item_id: item.id, returnable_quantity: 0, return_by: null };
 
       anyStarted = true;
-      const returnBy = start + policy.window_days * DAY_MS;
-      const inWindow = now.getTime() <= returnBy;
-      if (inWindow) anyInWindow = true;
+      const open = shipments.filter(
+        (shipment) => now.getTime() <= shipment.returnBy,
+      );
+      if (open.length) anyInWindow = true;
 
+      const shipped = shipments.reduce((sum, s) => sum + s.quantity, 0);
+      const openQuantity = open.reduce((sum, s) => sum + s.quantity, 0);
       const detail = item.detail ?? {};
-      const remaining =
-        num(detail.fulfilled_quantity) -
-        num(detail.return_requested_quantity) -
-        num(detail.return_received_quantity) -
-        num(detail.return_dismissed_quantity) -
+      const alreadyReturning =
+        num(detail.return_requested_quantity) +
+        num(detail.return_received_quantity) +
+        num(detail.return_dismissed_quantity) +
         num(detail.written_off_quantity);
+      // Returns don't say which shipment they came from; count them against
+      // closed shipments first, which leaves the customer the most.
+      const returnable = Math.max(
+        0,
+        Math.min(openQuantity, shipped - alreadyReturning),
+      );
+
+      // The latest open deadline, or the last one that passed.
+      const returnBy = Math.max(
+        ...(open.length ? open : shipments).map((s) => s.returnBy),
+      );
 
       return {
         item_id: item.id,
-        returnable_quantity:
-          policy.enabled && inWindow ? Math.max(0, remaining) : 0,
+        returnable_quantity: policy.enabled ? returnable : 0,
         return_by: new Date(returnBy).toISOString(),
       };
     });
