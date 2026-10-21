@@ -10,6 +10,7 @@ import {
 import type { CustomerDTO, OrderDTO } from "@medusajs/framework/types";
 
 import { EmailLayout } from "./components/layout";
+import { OrderPageButton } from "./components/order-page-button";
 import type { BrandSummary } from "./constants";
 
 /**
@@ -101,6 +102,8 @@ function OrderShippedEmailComponent({
             </Column>
           </Row>
         ))}
+
+        <OrderPageButton orderId={order.id} label="Track your order" />
 
         <Text className="mt-6 text-sm text-gray-500">
           Order ID: #{order.display_id}

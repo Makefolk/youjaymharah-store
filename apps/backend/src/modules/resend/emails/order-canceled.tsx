@@ -6,6 +6,7 @@ import type {
 } from "@medusajs/framework/types";
 
 import { EmailLayout } from "./components/layout";
+import { OrderPageButton } from "./components/order-page-button";
 import type { BrandSummary } from "./constants";
 import { SUPPORT_EMAIL } from "./constants";
 
@@ -90,6 +91,7 @@ function OrderCanceledEmailComponent({
           method. Refund timing depends on your bank. If anything looks wrong,
           reply to this email or write to {SUPPORT_EMAIL}.
         </Text>
+        <OrderPageButton orderId={order.id} />
       </Container>
     </EmailLayout>
   );

@@ -15,6 +15,7 @@ import type {
 } from "@medusajs/framework/types";
 
 import { EmailLayout } from "./components/layout";
+import { OrderPageButton } from "./components/order-page-button";
 import type { BrandSummary } from "./constants";
 
 export type OrderPlacedEmailProps = {
@@ -90,6 +91,10 @@ function OrderPlacedEmailComponent({
           </Section>
         </Container>
       )}
+
+      <Container className="px-6">
+        <OrderPageButton orderId={order.id} label="Track your order" />
+      </Container>
 
       <Container className="px-6">
         <Heading className="mb-4 text-xl font-semibold text-gray-800">

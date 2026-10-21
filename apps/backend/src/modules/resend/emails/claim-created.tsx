@@ -6,6 +6,7 @@ import { formatMoney } from "../utils/format-money";
 import { BalanceNotice } from "./components/balance-notice";
 import { type EmailLineItem, ItemList } from "./components/item-list";
 import { EmailLayout } from "./components/layout";
+import { OrderPageButton } from "./components/order-page-button";
 import {
   type ReturnDestination,
   ReturnDestinationSection,
@@ -133,6 +134,8 @@ function ClaimCreatedEmailComponent({
             You do not need to send anything back.
           </Text>
         )}
+
+        <OrderPageButton orderId={order.id} />
 
         <Text className="mt-6 text-sm text-gray-500">
           Order ID: #{order.display_id}

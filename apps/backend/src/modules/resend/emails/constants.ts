@@ -9,6 +9,15 @@ export const SUPPORT_EMAIL =
   process.env.SUPPORT_EMAIL ?? "support@youjaymharah.com";
 export const STOREFRONT_URL =
   process.env.STOREFRONT_URL ?? "http://localhost:8000";
+
+/**
+ * An order's status page on the storefront, where the customer can track it
+ * and request a return. Must match `orderPath` in the storefront's
+ * lib/seo/routes.ts. The order id is the page's key, as in Medusa's own
+ * order confirmation links.
+ */
+export const orderPageUrl = (orderId: string) =>
+  `${STOREFRONT_URL.replace(/\/$/, "")}/orders/${encodeURIComponent(orderId)}`;
 /**
  * Base URL of the admin dashboard, used for invite and staff reset links.
  * Includes the path when the backend serves it (`https://api.example.com/app`);

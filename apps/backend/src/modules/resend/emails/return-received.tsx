@@ -3,6 +3,7 @@ import type { CustomerDTO, OrderDTO } from "@medusajs/framework/types";
 
 import { formatMoney } from "../utils/format-money";
 import { EmailLayout } from "./components/layout";
+import { OrderPageButton } from "./components/order-page-button";
 import type { BrandSummary } from "./constants";
 
 /**
@@ -110,6 +111,8 @@ function ReturnReceivedEmailComponent({
             separately.
           </Text>
         )}
+
+        <OrderPageButton orderId={order.id} label="View your return" />
 
         <Text className="mt-6 text-sm text-gray-500">
           Order ID: #{order.display_id}

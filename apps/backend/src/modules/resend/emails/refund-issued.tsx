@@ -3,6 +3,7 @@ import type { CustomerDTO, OrderDTO } from "@medusajs/framework/types";
 
 import { formatMoney } from "../utils/format-money";
 import { EmailLayout } from "./components/layout";
+import { OrderPageButton } from "./components/order-page-button";
 import type { BrandSummary } from "./constants";
 
 /**
@@ -71,6 +72,8 @@ function RefundIssuedEmailComponent({
           The money goes back to your original payment method. Depending on your
           bank, it can take several working days to appear.
         </Text>
+
+        <OrderPageButton orderId={order.id} />
 
         <Text className="mt-6 text-sm text-gray-500">
           Order ID: #{order.display_id}

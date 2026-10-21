@@ -2,6 +2,7 @@ import { Column, Container, Heading, Row, Section, Text } from "react-email";
 import type { CustomerDTO, OrderDTO } from "@medusajs/framework/types";
 
 import { EmailLayout } from "./components/layout";
+import { OrderPageButton } from "./components/order-page-button";
 import type { BrandSummary } from "./constants";
 
 /**
@@ -102,6 +103,8 @@ function ReturnRequestedEmailComponent({
           Pack the items securely and include your order number, #
           {order.display_id}. We will email you when they arrive.
         </Text>
+
+        <OrderPageButton orderId={order.id} label="View your return" />
 
         <Text className="mt-6 text-sm text-gray-500">
           Order ID: #{order.display_id}

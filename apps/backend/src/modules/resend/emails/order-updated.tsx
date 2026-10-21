@@ -5,6 +5,7 @@ import { formatMoney } from "../utils/format-money";
 import { BalanceNotice } from "./components/balance-notice";
 import { type EmailLineItem, ItemList } from "./components/item-list";
 import { EmailLayout } from "./components/layout";
+import { OrderPageButton } from "./components/order-page-button";
 import type { BrandSummary } from "./constants";
 
 /**
@@ -67,6 +68,8 @@ function OrderUpdatedEmailComponent({
           Did not ask for this change? Reply to this email and we will put it
           right.
         </Text>
+
+        <OrderPageButton orderId={order.id} />
 
         <Text className="mt-6 text-sm text-gray-500">
           Order ID: #{order.display_id}

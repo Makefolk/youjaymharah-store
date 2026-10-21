@@ -2,6 +2,7 @@ import { Column, Container, Heading, Row, Text } from "react-email";
 import type { CustomerDTO, OrderDTO } from "@medusajs/framework/types";
 
 import { EmailLayout } from "./components/layout";
+import { OrderPageButton } from "./components/order-page-button";
 import type { BrandSummary } from "./constants";
 import { SUPPORT_EMAIL } from "./constants";
 
@@ -65,8 +66,11 @@ function OrderDeliveredEmailComponent({
 
         <Text className="mt-6 text-gray-600">
           Something missing, damaged or not quite right? Reply to this email or
-          write to {supportEmail} and we will sort it out.
+          write to {supportEmail} and we will sort it out. To send something
+          back, request a return from your order page.
         </Text>
+
+        <OrderPageButton orderId={order.id} />
 
         <Text className="mt-6 text-sm text-gray-500">
           Order ID: #{order.display_id}
