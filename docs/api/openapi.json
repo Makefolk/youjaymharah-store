@@ -2990,7 +2990,7 @@
           "Storefront"
         ],
         "summary": "Get the settings the storefront renders with",
-        "description": "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) and `returns` (whether customers can request returns online, and the window in days). Public and identical for every shopper, so it is safe to read from cached pages.",
+        "description": "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
         "security": [
           {
             "publishableKey": []
@@ -3395,6 +3395,18 @@
                             "window_days"
                           ],
                           "additionalProperties": false
+                        },
+                        "sign_in": {
+                          "type": "object",
+                          "properties": {
+                            "google": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "google"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
@@ -3403,7 +3415,8 @@
                         "seo",
                         "homepage",
                         "products",
-                        "returns"
+                        "returns",
+                        "sign_in"
                       ],
                       "additionalProperties": false
                     }

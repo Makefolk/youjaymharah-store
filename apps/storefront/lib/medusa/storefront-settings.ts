@@ -63,6 +63,8 @@ const FALLBACK: StorefrontSettings = {
   products: { new_badge_days: 30 },
   // The backend defaults.
   returns: { enabled: true, window_days: 7 },
+  // Unknown without the backend; the button would only lead to an error.
+  sign_in: { google: false },
 }
 
 /**

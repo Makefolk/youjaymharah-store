@@ -753,6 +753,9 @@ export type StoreStorefrontSettingsResponse = {
       enabled: boolean;
       window_days: number;
     };
+    sign_in: {
+      google: boolean;
+    };
   };
 };
 

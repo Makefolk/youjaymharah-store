@@ -62,3 +62,14 @@ export function developmentEnvironmentWarnings(
 export function validateSearchEnvironment(env: NodeJS.ProcessEnv) {
   approvedTrendingTerms(env.SEARCH_TRENDING_TERMS);
 }
+
+/**
+ * Google sign-in is on when all three of its settings are present; the
+ * provider throws at boot if any is missing, so it is registered only then.
+ * The storefront shows its button from the same answer.
+ */
+export function googleSignInEnabled(env: NodeJS.ProcessEnv): boolean {
+  return Boolean(
+    env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL,
+  );
+}

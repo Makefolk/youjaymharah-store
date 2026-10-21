@@ -518,6 +518,8 @@ const PublicStorefrontSettings = z.object({
     new_badge_days: z.number(),
   }),
   returns: z.lazy(() => ReturnPolicy),
+  /** Sign-in methods besides email and password that are switched on. */
+  sign_in: z.object({ google: z.boolean() }),
 });
 
 const ReturnPolicy = z.object({
@@ -1127,7 +1129,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Storefront",
     summary: "Get the settings the storefront renders with",
     description:
-      "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) and `returns` (whether customers can request returns online, and the window in days). Public and identical for every shopper, so it is safe to read from cached pages.",
+      "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
     auth: "public",
     response: {
       description: "The public storefront settings.",

@@ -1,6 +1,7 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
 
+import { googleSignInEnabled } from "../../../lib/environment-safety";
 import { BRANDING_MODULE } from "../../../modules/branding";
 import type BrandingModuleService from "../../../modules/branding/service";
 import { STOREFRONT_SETTINGS_MODULE } from "../../../modules/storefront-settings";
@@ -65,6 +66,9 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       returns: {
         enabled: settings.returns_enabled,
         window_days: settings.return_window_days,
+      },
+      sign_in: {
+        google: googleSignInEnabled(process.env),
       },
       navigation: {
         store_menu_cards: await resolveStoreMenuPromos(

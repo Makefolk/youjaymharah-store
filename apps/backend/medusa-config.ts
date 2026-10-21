@@ -3,6 +3,7 @@ import { loadEnv, defineConfig, MedusaError } from "@medusajs/framework/utils";
 
 import {
   developmentEnvironmentWarnings,
+  googleSignInEnabled,
   validateProductionEnvironment,
   validateSearchEnvironment,
 } from "./src/lib/environment-safety";
@@ -227,9 +228,7 @@ module.exports = defineConfig({
           // Google sign-in turns itself on once credentials exist. The
           // provider throws at boot when any option is missing, so a dev
           // machine without them still starts -- same trick as Redis above.
-          ...(process.env.GOOGLE_CLIENT_ID &&
-          process.env.GOOGLE_CLIENT_SECRET &&
-          process.env.GOOGLE_CALLBACK_URL
+          ...(googleSignInEnabled(process.env)
             ? [
                 {
                   resolve: "@medusajs/medusa/auth-google",

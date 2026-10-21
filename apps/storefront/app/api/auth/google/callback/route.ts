@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server"
 
 import { completeSignIn } from "@/lib/medusa/auth"
 import { sdk } from "@/lib/medusa/server"
+import { takeSignInNext } from "@/lib/medusa/session"
+import { safeNextPath, SIGN_IN_PATH } from "@/lib/seo/routes"
 
 /**
  * Where Google sends the customer back (the backend's GOOGLE_CALLBACK_URL).
@@ -17,10 +19,14 @@ export async function GET(request: NextRequest): Promise<never> {
   const code = request.nextUrl.searchParams.get("code")
   const state = request.nextUrl.searchParams.get("state")
 
-  let destination = "/"
+  // Where the customer started, e.g. checkout; the account page otherwise.
+  const next = safeNextPath(await takeSignInNext())
+  const failed = (error: string) =>
+    `${SIGN_IN_PATH}?error=${error}&next=${encodeURIComponent(next)}`
+  let destination = next
 
   if (!code || !state) {
-    destination = "/?auth_error=google_cancelled"
+    destination = failed("google_cancelled")
   } else {
     try {
       const callbackToken = await sdk.auth.callback("customer", "google", {
@@ -45,7 +51,7 @@ export async function GET(request: NextRequest): Promise<never> {
       await completeSignIn(token)
     } catch (error) {
       console.error("Google sign-in could not complete", error)
-      destination = "/?auth_error=google_failed"
+      destination = failed("google_failed")
     }
   }
 

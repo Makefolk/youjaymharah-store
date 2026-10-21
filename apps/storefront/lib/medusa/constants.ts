@@ -42,3 +42,6 @@ export const CURRENT_WISHLIST_ID = "current"
 
 /** What a shopper who has never saved anything has. */
 export const EMPTY_WISHLIST: Wishlist = { id: null, items: [] }
+
+/** Where to return after a Google sign-in; Google's round trip can't carry it. */
+export const SIGN_IN_NEXT_COOKIE = "_signin_next"

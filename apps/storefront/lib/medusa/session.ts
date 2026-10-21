@@ -2,7 +2,12 @@ import "server-only"
 
 import { cookies } from "next/headers"
 
-import { AUTH_COOKIE, CART_COOKIE, WISHLIST_COOKIE } from "./constants"
+import {
+  AUTH_COOKIE,
+  CART_COOKIE,
+  SIGN_IN_NEXT_COOKIE,
+  WISHLIST_COOKIE,
+} from "./constants"
 
 /**
  * Must not outlive the token inside it. Medusa signs customer tokens for its
@@ -75,4 +80,22 @@ export async function setWishlistId(wishlistId: string): Promise<void> {
 
 export async function clearWishlistId(): Promise<void> {
   ;(await cookies()).delete(WISHLIST_COOKIE)
+}
+
+/** Long enough to choose an account on Google's screen, not much longer. */
+const SIGN_IN_NEXT_MAX_AGE_SECONDS = 60 * 10
+
+export async function setSignInNext(path: string): Promise<void> {
+  ;(await cookies()).set(SIGN_IN_NEXT_COOKIE, path, {
+    ...baseCookie,
+    maxAge: SIGN_IN_NEXT_MAX_AGE_SECONDS,
+  })
+}
+
+/** Reads and clears it: one sign-in, one return. */
+export async function takeSignInNext(): Promise<string | undefined> {
+  const store = await cookies()
+  const value = store.get(SIGN_IN_NEXT_COOKIE)?.value
+  store.delete(SIGN_IN_NEXT_COOKIE)
+  return value
 }
