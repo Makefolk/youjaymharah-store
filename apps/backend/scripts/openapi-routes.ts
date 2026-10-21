@@ -113,6 +113,10 @@ const StoreNewsletter = z.object({
   }).extend({
     heading: z.string(),
     description: z.string(),
+    /** Show the opt-in checkbox at checkout (signup on and the setting on). */
+    checkout_opt_in: z.boolean(),
+    /** The checkbox's label, with a default when none is set. */
+    checkout_label: z.string(),
   }),
 });
 

@@ -27,6 +27,10 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       heading: settings.heading || DEFAULT_NEWSLETTER_HEADING,
       description: settings.description || DEFAULT_NEWSLETTER_DESCRIPTION,
       consent_text: settings.consent_text,
+      // The checkbox at checkout, when the store shows one.
+      checkout_opt_in: settings.enabled && settings.checkout_opt_in,
+      checkout_label:
+        settings.checkout_label || "Email me about new collections and offers",
     },
   });
 };

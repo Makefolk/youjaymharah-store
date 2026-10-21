@@ -7,8 +7,10 @@ import { useRouter } from "next/navigation"
 import { useId, useState, type ReactNode } from "react"
 
 import { FormAlert } from "@/components/account/account-shell"
+import { PromoCode } from "@/components/cart/promo-code"
 import { useAppForm, validateOnSubmitThenChange } from "@/components/form"
 import { Button } from "@/components/ui/button"
+import { toast } from "@/components/ui/toaster"
 import { useCart } from "@/features/cart/hooks"
 import {
   usePaymentProviders,
@@ -19,6 +21,11 @@ import {
 } from "@/features/checkout/hooks"
 import { checkoutDetailsSchema } from "@/features/checkout/schema"
 import { useCustomer } from "@/features/customer/hooks"
+import { useMarketingPreference } from "@/features/marketing/hooks"
+import {
+  useNewsletterSettings,
+  useSubscribeToNewsletter,
+} from "@/features/newsletter/hooks"
 import {
   describeCompletionError,
   getCheckoutStep,
@@ -186,6 +193,15 @@ function DetailsSummary({ cart, onEdit }: { cart: Cart; onEdit: () => void }) {
 function DetailsForm({ cart, onSaved }: { cart: Cart; onSaved: () => void }) {
   const { data: customer } = useCustomer()
   const save = useSaveCheckoutDetails()
+  const newsletter = useNewsletterSettings()
+  const marketing = useMarketingPreference()
+  const subscribe = useSubscribeToNewsletter("checkout")
+  const [optIn, setOptIn] = useState(false)
+  const alreadySubscribed =
+    marketing.data?.status === "subscribed" ||
+    marketing.data?.status === "pending"
+  const offerOptIn =
+    Boolean(newsletter.data?.checkout_opt_in) && !alreadySubscribed
   const address = cart.shipping_address
   const countryCode =
     address?.country_code ?? cart.region?.countries?.[0]?.iso_2 ?? "ng"
@@ -213,6 +229,17 @@ function DetailsForm({ cart, onSaved }: { cart: Cart; onSaved: () => void }) {
     onSubmit: async ({ value }) => {
       try {
         await save.mutateAsync({ ...value, countryCode })
+        if (offerOptIn && optIn) {
+          // Not awaited: signing up must never hold up the order.
+          subscribe.mutate(value.email.trim(), {
+            onSuccess: () => {
+              if (newsletter.data?.double_opt_in)
+                toast.success("Almost subscribed", {
+                  description: "Confirm from the email we sent you.",
+                })
+            },
+          })
+        }
         onSaved()
       } catch {
         // Shown below the form.
@@ -329,6 +356,24 @@ function DetailsForm({ cart, onSaved }: { cart: Cart; onSaved: () => void }) {
           )}
         </form.AppField>
       </div>
+      {offerOptIn && (
+        <label className="flex items-start gap-3 text-[13px]">
+          <input
+            type="checkbox"
+            checked={optIn}
+            onChange={(event) => setOptIn(event.target.checked)}
+            className="mt-0.5 size-4 shrink-0 accent-foreground"
+          />
+          <span>
+            {newsletter.data?.checkout_label}
+            {newsletter.data?.consent_text && (
+              <span className="mt-1 block text-muted-foreground">
+                {newsletter.data.consent_text}
+              </span>
+            )}
+          </span>
+        </label>
+      )}
       <form.AppForm>
         <form.SubmitButton
           size="lg"
@@ -594,6 +639,13 @@ function OrderSummary({ cart }: { cart: Cart }) {
           </li>
         ))}
       </ul>
+      <div className="border-t border-border/70 py-4">
+        <PromoCode
+          applied={(cart.promotions ?? [])
+            .filter((promotion) => promotion.code && !promotion.is_automatic)
+            .map((promotion) => promotion.code as string)}
+        />
+      </div>
       <dl className="flex flex-col gap-2 border-t border-border/70 pt-4 text-[13px]">
         {rows.map(([label, value]) => (
           <div key={label} className="flex justify-between gap-4">

@@ -7672,6 +7672,12 @@
                         },
                         "description": {
                           "type": "string"
+                        },
+                        "checkout_opt_in": {
+                          "type": "boolean"
+                        },
+                        "checkout_label": {
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -7679,7 +7685,9 @@
                         "double_opt_in",
                         "consent_text",
                         "heading",
-                        "description"
+                        "description",
+                        "checkout_opt_in",
+                        "checkout_label"
                       ],
                       "additionalProperties": false
                     }

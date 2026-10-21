@@ -192,6 +192,8 @@ export type StoreNewsletterResponse = {
     consent_text: string | null;
     heading: string;
     description: string;
+    checkout_opt_in: boolean;
+    checkout_label: string;
   };
 };
 
