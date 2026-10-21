@@ -259,3 +259,32 @@ describe("Credo dashboard refunds", () => {
     ).rejects.toThrow(/Credo dashboard/);
   });
 });
+
+describe("starting a payment", () => {
+  it("logs the gateway's error and shows the shopper a plain message", async () => {
+    global.fetch = jest.fn().mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            status: 401,
+            message: "You may not have the necessary permissions",
+          }),
+          { status: 401 },
+        ),
+    );
+    (logger.error as jest.Mock).mockClear();
+    const error = await credo()
+      .initiatePayment({
+        amount: 100,
+        currency_code: "NGN",
+        data: { session_id: "payses_1", payer: { email: "a@b.co" } },
+      })
+      .catch((e: Error) => e);
+    expect((error as Error).message).toBe(
+      "We couldn't start this payment just now. Please try again, or choose another way to pay.",
+    );
+    expect((logger.error as jest.Mock).mock.calls[0][0]).toMatch(
+      /payses_1.*Credo POST \/transaction\/initialize failed \(401\)/,
+    );
+  });
+});

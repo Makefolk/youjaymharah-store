@@ -266,14 +266,27 @@ export abstract class RedirectPaymentProvider<
     const currencyCode = args.currencyCode.toUpperCase();
     const amountInMinor = toMinorUnit(args.amount, currencyCode);
 
-    const initialized = await this.initializeTransaction({
-      reference: args.reference,
-      amountInMinor,
-      currencyCode,
-      sessionId: args.sessionId,
-      context: args.context,
-      data: args.extra,
-    });
+    let initialized: InitializedTransaction;
+    try {
+      initialized = await this.initializeTransaction({
+        reference: args.reference,
+        amountInMinor,
+        currencyCode,
+        sessionId: args.sessionId,
+        context: args.context,
+        data: args.extra,
+      });
+    } catch (error) {
+      // The gateway's own text ("Credo POST /transaction/initialize failed
+      // (401): ... contact our support team") is for us, not the shopper.
+      this.logger_.error(
+        `[${this.getIdentifier()}] Could not start a payment for session ${args.sessionId}: ${(error as Error).message}`,
+      );
+      throw new MedusaError(
+        MedusaError.Types.UNEXPECTED_STATE,
+        "We couldn't start this payment just now. Please try again, or choose another way to pay.",
+      );
+    }
 
     return {
       reference: initialized.reference,
