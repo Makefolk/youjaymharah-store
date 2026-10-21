@@ -23,7 +23,7 @@ import {
   type Shipment,
 } from "@/lib/medusa/order"
 import { formatPrice } from "@/lib/medusa/price"
-import { contactPath, orderReturnPath } from "@/lib/seo/routes"
+import { contactPath, orderHelpPath, orderReturnPath } from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
 
 export const metadata: Metadata = {
@@ -210,14 +210,12 @@ export default async function OrderPage({
       <section className="mt-12 border-t border-border/70 pt-6">
         <h2 className="text-[15px] font-medium">Need help with this order?</h2>
         <p className="mt-2 text-[13px] text-muted-foreground">
-          Message us and we&apos;ll reply by email; your order number is filled
-          in for you.
+          Cancel it, change the address, exchange a size, report a damaged or
+          missing item, or ask us anything. We&apos;ll reply to the email on the
+          order.
         </p>
         <Link
-          href={contactPath({
-            order: order.display_id,
-            topic: "An order",
-          })}
+          href={orderHelpPath(order.id)}
           className="mt-3 inline-block text-[13px] text-foreground underline underline-offset-4"
         >
           Get help with this order

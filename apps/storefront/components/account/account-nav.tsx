@@ -8,6 +8,7 @@ import {
   ACCOUNT_DETAILS_PATH,
   ACCOUNT_PATH,
   ACCOUNT_PREFERENCES_PATH,
+  ACCOUNT_SUPPORT_PATH,
   WISHLIST_PATH,
 } from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
@@ -16,6 +17,7 @@ const SECTIONS = [
   { href: ACCOUNT_PATH, label: "Orders" },
   { href: ACCOUNT_DETAILS_PATH, label: "Your details" },
   { href: ACCOUNT_ADDRESSES_PATH, label: "Addresses" },
+  { href: ACCOUNT_SUPPORT_PATH, label: "Support" },
   { href: ACCOUNT_PREFERENCES_PATH, label: "Preferences" },
   { href: WISHLIST_PATH, label: "Wishlist" },
 ]

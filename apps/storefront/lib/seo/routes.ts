@@ -72,6 +72,12 @@ export const ACCOUNT_PATH = "/account"
 export const ACCOUNT_DETAILS_PATH = "/account/details"
 export const ACCOUNT_ADDRESSES_PATH = "/account/addresses"
 export const ACCOUNT_PREFERENCES_PATH = "/account/preferences"
+export const ACCOUNT_SUPPORT_PATH = "/account/support"
+
+export const supportRequestPath = (id: string, access?: string | null) =>
+  `/support/${encodeURIComponent(id)}${access ? `?access=${encodeURIComponent(access)}` : ""}`
+
+export const orderHelpPath = (id: string) => `${orderPath(id)}/help`
 export const SIGN_IN_PATH = "/account/sign-in"
 export const REGISTER_PATH = "/account/register"
 export const FORGOT_PASSWORD_PATH = "/account/forgot-password"
@@ -98,6 +104,7 @@ export const PRIVATE_PATHS = [
   "/api/",
   "/account",
   "/orders/",
+  "/support/",
   SHOPPING_BAG_PATH,
   WISHLIST_PATH,
   "/checkout",

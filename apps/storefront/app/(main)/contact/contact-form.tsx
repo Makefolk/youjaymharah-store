@@ -57,33 +57,38 @@ export function ContactForm({
 
   const send = useMutation({
     mutationFn: () =>
-      getBrowserSdk().client.fetch<{ sent: true }>("/store/contact", {
-        method: "POST",
-        body: {
-          name: nameValue.trim(),
-          email: emailValue.trim(),
-          topic: topic || null,
-          order_number: orderNumber.trim() || null,
-          message: message.trim(),
-          website,
+      getBrowserSdk().client.fetch<{ sent: true; reference: string | null }>(
+        "/store/contact",
+        {
+          method: "POST",
+          body: {
+            name: nameValue.trim(),
+            email: emailValue.trim(),
+            topic: topic || null,
+            order_number: orderNumber.trim() || null,
+            message: message.trim(),
+            website,
+          },
         },
-      }),
+      ),
     onSuccess: () =>
       toast.success("Message sent", {
-        description: "We've emailed you a copy.",
+        description: "We've emailed you a link to follow it.",
       }),
   })
 
   if (send.isSuccess) {
     return (
       <div role="status" className="flex flex-col gap-3 text-[15px]">
-        <p className="font-medium">Thanks, your message is on its way.</p>
+        <p className="font-medium">
+          Thanks, your message is on its way
+          {send.data.reference ? ` (reference ${send.data.reference})` : ""}.
+        </p>
         <p className="text-muted-foreground">
           {responseTime
             ? `We usually reply ${responseTime}, to ${emailValue.trim()}.`
             : `We'll reply to ${emailValue.trim()} as soon as we can.`}{" "}
-          We&apos;ve emailed you a copy; reply to it if you think of anything
-          else.
+          We&apos;ve emailed you a link to follow your request and reply to us.
         </p>
       </div>
     )
