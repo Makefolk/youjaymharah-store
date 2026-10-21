@@ -8,7 +8,10 @@ import { useEffect, useMemo, useState } from "react"
 
 import { ProductCard } from "@/components/catalog/product-card"
 import { listingQueries } from "@/features/listing/queries"
-import { useListingLayout } from "@/features/listing/use-listing-layout"
+import {
+  readRememberedView,
+  rememberView,
+} from "@/features/listing/use-listing-layout"
 import {
   activeLayout,
   countActiveFilters,
@@ -17,6 +20,8 @@ import {
   facetValueLabel,
   LAYOUTS,
   listingParsers,
+  viewToLayout,
+  VIEWS,
   type LayoutIndex,
   type ListingFacet,
   type ListingScope,
@@ -53,10 +58,26 @@ export function ProductListing({
     history: "push",
     scroll: false,
   })
+  const { view, ...filters } = params
+  const filtersKey = JSON.stringify(filters)
   const state = useMemo<ListingState>(
-    () => ({ ...emptyListingState(), ...params }),
-    [params],
+    () => ({ ...emptyListingState(), ...JSON.parse(filtersKey) }),
+    [filtersKey],
   )
+  const layout = viewToLayout(view)
+
+  // Opened without ?view=: start in the shopper's last layout, and put it in
+  // the URL so the address always describes what's on screen.
+  useEffect(() => {
+    if (view) return
+    const remembered = readRememberedView()
+    if (remembered) void setParams({ view: remembered }, { history: "replace" })
+  }, [view, setParams])
+
+  const setLayout = (index: LayoutIndex) => {
+    rememberView(VIEWS[index])
+    void setParams({ view: VIEWS[index] }, { history: "replace" })
+  }
   const args = useMemo(
     () => ({ scope, state, regionId, defaultSort }),
     [scope, state, regionId, defaultSort],
@@ -68,7 +89,6 @@ export function ProductListing({
   const count = pages[0]?.count ?? 0
   const facets = pages[0]?.facets
 
-  const [layout, setLayout] = useListingLayout()
   const [sheetOpen, setSheetOpen] = useState(false)
   const filtersInUse = countActiveFilters(state)
   const grid = layout === null ? DEFAULT_LAYOUT_GRID : LAYOUTS[layout].grid
@@ -215,6 +235,7 @@ export function ProductListing({
                 showDetails={details}
                 showBadges={details}
                 showWishlist={details}
+                showQuickAdd={details}
                 showCarouselArrows={details}
                 showCarouselDots={details}
                 showColourSelector={details}
@@ -253,20 +274,59 @@ export function ProductListing({
   )
 }
 
-function GridIcon({ columns }: { columns: number }) {
-  const rows = columns >= 3 ? 3 : 2
+type IconKind = "rows" | "columns" | "grid" | "dense"
+
+/** Outlined when available, filled when chosen. */
+function LayoutIcon({ kind, active }: { kind: IconKind; active: boolean }) {
+  const cells: [number, number, number, number][] =
+    kind === "rows"
+      ? [
+          [1, 1.5, 16, 6.5],
+          [1, 10, 16, 6.5],
+        ]
+      : kind === "columns"
+        ? [
+            [1.5, 1, 6.5, 16],
+            [10, 1, 6.5, 16],
+          ]
+        : kind === "grid"
+          ? [
+              [1.5, 1.5, 6.5, 6.5],
+              [10, 1.5, 6.5, 6.5],
+              [1.5, 10, 6.5, 6.5],
+              [10, 10, 6.5, 6.5],
+            ]
+          : [0, 1, 2].flatMap((row) =>
+              [0, 1, 2].map((column): [number, number, number, number] => [
+                1 + column * 5.75,
+                1 + row * 5.75,
+                4.25,
+                4.25,
+              ]),
+            )
   return (
-    <svg viewBox="0 0 18 18" aria-hidden className="size-4.5 fill-current">
-      {Array.from({ length: columns * rows }, (_, index) => {
-        const gap = 1.5
-        const width = (18 - gap * (columns - 1)) / columns
-        const height = (18 - gap * (rows - 1)) / rows
-        const x = (index % columns) * (width + gap)
-        const y = Math.floor(index / columns) * (height + gap)
-        return <rect key={index} x={x} y={y} width={width} height={height} />
-      })}
+    <svg viewBox="0 0 18 18" aria-hidden className="size-4.5">
+      {cells.map(([x, y, width, height], index) => (
+        <rect
+          key={index}
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          className={
+            active
+              ? "fill-current"
+              : "fill-none stroke-current [stroke-width:1.1]"
+          }
+        />
+      ))}
     </svg>
   )
+}
+
+const ICONS: Record<"mobile" | "desktop", IconKind[]> = {
+  mobile: ["rows", "columns", "dense"],
+  desktop: ["columns", "grid", "dense"],
 }
 
 /** Phones and desktops each show their own three choices. */
@@ -309,10 +369,9 @@ function LayoutToggles({
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
-              <GridIcon
-                columns={
-                  (breakpoint === "mobile" ? [1, 2, 3] : [2, 3, 4])[index]
-                }
+              <LayoutIcon
+                kind={ICONS[breakpoint][index]}
+                active={active === index}
               />
             </button>
           )

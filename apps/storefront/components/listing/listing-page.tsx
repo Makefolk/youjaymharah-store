@@ -27,6 +27,7 @@ export async function ListingPage({
   searchParams,
   breadcrumbs = [],
   tabs,
+  hero,
   footer,
 }: {
   title: string
@@ -35,6 +36,8 @@ export async function ListingPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
   breadcrumbs?: { name: string; href: string }[]
   tabs?: ListingTab[]
+  /** Above everything, e.g. a collection's banner. */
+  hero?: ReactNode
   footer?: ReactNode
 }) {
   const [region, settings, params] = await Promise.all([
@@ -55,7 +58,8 @@ export async function ListingPage({
   })
 
   return (
-    <main className="pt-6 pb-24 md:pt-10">
+    <main className={hero ? "pb-24" : "pt-6 pb-24 md:pt-10"}>
+      {hero}
       {breadcrumbs.length > 0 && (
         <nav
           aria-label="Breadcrumb"

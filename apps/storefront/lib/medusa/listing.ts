@@ -4,6 +4,7 @@ import {
   parseAsArrayOf,
   parseAsStringLiteral,
   parseAsString,
+  type LoaderInput,
 } from "nuqs/server"
 
 /**
@@ -48,8 +49,13 @@ export const FACET_LABELS: Record<ListingFacet, string> = {
   feature: "Product feature",
 }
 
-/** URL parsers: `?sort=newest&colour=Black,Navy&size=M`. */
+/** The three layouts by name, as they appear in the URL (`?view=compact`). */
+export const VIEWS = ["large", "medium", "compact"] as const
+export type ListingView = (typeof VIEWS)[number]
+
+/** URL parsers: `?view=medium&sort=newest&colour=Black,Navy&size=M`. */
 export const listingParsers = {
+  view: parseAsStringLiteral(VIEWS),
   sort: parseAsStringLiteral(SORTS),
   ...(Object.fromEntries(
     FACETS.map((facet) => [
@@ -64,7 +70,17 @@ export const listingParsers = {
   >),
 }
 
-export const loadListingState = createLoader(listingParsers)
+const loadListingParams = createLoader(listingParsers)
+
+/** The filters and sort from the URL; the layout is read separately. */
+export function loadListingState(input: LoaderInput): ListingState {
+  const { view: _view, ...state } = loadListingParams(input)
+  return state
+}
+
+export function loadListingView(input: LoaderInput): ListingView | null {
+  return loadListingParams(input).view
+}
 
 export type ListingState = {
   sort: ListingSortOption | null
@@ -156,6 +172,10 @@ export const LAYOUTS = [
 ] as const
 
 export type LayoutIndex = 0 | 1 | 2
+
+export function viewToLayout(view: ListingView | null): LayoutIndex | null {
+  return view === null ? null : (VIEWS.indexOf(view) as LayoutIndex)
+}
 
 export const DEFAULT_LAYOUT_GRID = "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
 

@@ -7,6 +7,8 @@ import {
   emptyListingState,
   facetValueLabel,
   loadListingState,
+  loadListingView,
+  viewToLayout,
 } from "./listing"
 
 describe("loadListingState", () => {
@@ -25,6 +27,15 @@ describe("loadListingState", () => {
 
   it("ignores an unknown sort", () => {
     expect(loadListingState({ sort: "cheapest" }).sort).toBeNull()
+  })
+
+  it("keeps the layout out of the filters", () => {
+    const params = { view: "compact", colour: "Black" }
+    expect(loadListingState(params)).not.toHaveProperty("view")
+    expect(loadListingView(params)).toBe("compact")
+    expect(viewToLayout(loadListingView(params))).toBe(2)
+    expect(loadListingView({ view: "huge" })).toBeNull()
+    expect(viewToLayout(null)).toBeNull()
   })
 })
 
