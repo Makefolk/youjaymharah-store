@@ -20,6 +20,9 @@ import { ProductCardControls } from "./product-card-controls"
 import { ProductCardGallery } from "./product-card-gallery"
 import { ProductCardQuickAdd } from "./product-card-quick-add"
 
+/** More than this and the rest show as "+N", linking to the product page. */
+const MAX_SWATCHES = 4
+
 export function ProductCardView({
   product,
   newProduct,
@@ -29,7 +32,7 @@ export function ProductCardView({
   detailsPlacement = "below",
   showPrice = true,
   showBadges = true,
-  badgePlacement = "details",
+  badgePlacement = "image",
   showWishlist = false,
   showQuickAdd = false,
   showNotifyMe = false,
@@ -52,7 +55,8 @@ export function ProductCardView({
   const canNotify =
     productStatus === "Coming soon" || productStatus === "Sold out"
   // A sale shows as the percentage beside the price, not as a label.
-  const badges = showBadges && status !== "New" && status ? [status] : []
+  // One label, the most important status; a sale shows beside the price.
+  const label = showBadges ? status : null
   const colours = showColours ? getColourChoices(product) : []
   const overlay = detailsPlacement === "overlay"
   const secondaryText = overlay ? "text-white/80" : "text-muted-foreground"
@@ -117,14 +121,14 @@ export function ProductCardView({
           </p>
         )}
       </div>
-      {badgePlacement === "details" && badges.length > 0 && (
+      {badgePlacement === "details" && label && (
         <p
           className={cn(
             "mt-3 text-[10px] leading-relaxed tracking-[0.12em] uppercase",
             secondaryText,
           )}
         >
-          {badges.join(" · ")}
+          {label}
         </p>
       )}
       {colours.length > 1 && (
@@ -135,7 +139,7 @@ export function ProductCardView({
               aria-label={`Choose a colour of ${product.title}`}
               className="flex flex-wrap gap-1"
             >
-              {colours.map((choice) => (
+              {colours.slice(0, MAX_SWATCHES).map((choice) => (
                 <button
                   key={choice.value}
                   type="button"
@@ -152,6 +156,15 @@ export function ProductCardView({
                   <Swatch colour={choice} />
                 </button>
               ))}
+              {colours.length > MAX_SWATCHES && (
+                <Link
+                  href={href}
+                  aria-label={`${colours.length - MAX_SWATCHES} more colours of ${product.title}`}
+                  className="flex min-h-8 items-center px-1 text-[11px] tabular-nums hover:underline hover:underline-offset-4"
+                >
+                  +{colours.length - MAX_SWATCHES}
+                </Link>
+              )}
             </div>
           ) : (
             <p className="text-[11px]">{colours.length} colours</p>
@@ -178,27 +191,10 @@ export function ProductCardView({
         >
           {overlay && details}
         </ProductCardGallery>
-        {showBadges && status === "New" && (
-          <span className="pointer-events-none absolute top-0 left-0 bg-background/95 text-[10px] leading-none tracking-[0.12em] text-foreground uppercase [writing-mode:vertical-rl]">
-            New
+        {badgePlacement === "image" && label && (
+          <span className="pointer-events-none absolute top-3 left-3 bg-background/95 px-2 py-1 text-[10px] leading-relaxed tracking-[0.1em] text-foreground uppercase">
+            {label}
           </span>
-        )}
-        {badgePlacement === "image" && badges.length > 0 && (
-          <div
-            className={cn(
-              "pointer-events-none absolute top-3 left-3 flex max-w-[calc(100%-5rem)] flex-wrap gap-1.5",
-              status === "New" && "left-5",
-            )}
-          >
-            {badges.map((badge) => (
-              <span
-                key={badge}
-                className="bg-background/95 px-2 py-1 text-[10px] leading-relaxed tracking-[0.1em] text-foreground uppercase"
-              >
-                {badge}
-              </span>
-            ))}
-          </div>
         )}
         {quickAdd && (
           <ProductCardQuickAdd product={product} quickAdd={quickAdd} />

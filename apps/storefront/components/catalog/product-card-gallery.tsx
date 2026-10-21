@@ -151,15 +151,11 @@ export function ProductCardGallery({
                 draggable={false}
                 className="relative block aspect-3/4 outline-none focus-visible:after:absolute focus-visible:after:inset-1 focus-visible:after:z-10 focus-visible:after:border focus-visible:after:border-white focus-visible:after:outline focus-visible:after:outline-black"
               >
-                <Image
+                <CardImage
                   src={image.url}
                   alt={`${title} — image ${index + 1}`}
-                  fill
                   sizes={sizes}
-                  loading={priority && index === 0 ? "eager" : "lazy"}
-                  fetchPriority={priority && index === 0 ? "high" : undefined}
-                  draggable={false}
-                  className="object-cover"
+                  priority={priority && index === 0}
                 />
               </Link>
             </CarouselItem>
@@ -269,5 +265,49 @@ export function ProductCardGallery({
         </p>
       )}
     </Carousel>
+  )
+}
+
+/**
+ * Fades in over a softly pulsing tile, so a grid still loading reads as
+ * loading rather than empty. Priority photos show at once: a hidden image
+ * can't count as the page's largest paint.
+ */
+function CardImage({
+  src,
+  alt,
+  sizes,
+  priority,
+}: {
+  src: string
+  alt: string
+  sizes: string
+  priority: boolean
+}) {
+  const [loaded, setLoaded] = useState(priority)
+
+  return (
+    <>
+      {!loaded && (
+        <span
+          aria-hidden
+          className="absolute inset-0 animate-pulse bg-foreground/5 motion-reduce:animate-none"
+        />
+      )}
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes={sizes}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : undefined}
+        draggable={false}
+        onLoad={() => setLoaded(true)}
+        className={cn(
+          "object-cover transition-opacity duration-500 ease-out motion-reduce:transition-none",
+          loaded ? "opacity-100" : "opacity-0",
+        )}
+      />
+    </>
   )
 }
