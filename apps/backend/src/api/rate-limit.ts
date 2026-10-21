@@ -39,22 +39,18 @@ export function rateLimit(bucket: string, limit: number) {
           "Retry-After",
           String(60 - (Math.floor(Date.now() / 1000) % 60)),
         );
-        res
-          .status(429)
-          .json({
-            type: "too_many_requests",
-            message: "Too many requests. Please try again shortly.",
-          });
+        res.status(429).json({
+          type: "too_many_requests",
+          message: "Too many requests. Please try again shortly.",
+        });
         return;
       }
     } catch {
       res.setHeader("Retry-After", "30");
-      res
-        .status(503)
-        .json({
-          type: "unavailable",
-          message: "Temporarily unavailable. Please try again shortly.",
-        });
+      res.status(503).json({
+        type: "unavailable",
+        message: "Temporarily unavailable. Please try again shortly.",
+      });
       return;
     }
     next();

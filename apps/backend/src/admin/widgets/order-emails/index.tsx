@@ -3,6 +3,7 @@ import type { AdminOrder, DetailWidgetProps } from "@medusajs/framework/types";
 import {
   Button,
   Container,
+  DropdownMenu,
   Heading,
   Text,
   toast,
@@ -37,17 +38,29 @@ const OrderEmailsWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
       ),
   });
 
+  type Resend =
+    { kind: "confirmation" } | { kind: "shipping"; fulfillmentId: string };
+
   const resend = useMutation({
-    mutationFn: () =>
+    mutationFn: (request: Resend) =>
       sdk.client.fetch<{ sent_to: string | null; pending: boolean }>(
-        `/admin/orders/${order.id}/emails/resend-confirmation`,
-        { method: "POST" },
+        request.kind === "confirmation"
+          ? `/admin/orders/${order.id}/emails/resend-confirmation`
+          : `/admin/orders/${order.id}/emails/resend-shipping`,
+        request.kind === "confirmation"
+          ? { method: "POST" }
+          : {
+              method: "POST",
+              body: { fulfillment_id: request.fulfillmentId },
+            },
       ),
-    onSuccess: ({ sent_to, pending }) => {
+    onSuccess: ({ sent_to, pending }, request) => {
       void queryClient.invalidateQueries({
         queryKey: orderEmailsQueryKey(order.id),
       });
-      if (sent_to) toast.success(`Confirmation sent to ${sent_to}.`);
+      const what =
+        request.kind === "confirmation" ? "Confirmation" : "Shipping email";
+      if (sent_to) toast.success(`${what} sent to ${sent_to}.`);
       else if (pending)
         toast.warning("Resend didn't accept it yet. It will keep retrying.");
       else toast.error("This order has no email address.");
@@ -55,17 +68,27 @@ const OrderEmailsWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const confirmResend = async () => {
+  // Shipped, uncanceled shipments, oldest first, as the timeline lists them.
+  const shipments = (order.fulfillments ?? []).filter(
+    (fulfillment) => fulfillment.shipped_at && !fulfillment.canceled_at,
+  );
+
+  const confirmResend = async (request: Resend, label: string) => {
     const confirmed = await prompt({
-      title: "Resend the order confirmation?",
+      title: `Resend the ${label}?`,
       description: order.email
         ? `It goes to ${order.email}. If that address bounced, correct the order's email first.`
         : "This order has no email address.",
       confirmText: "Resend",
       cancelText: "Cancel",
     });
-    if (confirmed) resend.mutate();
+    if (confirmed) resend.mutate(request);
   };
+
+  const shipmentLabel = (index: number) =>
+    shipments.length > 1
+      ? `shipping email for shipment ${index + 1}`
+      : "shipping email";
 
   const emails = data?.emails ?? [];
 
@@ -73,17 +96,56 @@ const OrderEmailsWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
     <Container className="divide-y p-0">
       <div className="flex items-center justify-between px-6 py-4">
         <Heading level="h2">Customer emails</Heading>
-        {can("order", "update") ? (
+        {!can("order", "update") ? null : shipments.length ? (
+          <DropdownMenu>
+            <DropdownMenu.Trigger asChild>
+              <Button
+                size="small"
+                variant="secondary"
+                disabled={!order.email || resend.isPending}
+                isLoading={resend.isPending}
+              >
+                Resend
+              </Button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end">
+              <DropdownMenu.Item
+                onClick={() =>
+                  confirmResend({ kind: "confirmation" }, "order confirmation")
+                }
+              >
+                Order confirmation
+              </DropdownMenu.Item>
+              {shipments.map((shipment, index) => (
+                <DropdownMenu.Item
+                  key={shipment.id}
+                  onClick={() =>
+                    confirmResend(
+                      { kind: "shipping", fulfillmentId: shipment.id },
+                      shipmentLabel(index),
+                    )
+                  }
+                >
+                  {shipments.length > 1
+                    ? `Shipping email · shipment ${index + 1}`
+                    : "Shipping email"}
+                </DropdownMenu.Item>
+              ))}
+            </DropdownMenu.Content>
+          </DropdownMenu>
+        ) : (
           <Button
             size="small"
             variant="secondary"
             disabled={!order.email || resend.isPending}
             isLoading={resend.isPending}
-            onClick={confirmResend}
+            onClick={() =>
+              confirmResend({ kind: "confirmation" }, "order confirmation")
+            }
           >
             Resend confirmation
           </Button>
-        ) : null}
+        )}
       </div>
       <div className="px-6 py-4">
         <RenderFromQuery

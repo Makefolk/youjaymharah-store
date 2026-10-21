@@ -20,6 +20,7 @@ import {
   AdminUpdateCartReminderSettings,
   AdminUpdateReturnPolicy,
   AdminCreateOrderFromPayment,
+  AdminResendShippingEmail,
   StoreOrderLookup,
   StoreRequestReturn,
   StoreCartReminderToken,
@@ -2273,6 +2274,35 @@ export const ROUTES: RouteDoc[] = [
       }),
     },
     errors: [{ status: 404, description: "No such order." }],
+  },
+  {
+    method: "POST",
+    path: "/admin/orders/{id}/emails/resend-shipping",
+    tag: "Support",
+    summary: "Resend a shipment's shipping email",
+    description:
+      "Sends the shipping email for one shipment of the order again, with its tracking details, to the order's current email, as a new email. Each call sends once more.",
+    auth: "admin",
+    policies: ["order:update"],
+    body: AdminResendShippingEmail,
+    response: {
+      description:
+        "Where it was sent. `sent_to` is null when the order has no email, or when `pending` is true: the first attempt failed and the workflow engine is retrying.",
+      schema: z.object({
+        sent_to: z.string().nullable(),
+        pending: z.boolean(),
+      }),
+    },
+    errors: [
+      {
+        status: 404,
+        description: "No such order, or the shipment isn't part of it.",
+      },
+      {
+        status: 400,
+        description: "The fulfillment hasn't shipped or was canceled.",
+      },
+    ],
   },
   {
     method: "GET",

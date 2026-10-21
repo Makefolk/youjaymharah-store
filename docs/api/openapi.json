@@ -11766,6 +11766,119 @@
         }
       }
     },
+    "/admin/orders/{id}/emails/resend-shipping": {
+      "post": {
+        "operationId": "postAdminOrdersIdEmailsResendShipping",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Resend a shipment's shipping email",
+        "description": "Sends the shipping email for one shipment of the order again, with its tracking details, to the order's current email, as a new email. Each call sends once more.",
+        "x-required-policies": [
+          "order:update"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fulfillment_id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "fulfillment_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Where it was sent. `sent_to` is null when the order has no email, or when `pending` is true: the first attempt failed and the workflow engine is retrying.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sent_to": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "pending": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "sent_to",
+                    "pending"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The fulfillment hasn't shipped or was canceled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such order, or the shipment isn't part of it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/customers/{id}/support-context": {
       "get": {
         "operationId": "getAdminCustomersIdSupportContext",

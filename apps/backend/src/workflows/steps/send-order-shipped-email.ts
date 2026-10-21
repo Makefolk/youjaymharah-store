@@ -11,6 +11,12 @@ import type { ShipmentSummary } from "../../modules/resend/emails/order-shipped"
 export type SendOrderShippedEmailInput = {
   /** The fulfillment the shipment was created on (shipment.created's `id`). */
   fulfillment_id: string;
+  /**
+   * Set when staff resend the email. Each resend needs its own delivery
+   * identity: reusing the original one returns the earlier receipt instead
+   * of sending.
+   */
+  resend_key?: string;
 };
 
 export type SendOrderShippedEmailOutput = {
@@ -120,7 +126,11 @@ export const sendOrderShippedEmailStep = createStep(
       resource_type: "order",
       resource_id: order.id,
       template: EmailTemplates.ORDER_SHIPPED,
-      ...emailIdempotency(`order-shipped:${input.fulfillment_id}`),
+      ...emailIdempotency(
+        input.resend_key
+          ? `order-shipped:${input.fulfillment_id}:resend:${input.resend_key}`
+          : `order-shipped:${input.fulfillment_id}`,
+      ),
       data: { order, shipment, brand },
     });
 

@@ -401,6 +401,14 @@ export type AdminUpdateReturnPolicyType = z.infer<
   typeof AdminUpdateReturnPolicy
 >;
 
+export const AdminResendShippingEmail = z.object({
+  fulfillment_id: z.string().min(1),
+});
+
+export type AdminResendShippingEmailType = z.infer<
+  typeof AdminResendShippingEmail
+>;
+
 export const StoreOrderLookup = z.object({
   email: z.email(),
   /** The order number on the confirmation, with or without its "#". */
@@ -681,6 +689,12 @@ export default defineMiddlewares({
       matcher: "/admin/orders/:id/emails/resend-confirmation",
       method: ["POST"],
       policies: [{ resource: "order", operation: "update" }],
+    },
+    {
+      matcher: "/admin/orders/:id/emails/resend-shipping",
+      method: ["POST"],
+      policies: [{ resource: "order", operation: "update" }],
+      middlewares: [validateAndTransformBody(AdminResendShippingEmail)],
     },
     {
       matcher: "/admin/customers/:id/support-context",

@@ -312,12 +312,10 @@ describe("search insights", () => {
     it("falls back to suggestions that find a product, marked as curated", async () => {
       const service = {
         listTrendingTerms: jest.fn().mockResolvedValue([]),
-        readFallbackTerms: jest
-          .fn()
-          .mockResolvedValue({
-            terms: ["wool coats", "velvet"],
-            revision: "r",
-          }),
+        readFallbackTerms: jest.fn().mockResolvedValue({
+          terms: ["wool coats", "velvet"],
+          revision: "r",
+        }),
       };
       expect(
         await trendingSearchTerms(
@@ -345,12 +343,10 @@ describe("search insights", () => {
     it("honours the requested limit on the fallback too", async () => {
       const service = {
         listTrendingTerms: jest.fn().mockResolvedValue([]),
-        readFallbackTerms: jest
-          .fn()
-          .mockResolvedValue({
-            terms: ["linen", "wool", "silk"],
-            revision: "r",
-          }),
+        readFallbackTerms: jest.fn().mockResolvedValue({
+          terms: ["linen", "wool", "silk"],
+          revision: "r",
+        }),
       };
       expect(
         await trendingSearchTerms(
