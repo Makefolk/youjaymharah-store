@@ -29,4 +29,3 @@ export const PRODUCT_CARD_MEDIA_FIELDS = [
   "*variants.images",
   "+variants.thumbnail",
 ].join(",")
-

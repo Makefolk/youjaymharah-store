@@ -3,6 +3,9 @@
 import { BellIcon, HeartIcon } from "@phosphor-icons/react"
 import { useId, useState } from "react"
 
+import { toast } from "@/components/ui/toaster"
+import { cn } from "@/lib/util/cn"
+
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -27,8 +30,16 @@ import {
 
 type ProductIdentity = { productId: string; title: string }
 
+/** No background, so the photo stays clear; the shadow keeps it visible on light photos. */
 const controlClass =
-  "flex size-11 items-center justify-center bg-background/95 text-foreground transition-colors hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:cursor-wait disabled:opacity-60"
+  "flex size-11 items-center justify-center text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.45)] transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-wait"
+
+/**
+ * Shown on hover for mouse users and always on touch screens; always shown
+ * once on (saved, subscribed), so the state can be seen at a glance.
+ */
+const hoverOnly =
+  "[@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-hover/card:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within/card:opacity-100"
 
 export function ProductCardControls({
   productId,
@@ -49,15 +60,11 @@ function WishlistControl({ productId, title }: ProductIdentity) {
   const { item, isSaved, isPending } = useWishlistItem(productId)
   const save = useSaveToWishlist()
   const remove = useRemoveFromWishlist()
-  const [message, setMessage] = useState("")
-  const [failed, setFailed] = useState(false)
   const label = wishlist.isError
     ? "Retry loading wishlist"
     : `${isSaved ? "Remove" : "Save"} ${title} ${isSaved ? "from" : "to"} wishlist`
 
   async function toggle() {
-    setMessage("")
-    setFailed(false)
     if (wishlist.isError) {
       await wishlist.refetch()
       return
@@ -65,42 +72,39 @@ function WishlistControl({ productId, title }: ProductIdentity) {
     try {
       if (item) {
         await remove.mutateAsync(item)
-        setMessage("Removed from your wishlist.")
+        toast.info("Removed from your wishlist", { description: title })
       } else {
         await save.mutateAsync({ product_id: productId })
-        setMessage("Saved to your wishlist.")
+        toast.success("Saved to your wishlist", {
+          description: title,
+          link: { href: "/wishlist", label: "View wishlist" },
+        })
       }
     } catch {
-      setFailed(true)
-      setMessage("Couldn't update your wishlist. Please try again.")
+      toast.error("Couldn't update your wishlist", {
+        description: "Please try again.",
+      })
     }
   }
 
   return (
-    <>
-      <button
-        type="button"
-        className={controlClass}
-        aria-label={label}
-        title={label}
-        aria-pressed={isSaved}
-        disabled={
-          wishlist.isPending || isPending || save.isPending || remove.isPending
-        }
-        onClick={toggle}
-      >
-        <HeartIcon
-          aria-hidden
-          className="size-5"
-          weight={isSaved ? "fill" : "regular"}
-        />
-      </button>
-      <Feedback failed={failed || wishlist.isError}>
-        {wishlist.isError
-          ? "Couldn't load your wishlist. Tap the heart to retry."
-          : message}
-      </Feedback>
-    </>
+    <button
+      type="button"
+      className={cn(controlClass, !isSaved && hoverOnly)}
+      aria-label={label}
+      title={label}
+      aria-pressed={isSaved}
+      disabled={
+        wishlist.isPending || isPending || save.isPending || remove.isPending
+      }
+      onClick={toggle}
+    >
+      <HeartIcon
+        aria-hidden
+        className={cn("size-5", isSaved && "text-gold")}
+        weight={isSaved ? "fill" : "regular"}
+      />
+    </button>
   )
 }
 
@@ -147,9 +151,15 @@ function NotifyControl({ productId, title }: ProductIdentity) {
         ...(email ? { email } : {}),
       })
       setMessage("We'll email you when it's available.")
+      toast.success("We'll email you when it's available", {
+        description: title,
+      })
     } catch {
       setFailed(true)
       setMessage("Couldn't save your notification. Please try again.")
+      toast.error("Couldn't save your notification", {
+        description: "Please try again.",
+      })
     }
   }
 
@@ -173,16 +183,20 @@ function NotifyControl({ productId, title }: ProductIdentity) {
       await cancel.mutateAsync(waiting.id)
       create.reset()
       setMessage("Notification cancelled.")
+      toast.info("Notification cancelled", { description: title })
     } catch {
       setFailed(true)
       setMessage("Couldn't cancel your notification. Please try again.")
+      toast.error("Couldn't cancel your notification", {
+        description: "Please try again.",
+      })
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        className={controlClass}
+        className={cn(controlClass, !subscribed && hoverOnly)}
         aria-label={label}
         title={label}
         disabled={pending}
@@ -195,7 +209,7 @@ function NotifyControl({ productId, title }: ProductIdentity) {
       >
         <BellIcon
           aria-hidden
-          className="size-5"
+          className={cn("size-5", subscribed && "text-gold")}
           weight={subscribed ? "fill" : "regular"}
         />
       </DialogTrigger>

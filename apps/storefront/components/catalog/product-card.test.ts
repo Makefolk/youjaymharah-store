@@ -76,7 +76,7 @@ describe("product card merchandising", () => {
     }
   })
 
-  it("shows Sale only for the displayed variant's sale price list", () => {
+  it("shows the sale percentage only for the displayed variant's sale price list", () => {
     const variant = (amount: number, sale: boolean) => ({
       manage_inventory: false,
       calculated_price: {
@@ -86,11 +86,11 @@ describe("product card merchandising", () => {
         calculated_price: { price_list_type: sale ? "sale" : "override" },
       },
     })
-    expect(render(product([variant(100, true)]))).toContain(">Sale<")
-    expect(render(product([variant(100, false)]))).not.toContain(">Sale<")
+    expect(render(product([variant(100, true)]))).toContain(">−33%<")
+    expect(render(product([variant(100, false)]))).not.toContain(">−33%<")
     expect(
       render(product([variant(100, true), variant(50, false)])),
-    ).not.toContain(">Sale<")
+    ).not.toContain(">−33%<")
   })
 
   it("keeps badges and controls independently configurable", () => {

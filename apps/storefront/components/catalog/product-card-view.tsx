@@ -10,6 +10,7 @@ import {
   getCardColourProduct,
   getCardGallery,
   getCardStatus,
+  getQuickAdd,
 } from "@/lib/medusa/product-card"
 import { getColourChoices, type OptionChoice } from "@/lib/medusa/variants"
 import { productPath } from "@/lib/seo/routes"
@@ -17,6 +18,7 @@ import { cn } from "@/lib/util/cn"
 import type { ProductCardProps } from "./product-card"
 import { ProductCardControls } from "./product-card-controls"
 import { ProductCardGallery } from "./product-card-gallery"
+import { ProductCardQuickAdd } from "./product-card-quick-add"
 
 export function ProductCardView({
   product,
@@ -29,6 +31,7 @@ export function ProductCardView({
   showBadges = true,
   badgePlacement = "details",
   showWishlist = false,
+  showQuickAdd = false,
   showNotifyMe = false,
   showColours = true,
   showColourSelector = true,
@@ -48,20 +51,14 @@ export function ProductCardView({
   const productStatus = getCardStatus(product)
   const canNotify =
     productStatus === "Coming soon" || productStatus === "Sold out"
-  const badges = showBadges
-    ? [
-        status !== "New" ? status : null,
-        status !== "Coming soon" &&
-        status !== "Sold out" &&
-        price?.price.isOnSale
-          ? "Sale"
-          : null,
-      ].filter(Boolean)
-    : []
+  // A sale shows as the percentage beside the price, not as a label.
+  const badges = showBadges && status !== "New" && status ? [status] : []
   const colours = showColours ? getColourChoices(product) : []
   const overlay = detailsPlacement === "overlay"
   const secondaryText = overlay ? "text-white/80" : "text-muted-foreground"
   const href = productPath(product.handle)
+  const quickAdd =
+    showQuickAdd && !overlay ? getQuickAdd(product, colour) : null
 
   function selectColour(value: string) {
     setColour(value)
@@ -96,9 +93,7 @@ export function ProductCardView({
             className="flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs leading-relaxed tabular-nums @xs/card:flex-col @xs/card:items-end"
             aria-live="polite"
           >
-            <span
-              className={cn(price.price.isOnSale && !overlay && "text-sale")}
-            >
+            <span>
               {price.price.isOnSale && (
                 <span className="sr-only">Sale price: </span>
               )}
@@ -106,13 +101,18 @@ export function ProductCardView({
               {formatPrice(price.price.amount, price.price.currencyCode)}
             </span>
             {price.price.isOnSale && (
-              <s className={secondaryText}>
-                <span className="sr-only">Original price: </span>
-                {formatPrice(
-                  price.price.originalAmount,
-                  price.price.currencyCode,
-                )}
-              </s>
+              <span
+                className={cn("flex items-baseline gap-1.5", secondaryText)}
+              >
+                <s>
+                  <span className="sr-only">Original price: </span>
+                  {formatPrice(
+                    price.price.originalAmount,
+                    price.price.currencyCode,
+                  )}
+                </s>
+                <span>−{price.price.percentOff}%</span>
+              </span>
             )}
           </p>
         )}
@@ -174,6 +174,7 @@ export function ProductCardView({
           setApi={setApi}
           showArrows={showCarouselArrows}
           showDots={showCarouselDots}
+          raiseLines={Boolean(quickAdd)}
         >
           {overlay && details}
         </ProductCardGallery>
@@ -198,6 +199,9 @@ export function ProductCardView({
               </span>
             ))}
           </div>
+        )}
+        {quickAdd && (
+          <ProductCardQuickAdd product={product} quickAdd={quickAdd} />
         )}
         {(showWishlist || (showNotifyMe && canNotify)) && (
           <ProductCardControls

@@ -26,6 +26,8 @@ export type ProductCardProps = {
   showBadges?: boolean
   badgePlacement?: "details" | "image"
   showWishlist?: boolean
+  /** Add to the bag from the card, on hover (mouse only). */
+  showQuickAdd?: boolean
   showNotifyMe?: boolean
   /** Colour choices or a count, shown only for more than one colour. */
   showColours?: boolean

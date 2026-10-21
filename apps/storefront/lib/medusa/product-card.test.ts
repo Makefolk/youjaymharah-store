@@ -5,6 +5,7 @@ import {
   getCardColourProduct,
   getCardGallery,
   getCardStatus,
+  getQuickAdd,
 } from "./product-card"
 import { getProductPrice } from "./price"
 
@@ -81,5 +82,65 @@ describe("card gallery and colour selection", () => {
     expect(getCardStatus(product)).toBeNull()
     expect(getCardColourProduct(product, null)).toBe(product)
     expect(product.variants).toHaveLength(3)
+  })
+})
+
+describe("getQuickAdd", () => {
+  const variant = (id: string, colour: string, size: string, stock = 5) => ({
+    id,
+    options: [
+      { option_id: "colour", value: colour },
+      { option_id: "size", value: size },
+    ],
+    manage_inventory: true,
+    inventory_quantity: stock,
+    calculated_price: { calculated_amount: 100, currency_code: "ngn" },
+  })
+  const sized = {
+    options: [
+      { id: "colour", title: "Colour" },
+      { id: "size", title: "Size" },
+    ],
+    variants: [
+      variant("black-s", "Black", "S", 0),
+      variant("black-m", "Black", "M"),
+      variant("cream-s", "Cream", "S"),
+    ],
+  } as unknown as HttpTypes.StoreProduct
+
+  it("offers the shown colour's sizes, keeping sold-out ones visible", () => {
+    const quickAdd = getQuickAdd(sized, "Black")
+    expect(quickAdd).toMatchObject({ mode: "sizes", colour: "Black" })
+    expect(quickAdd?.mode === "sizes" && quickAdd.sizes).toEqual([
+      expect.objectContaining({
+        value: "S",
+        available: false,
+        variantId: "black-s",
+      }),
+      expect.objectContaining({
+        value: "M",
+        available: true,
+        variantId: "black-m",
+      }),
+    ])
+  })
+
+  it("adds straight away when the colour has a single buyable variant", () => {
+    expect(getQuickAdd(sized, "Cream")).toEqual({
+      mode: "direct",
+      colour: "Cream",
+      variantId: "cream-s",
+    })
+  })
+
+  it("offers nothing for coming-soon or entirely sold-out products", () => {
+    expect(
+      getQuickAdd({ ...sized, metadata: { coming_soon: true } }, null),
+    ).toBeNull()
+    const soldOut = {
+      ...sized,
+      variants: [variant("a", "Black", "S", 0), variant("b", "Black", "M", 0)],
+    } as unknown as HttpTypes.StoreProduct
+    expect(getQuickAdd(soldOut, null)).toBeNull()
   })
 })

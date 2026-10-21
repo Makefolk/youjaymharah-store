@@ -13,6 +13,7 @@ import { CatalogProvider } from "@/features/catalog/provider"
 import { StorefrontSettingsProvider } from "@/features/site-settings/provider"
 import { getCategoryTree, listCollections } from "@/lib/medusa/catalog"
 import { getCollectionMenu, getMenuModel } from "@/lib/medusa/menu"
+import { Toaster } from "@/components/ui/toaster"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 const bodoniModa = Bodoni_Moda({
@@ -69,6 +70,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   {children}
                 </CatalogProvider>
               </StorefrontSettingsProvider>
+              <Toaster />
             </QueryProvider>
           </TooltipProvider>
         </NuqsAdapter>
