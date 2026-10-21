@@ -59,6 +59,10 @@ const PAYMENTS = [
   "payment_collection",
   "payment_method",
   "payment_session",
+  // Medusa's Refund and Capture routes check these, not `payment`
+  // (registered in src/policies/refund-capture.ts).
+  "refund",
+  "capture",
   "refund_reason",
 ];
 const CUSTOMERS = ["customer", "customer_address", "customer_group"];
