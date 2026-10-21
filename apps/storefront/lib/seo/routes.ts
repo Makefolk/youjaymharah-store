@@ -45,6 +45,7 @@ export const orderConfirmationPath = (id: string) => `${orderPath(id)}?placed=1`
 /** Finding a guest order from its number and email. */
 export const TRACK_ORDER_PATH = "/track-order"
 
+export const PRODUCTS_PATH = "/products"
 export const CONTACT_PATH = "/contact"
 export const RETURNS_POLICY_PATH = "/help/returns"
 export const DELIVERY_PATH = "/help/delivery"

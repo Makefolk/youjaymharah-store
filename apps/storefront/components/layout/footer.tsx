@@ -19,19 +19,19 @@ import { StorefrontSettings } from "@/lib/medusa/storefront-settings"
 import {
   CONTACT_PATH,
   DELIVERY_PATH,
+  PRODUCTS_PATH,
   RETURNS_POLICY_PATH,
   TRACK_ORDER_PATH,
 } from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
 
+// About and Privacy return once their pages are written.
 const navLinks = [
-  { href: "#", label: "Catalog" },
+  { href: PRODUCTS_PATH, label: "Catalog" },
   { href: TRACK_ORDER_PATH, label: "Track an order" },
   { href: DELIVERY_PATH, label: "Delivery" },
   { href: RETURNS_POLICY_PATH, label: "Returns" },
-  { href: "#", label: "About" },
   { href: CONTACT_PATH, label: "Contact" },
-  { href: "#", label: "Privacy" },
 ]
 
 type TSocialPlatform = keyof StorefrontSettings["seo"]["social_links"]

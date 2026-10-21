@@ -9,6 +9,7 @@ import {
   CONTACT_PATH,
   DELIVERY_PATH,
   productPath,
+  PRODUCTS_PATH,
   RETURNS_POLICY_PATH,
 } from "@/lib/seo/routes"
 
@@ -72,6 +73,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const home: MetadataRoute.Sitemap = [
     { url: absoluteUrl("/"), priority: 1 },
+    { url: absoluteUrl(PRODUCTS_PATH), priority: 0.8 },
     ...[CONTACT_PATH, DELIVERY_PATH, RETURNS_POLICY_PATH].map((path) => ({
       url: absoluteUrl(path),
       priority: 0.3,
