@@ -29,8 +29,11 @@ export function getBrowserSdk(): Medusa {
   browserSdk ??= new Medusa({
     baseUrl: `${window.location.origin}${MEDUSA_PROXY_PATH}`,
     publishableKey: PUBLISHABLE_KEY,
-    // Never store a token in the browser; the proxy attaches it.
-    auth: { type: "jwt", jwtTokenStorageMethod: "nostore" },
+    // "session" only so the SDK sends this site's cookies to the proxy, which
+    // reads the token from them; with "jwt" it fetches with
+    // `credentials: "omit"` and every call arrives signed out. No token or
+    // Medusa session is involved: the proxy forwards no cookies to Medusa.
+    auth: { type: "session", fetchCredentials: "same-origin" },
   })
 
   return browserSdk
