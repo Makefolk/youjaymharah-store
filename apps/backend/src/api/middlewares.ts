@@ -485,6 +485,23 @@ export type StoreVerifyCustomerEmailType = z.infer<
   typeof StoreVerifyCustomerEmail
 >;
 
+export const AdminResolveEmailDelivery = z.discriminatedUnion("resolution", [
+  z.object({
+    resolution: z.literal("sent"),
+    /** The email's ID in Resend's dashboard, as evidence it was accepted. */
+    provider_id: z.uuid("Paste the email's ID from Resend, like 4ef9a417-…"),
+    note: z.string().trim().max(500).nullable().optional(),
+  }),
+  z.object({
+    resolution: z.literal("not_sent"),
+    note: z.string().trim().max(500).nullable().optional(),
+  }),
+]);
+
+export type AdminResolveEmailDeliveryType = z.infer<
+  typeof AdminResolveEmailDelivery
+>;
+
 export const StoreOrderLookup = z.object({
   email: z.email(),
   /** The order number on the confirmation, with or without its "#". */
@@ -714,6 +731,17 @@ export default defineMiddlewares({
       matcher: "/admin/cart-reminders/stats",
       method: ["GET"],
       policies: [{ resource: "cart_reminder", operation: "read" }],
+    },
+    {
+      matcher: "/admin/email-review",
+      method: ["GET"],
+      policies: [{ resource: "order", operation: "read" }],
+    },
+    {
+      matcher: "/admin/email-review/:id/resolve",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(AdminResolveEmailDelivery)],
+      policies: [{ resource: "order", operation: "update" }],
     },
     {
       matcher: "/admin/payment-lookup",

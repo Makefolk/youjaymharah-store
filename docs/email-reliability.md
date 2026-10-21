@@ -108,21 +108,30 @@ input requires `refund_id`.
 
 ### Reviewing uncertain deliveries
 
-Run `pnpm exec medusa exec ./src/scripts/inspect-email-deliveries.ts` from
-`apps/backend` for counts and the oldest 100 review candidates. It is read-only
-and does not decrypt or print message content or recipient addresses. Review
-workflow/notification state and Resend request/email history in restricted tools.
-The ledger ID is `emdel_` plus SHA-256 of the notification's provider idempotency
-key; use that key to correlate provider evidence. Never paste credentials,
-message bodies or full customer details into an incident log.
+Open **Email review** in the admin sidebar (Support and Store Managers). It
+lists unresolved sends, oldest first, with the email type, recipient and order
+where they can be matched: `Blocked` ones stopped for review, and `No answer`
+ones attempted over 23 hours ago. Find each in Resend's email log by recipient
+and time, then record the verdict:
 
-Do not delete a receipt, clear `first_attempt_at`, or generate a random new key
-to bypass a review block. If acceptance is confirmed, reconcile the original
-receipt through a separately approved operation. If non-acceptance is confirmed,
-authorize a deliberate replacement with a new business-event identity; for
-password resets/invites, request a fresh token instead of sending an expired
-snapshot. If the outcome cannot be established, leave it blocked. A review/admin
-resolution screen and a lifecycle policy for receipts remain follow-ups.
+- **It was sent:** paste the email's ID from Resend as evidence. The receipt
+  is reconciled to accepted and the stored copy is dropped.
+- **It wasn't sent:** the verdict is recorded, but the delivery stays blocked,
+  so the stored email can never go out late. Send a replacement deliberately:
+  Resend on the order page for confirmations and shipping emails; a fresh
+  request for password resets, verifications and return links.
+- **Can't tell:** leave it in the list.
+
+Each verdict records who made it and when. Never delete a receipt, clear
+`first_attempt_at`, or generate a new key to bypass a block.
+
+`pnpm exec medusa exec ./src/scripts/inspect-email-deliveries.ts` from
+`apps/backend` still prints counts per status for incident logs. It is
+read-only and does not print message content or recipient addresses. The
+ledger ID is `emdel_` plus SHA-256 of the notification's provider idempotency
+key; use that key to correlate provider evidence. Never paste credentials,
+message bodies or full customer details into an incident log. A lifecycle
+policy for old receipts remains a follow-up.
 
 Unit tests cover identities, skipped notifications, encryption, concurrent sends,
 saved-payload retries, receipt-write failures and blocking stale uncertainty.

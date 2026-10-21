@@ -20,6 +20,7 @@ import {
   AdminUpdateCartReminderSettings,
   AdminUpdateReturnPolicy,
   AdminUpdateSupportInfo,
+  AdminResolveEmailDelivery,
   StoreContactMessage,
   AdminCreateOrderFromPayment,
   AdminResendShippingEmail,
@@ -2319,6 +2320,62 @@ export const ROUTES: RouteDoc[] = [
       { status: 400, description: "The order has no email address." },
       { status: 404, description: "No such order." },
       { status: 429, description: "Too many requests." },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/admin/email-review",
+    tag: "Support",
+    summary: "Emails whose outcome is unknown",
+    description:
+      "Up to 100 unresolved sends, oldest first: `needs_review` (sending stopped because the outcome is uncertain) and `stalled` (attempted over 23 hours ago with no answer). Template, recipient and resource come from the notification that sent each one; they are null if it can't be matched. `count` is the total.",
+    auth: "admin",
+    policies: ["order:read"],
+    response: {
+      description: "The sends to check.",
+      schema: z.object({
+        count: z.number(),
+        deliveries: z.array(
+          z.object({
+            id: z.string(),
+            state: z.enum(["needs_review", "stalled"]),
+            attempts: z.number(),
+            first_attempt_at: z.string().nullable(),
+            template: z.string().nullable(),
+            to: z.string().nullable(),
+            resource_type: z.string().nullable(),
+            resource_id: z.string().nullable(),
+          }),
+        ),
+      }),
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/email-review/{id}/resolve",
+    tag: "Support",
+    summary: "Record what happened to an uncertain send",
+    description:
+      "`sent`, with the email's ID from Resend's dashboard as evidence, marks it accepted. `not_sent` records the verdict but keeps it blocked, so the stored email can never go out late; a replacement is a new email (for example Resend on the order page). Records who decided and when.",
+    auth: "admin",
+    policies: ["order:update"],
+    body: AdminResolveEmailDelivery,
+    response: {
+      description: "The verdict.",
+      schema: z.object({
+        delivery: z.object({
+          id: z.string(),
+          resolution: z.enum(["sent", "not_sent"]),
+        }),
+      }),
+    },
+    errors: [
+      {
+        status: 400,
+        description:
+          "No Resend email ID for `sent`, or the email isn't waiting for review.",
+      },
+      { status: 404, description: "No such delivery." },
     ],
   },
   {

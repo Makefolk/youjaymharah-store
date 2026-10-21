@@ -1,5 +1,7 @@
 {
-  "namespaces": ["public"],
+  "namespaces": [
+    "public"
+  ],
   "name": "public",
   "tables": [
     {
@@ -33,7 +35,12 @@
           "scale": null,
           "default": "'prepared'",
           "comment": null,
-          "enumItems": ["prepared", "attempted", "accepted", "needs_review"],
+          "enumItems": [
+            "prepared",
+            "attempted",
+            "accepted",
+            "needs_review"
+          ],
           "mappedType": "enum"
         },
         "payload_ciphertext": {
@@ -171,6 +178,73 @@
           "enumItems": [],
           "mappedType": "text"
         },
+        "resolution": {
+          "name": "resolution",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [
+            "sent",
+            "not_sent"
+          ],
+          "mappedType": "enum"
+        },
+        "resolved_at": {
+          "name": "resolved_at",
+          "type": "timestamptz",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "resolved_by": {
+          "name": "resolved_by",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "resolution_note": {
+          "name": "resolution_note",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamptz",
@@ -243,7 +317,9 @@
         },
         {
           "keyName": "email_delivery_pkey",
-          "columnNames": ["id"],
+          "columnNames": [
+            "id"
+          ],
           "composite": false,
           "constraint": true,
           "primary": true,

@@ -11786,6 +11786,304 @@
         }
       }
     },
+    "/admin/email-review": {
+      "get": {
+        "operationId": "getAdminEmailReview",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Emails whose outcome is unknown",
+        "description": "Up to 100 unresolved sends, oldest first: `needs_review` (sending stopped because the outcome is uncertain) and `stalled` (attempted over 23 hours ago with no answer). Template, recipient and resource come from the notification that sent each one; they are null if it can't be matched. `count` is the total.",
+        "x-required-policies": [
+          "order:read"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The sends to check.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "number"
+                    },
+                    "deliveries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "needs_review",
+                              "stalled"
+                            ]
+                          },
+                          "attempts": {
+                            "type": "number"
+                          },
+                          "first_attempt_at": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "template": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "to": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "resource_type": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "resource_id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "state",
+                          "attempts",
+                          "first_attempt_at",
+                          "template",
+                          "to",
+                          "resource_type",
+                          "resource_id"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "count",
+                    "deliveries"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/email-review/{id}/resolve": {
+      "post": {
+        "operationId": "postAdminEmailReviewIdResolve",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Record what happened to an uncertain send",
+        "description": "`sent`, with the email's ID from Resend's dashboard as evidence, marks it accepted. `not_sent` records the verdict but keeps it blocked, so the stored email can never go out late; a replacement is a new email (for example Resend on the order page). Records who decided and when.",
+        "x-required-policies": [
+          "order:update"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "resolution": {
+                        "type": "string",
+                        "const": "sent"
+                      },
+                      "provider_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "note": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "resolution",
+                      "provider_id"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "resolution": {
+                        "type": "string",
+                        "const": "not_sent"
+                      },
+                      "note": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "resolution"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The verdict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "delivery": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "resolution": {
+                          "type": "string",
+                          "enum": [
+                            "sent",
+                            "not_sent"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "resolution"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "delivery"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No Resend email ID for `sent`, or the email isn't waiting for review.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such delivery.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/payment-lookup": {
       "get": {
         "operationId": "getAdminPaymentLookup",

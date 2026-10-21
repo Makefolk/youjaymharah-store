@@ -19,7 +19,7 @@ export type EmailHistoryEntry = {
   outcome_detail: string | null;
 };
 
-const TEMPLATE_LABELS: Record<string, string> = {
+export const TEMPLATE_LABELS: Record<string, string> = {
   "order-placed": "Order confirmation",
   "order-updated": "Order updated",
   "order-shipped": "Shipped",
@@ -38,6 +38,9 @@ const TEMPLATE_LABELS: Record<string, string> = {
   "product-back-in-stock": "Back in stock",
   "product-launched": "Product launched",
   "cart-reminder": "Bag reminder",
+  "return-access": "Return link",
+  "contact-message": "Contact form message",
+  "contact-received": "Contact form reply",
 };
 
 type BadgeColor = "green" | "red" | "orange" | "blue" | "grey";
