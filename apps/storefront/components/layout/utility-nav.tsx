@@ -16,7 +16,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useOverlay } from "@/features/layout/overlays"
-import { SHOPPING_BAG_PATH } from "@/lib/seo/routes"
+import { ACCOUNT_PATH, SHOPPING_BAG_PATH } from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
 
 export function UtilityNav({ className }: { className?: string }) {
@@ -37,7 +37,7 @@ export function UtilityNav({ className }: { className?: string }) {
         <HeartIcon />
       </UtilityItem>
 
-      <UtilityItem label="Account">
+      <UtilityItem label="Account" href={ACCOUNT_PATH}>
         <UserIcon />
         {
           // Show only when there's an account notification or user is not logged in
@@ -98,6 +98,7 @@ function UtilityItem({
             onClick={onClick}
             className={cn("relative", className)}
             render={href ? <NextLink href={href} /> : undefined}
+            nativeButton={!href}
           />
         }
       >

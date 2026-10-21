@@ -370,6 +370,42 @@ const repeatable = z
   .transform((value) => (Array.isArray(value) ? value : [value]))
   .optional();
 
+export const AdminUpdateReturnPolicy = z.object({
+  enabled: z.boolean().optional(),
+  /** Days after delivery; a year at most. */
+  window_days: z.number().int().min(1).max(365).optional(),
+});
+
+export type AdminUpdateReturnPolicyType = z.infer<
+  typeof AdminUpdateReturnPolicy
+>;
+
+export const StoreOrderLookup = z.object({
+  email: z.email(),
+  /** The order number on the confirmation, with or without its "#". */
+  display_id: z.coerce.number().int().positive(),
+});
+
+export type StoreOrderLookupType = z.infer<typeof StoreOrderLookup>;
+
+export const StoreRequestReturn = z.object({
+  items: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        quantity: z.number().int().min(1),
+        reason_id: z.string().min(1).nullable().optional(),
+      }),
+    )
+    .min(1)
+    .max(50),
+  note: z.string().trim().max(1000).nullable().optional(),
+  /** Required for guests: the order's email, as proof it is theirs. */
+  email: z.email().nullable().optional(),
+});
+
+export type StoreRequestReturnType = z.infer<typeof StoreRequestReturn>;
+
 export const StoreSearchProducts = z.object({
   q: z.string().trim().min(1).max(128).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(24),
@@ -542,6 +578,36 @@ export default defineMiddlewares({
       matcher: "/admin/cart-reminders/stats",
       method: ["GET"],
       policies: [{ resource: "cart_reminder", operation: "read" }],
+    },
+    {
+      matcher: "/admin/return-policy",
+      method: ["GET"],
+      policies: [{ resource: "return_policy", operation: "read" }],
+    },
+    {
+      matcher: "/admin/return-policy",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(AdminUpdateReturnPolicy)],
+      policies: [{ resource: "return_policy", operation: "update" }],
+    },
+    {
+      matcher: "/store/order-lookup",
+      method: ["POST"],
+      middlewares: [
+        rateLimit("order-lookup", 10),
+        validateAndTransformBody(StoreOrderLookup),
+      ],
+    },
+    {
+      matcher: "/store/orders/:id/return-requests",
+      method: ["POST"],
+      middlewares: [
+        rateLimit("return-request", 10),
+        authenticate("customer", ["session", "bearer"], {
+          allowUnauthenticated: true,
+        }),
+        validateAndTransformBody(StoreRequestReturn),
+      ],
     },
     {
       matcher: "/admin/orders/:id/emails",

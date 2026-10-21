@@ -18,6 +18,9 @@ import {
   AdminUpdateSizeGuide,
   AdminUpdateStorefrontSettings,
   AdminUpdateCartReminderSettings,
+  AdminUpdateReturnPolicy,
+  StoreOrderLookup,
+  StoreRequestReturn,
   StoreCartReminderToken,
   SizeGuideTable,
   StoreAddWishlistItem,
@@ -450,6 +453,42 @@ const PublicStorefrontSettings = z.object({
   products: z.object({
     new_badge_days: z.number(),
   }),
+  returns: z.lazy(() => ReturnPolicy),
+});
+
+const ReturnPolicy = z.object({
+  /** Off: customers can't request returns online. */
+  enabled: z.boolean(),
+  /** Days after delivery (or dispatch, if delivery wasn't recorded). */
+  window_days: z.number(),
+});
+
+const ReturnOptions = z.object({
+  return_policy: ReturnPolicy,
+  eligibility: z.object({
+    open: z.boolean(),
+    /** Why nothing can be returned; null while `open`. */
+    reason: z
+      .enum(["disabled", "canceled", "not_shipped", "expired", "nothing_left"])
+      .nullable(),
+    items: z.array(
+      z.object({
+        item_id: z.string(),
+        returnable_quantity: z.number(),
+        /** The last moment it can be requested; null while not shipped. */
+        return_by: z.string().nullable(),
+      }),
+    ),
+  }),
+  /** Returns already requested or received, newest last. */
+  returns: z.array(
+    z.object({
+      id: z.string(),
+      status: z.string(),
+      created_at: z.string(),
+      items: z.array(z.object({ item_id: z.string(), quantity: z.number() })),
+    }),
+  ),
 });
 
 /** Group descriptions, shown as section intros by API viewers. */
@@ -545,6 +584,8 @@ export const TAGS: Record<string, string> = {
     "Settings the storefront renders with, edited from Settings › Storefront: home page content (hero, featured collection), sharing & search defaults (title, description, share image, social profiles, indexing, Search Console verification) and product display (New badge days). The public route also includes the brand.",
   "Size guides":
     "Measurement tables for product pages. A product shows its own guide, else the nearest category's (walking up the category tree), else the store default. Measurements are stored in cm; the storefront converts to inches for display.",
+  Returns:
+    "Customer self-service after purchase: finding a guest order from its number and email, what can still be returned under the store's return policy, and requesting a return. A request becomes a requested return in the admin, without return shipping; staff arrange collection, receive the items and refund.",
   Support:
     "Context for customer support in the admin: the emails sent about an order or to a customer and whether they arrived, resending an order confirmation, and a customer's saved items, alerts and cart reminders.",
   Operations:
@@ -719,6 +760,19 @@ export const TYPES: {
   },
   { name: "AdminSetSizeGuideBody", schema: AdminSetSizeGuide, io: "input" },
   { name: "StorefrontSettings", schema: StorefrontSettings, io: "output" },
+  { name: "StoreOrderLookupBody", schema: StoreOrderLookup, io: "input" },
+  {
+    name: "StoreOrderLookupResponse",
+    schema: z.object({ order: z.object({ id: z.string() }) }),
+    io: "output",
+  },
+  { name: "StoreReturnOptionsResponse", schema: ReturnOptions, io: "output" },
+  { name: "StoreRequestReturnBody", schema: StoreRequestReturn, io: "input" },
+  {
+    name: "StoreRequestReturnResponse",
+    schema: z.object({ return: z.object({ id: z.string() }) }),
+    io: "output",
+  },
   {
     name: "StoreAnnouncementsResponse",
     schema: PublicAnnouncements,
@@ -1007,7 +1061,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Storefront",
     summary: "Get the settings the storefront renders with",
     description:
-      "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) and `products` (New badge days). Public and identical for every shopper, so it is safe to read from cached pages.",
+      "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) and `returns` (whether customers can request returns online, and the window in days). Public and identical for every shopper, so it is safe to read from cached pages.",
     auth: "public",
     response: {
       description: "The public storefront settings.",
@@ -1897,6 +1951,85 @@ export const ROUTES: RouteDoc[] = [
         description:
           "Processing failed. Retry the delivery; pending receipts are also recovered by a scheduled job.",
       },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/admin/return-policy",
+    tag: "Returns",
+    summary: "Get the return policy",
+    auth: "admin",
+    policies: ["return_policy:read"],
+    response: {
+      description: "Whether customers can request returns, and the window.",
+      schema: z.object({ return_policy: ReturnPolicy }),
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/return-policy",
+    tag: "Returns",
+    summary: "Change the return policy",
+    description:
+      "The window applies to every order at once, including ones already delivered.",
+    auth: "admin",
+    policies: ["return_policy:update"],
+    body: AdminUpdateReturnPolicy,
+    response: {
+      description: "The saved policy.",
+      schema: z.object({ return_policy: ReturnPolicy }),
+    },
+  },
+  {
+    method: "POST",
+    path: "/store/order-lookup",
+    tag: "Returns",
+    summary: "Find an order from its number and email",
+    description:
+      "For guests without the link from their confirmation email. Both must match; a miss doesn't say which was wrong. Rate limited to 10 attempts a minute. Load the order itself with GET /store/orders/{id}.",
+    auth: "public",
+    body: StoreOrderLookup,
+    response: {
+      description: "The order's ID.",
+      schema: z.object({ order: z.object({ id: z.string() }) }),
+    },
+    errors: [
+      { status: 404, description: "No order matches that number and email." },
+      { status: 429, description: "Too many attempts." },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/store/orders/{id}/return-options",
+    tag: "Returns",
+    summary: "What can still be returned from an order",
+    description:
+      "Public like GET /store/orders/{id}: the order ID is the key. Each item's `returnable_quantity` is what has been sent, minus what is already being returned, while its window is open.",
+    auth: "public",
+    response: { description: "The return options.", schema: ReturnOptions },
+    errors: [{ status: 404, description: "No such order." }],
+  },
+  {
+    method: "POST",
+    path: "/store/orders/{id}/return-requests",
+    tag: "Returns",
+    summary: "Request a return",
+    description:
+      "Signed in, the order must be the customer's own. As a guest, `email` must be the order's. Each item must still be returnable in the quantity asked for (see return-options). Reasons come from GET /store/return-reasons. Emails the customer that the request was received. Rate limited to 10 a minute.",
+    auth: "public",
+    body: StoreRequestReturn,
+    response: {
+      description: "The requested return.",
+      schema: z.object({ return: z.object({ id: z.string() }) }),
+    },
+    errors: [
+      {
+        status: 400,
+        description:
+          "Validation failed; a reason doesn't exist; the email doesn't match or the order isn't the signed-in customer's; or an item can't be returned (window closed, quantity too high, returns off). `message` says which, in words fit to show the customer.",
+      },
+      { status: 404, description: "No such order." },
+      { status: 429, description: "Too many requests." },
     ],
   },
   {

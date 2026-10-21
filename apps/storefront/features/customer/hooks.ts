@@ -71,3 +71,18 @@ export function useLogout() {
     },
   })
 }
+
+/** Emails a reset link. Succeeds whether or not the address has an account. */
+export function useRequestPasswordReset() {
+  return useMutation({
+    mutationFn: (input: { email: string }) =>
+      postJson<Success>("/api/auth/password-reset", input),
+  })
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: (input: { token: string; email: string; password: string }) =>
+      postJson<Success>("/api/auth/password-reset/confirm", input),
+  })
+}

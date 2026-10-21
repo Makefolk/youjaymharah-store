@@ -62,6 +62,10 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       products: {
         new_badge_days: settings.new_badge_days,
       },
+      returns: {
+        enabled: settings.returns_enabled,
+        window_days: settings.return_window_days,
+      },
       navigation: {
         store_menu_cards: await resolveStoreMenuPromos(
           req,

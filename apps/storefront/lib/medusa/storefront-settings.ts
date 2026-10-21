@@ -61,6 +61,8 @@ const FALLBACK: StorefrontSettings = {
   },
   navigation: { store_menu_cards: [] },
   products: { new_badge_days: 30 },
+  // The backend defaults.
+  returns: { enabled: true, window_days: 7 },
 }
 
 /**

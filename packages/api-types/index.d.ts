@@ -453,6 +453,58 @@ export type StorefrontSettings = {
   };
 };
 
+export type StoreOrderLookupBody = {
+  email: string;
+  display_id: number;
+};
+
+export type StoreOrderLookupResponse = {
+  order: {
+    id: string;
+  };
+};
+
+export type StoreReturnOptionsResponse = {
+  return_policy: {
+    enabled: boolean;
+    window_days: number;
+  };
+  eligibility: {
+    open: boolean;
+    reason: "disabled" | "canceled" | "not_shipped" | "expired" | "nothing_left" | null;
+    items: {
+      item_id: string;
+      returnable_quantity: number;
+      return_by: string | null;
+    }[];
+  };
+  returns: {
+    id: string;
+    status: string;
+    created_at: string;
+    items: {
+      item_id: string;
+      quantity: number;
+    }[];
+  }[];
+};
+
+export type StoreRequestReturnBody = {
+  items: {
+    id: string;
+    quantity: number;
+    reason_id?: string | null;
+  }[];
+  note?: string | null;
+  email?: string | null;
+};
+
+export type StoreRequestReturnResponse = {
+  return: {
+    id: string;
+  };
+};
+
 export type StoreAnnouncementsResponse = {
   appearance: "light" | "dark";
   dismissible: boolean;
@@ -651,6 +703,10 @@ export type StoreStorefrontSettingsResponse = {
     };
     products: {
       new_badge_days: number;
+    };
+    returns: {
+      enabled: boolean;
+      window_days: number;
     };
   };
 };

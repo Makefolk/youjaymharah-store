@@ -26,10 +26,40 @@ export const SHOPPING_BAG_PATH = "/shopping-bag"
 /** Full search results. The query travels as `?q=`. */
 export const SEARCH_PATH = "/search"
 
+/** An order's status page; the id is the key, as in the confirmation email. */
+export const orderPath = (id: string) => `/orders/${encodeURIComponent(id)}`
+
+export const orderReturnPath = (id: string) => `${orderPath(id)}/return`
+
+/** Finding a guest order from its number and email. */
+export const TRACK_ORDER_PATH = "/track-order"
+
+/** The signed-in customer's orders; sends guests to sign in. */
+export const ACCOUNT_PATH = "/account"
+export const SIGN_IN_PATH = "/account/sign-in"
+export const REGISTER_PATH = "/account/register"
+export const FORGOT_PASSWORD_PATH = "/account/forgot-password"
+/** Must match the link in the backend's password reset email. */
+export const RESET_PASSWORD_PATH = "/account/reset-password"
+
+/**
+ * Where to go after signing in: `next` when it is a page on this site, so a
+ * crafted link can't bounce someone to another domain.
+ */
+export function safeNextPath(next: unknown): string {
+  return typeof next === "string" &&
+    next.startsWith("/") &&
+    !next.startsWith("//") &&
+    !next.startsWith("/\\")
+    ? next
+    : ACCOUNT_PATH
+}
+
 /** Pages search engines should not crawl: private or per-visitor. */
 export const PRIVATE_PATHS = [
   "/api/",
   "/account",
+  "/orders/",
   SHOPPING_BAG_PATH,
   "/checkout",
   // Landing pages for emailed confirm and unsubscribe links: one per token.

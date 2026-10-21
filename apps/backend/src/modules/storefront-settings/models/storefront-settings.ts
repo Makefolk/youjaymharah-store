@@ -7,7 +7,9 @@ import { model } from "@medusajs/framework/utils";
  *
  * Kept apart from branding on purpose: branding is store identity and
  * owner-only, while these are day-to-day decisions for Marketing and the
- * Store Manager.
+ * Store Manager. The return policy fields are the exception: they have their
+ * own permission (`return_policy`) and admin routes, so Marketing's access to
+ * the rest does not extend to them.
  */
 export const StorefrontSettings = model.define("storefront_settings", {
   id: model.id().primaryKey(),
@@ -47,4 +49,8 @@ export const StorefrontSettings = model.define("storefront_settings", {
     dismissible: true,
     items: [],
   }),
+  /** Off hides "Request a return" on the storefront; staff can still create returns. */
+  returns_enabled: model.boolean().default(true),
+  /** Days after delivery (or dispatch, when delivery wasn't recorded) a return can be requested. */
+  return_window_days: model.number().default(7),
 });

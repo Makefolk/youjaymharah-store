@@ -106,6 +106,8 @@ const ROLES: RoleDefinition[] = [
       { resources: ["storefront_settings"], operations: [READ, "update"] },
       // Custom (src/policies/cart-reminder.ts).
       { resources: ["cart_reminder"], operations: [READ, "update"] },
+      // Custom (src/policies/return-policy.ts).
+      { resources: ["return_policy"], operations: [READ, "update"] },
       // Sees the Brand section of Settings -> Storefront; changing it stays
       // with the owner.
       { resources: ["branding"], operations: [READ] },
@@ -139,7 +141,13 @@ const ROLES: RoleDefinition[] = [
       { resources: CATALOG, operations: [READ] },
       { resources: ["region", "sales_channel"], operations: [READ] },
       {
-        resources: ["storefront_settings", "branding", "cart_reminder"],
+        resources: [
+          "storefront_settings",
+          "branding",
+          "cart_reminder",
+          // To quote the return window to customers.
+          "return_policy",
+        ],
         operations: [READ],
       },
     ],
