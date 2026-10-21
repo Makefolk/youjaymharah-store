@@ -69,6 +69,9 @@ export const DELIVERY_PATH = "/help/delivery"
 
 /** The signed-in customer's orders; sends guests to sign in. */
 export const ACCOUNT_PATH = "/account"
+export const ACCOUNT_DETAILS_PATH = "/account/details"
+export const ACCOUNT_ADDRESSES_PATH = "/account/addresses"
+export const ACCOUNT_PREFERENCES_PATH = "/account/preferences"
 export const SIGN_IN_PATH = "/account/sign-in"
 export const REGISTER_PATH = "/account/register"
 export const FORGOT_PASSWORD_PATH = "/account/forgot-password"

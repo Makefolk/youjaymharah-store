@@ -32,3 +32,28 @@ export const resetPasswordSchema = z
     path: ["confirm"],
     message: "The passwords don't match.",
   })
+
+export const profileSchema = z.object({
+  first_name: z.string().trim().max(100, "Use 100 characters or fewer."),
+  last_name: z.string().trim().max(100, "Use 100 characters or fewer."),
+  phone: z
+    .string()
+    .trim()
+    .regex(
+      /^(\+?[\d\s()-]{7,20})?$/,
+      "Enter a phone number, like 0803 123 4567.",
+    ),
+})
+
+export const changePasswordSchema = z
+  .object({
+    current_password: z.string().min(1, "Enter your current password."),
+    password: newPassword,
+    confirm: z.string(),
+  })
+  .refine((values) => values.password === values.confirm, {
+    path: ["confirm"],
+    message: "The passwords don't match.",
+  })
+
+export const setPasswordSchema = resetPasswordSchema

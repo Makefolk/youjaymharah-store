@@ -20,3 +20,8 @@ export const checkoutDetailsSchema = z.object({
 })
 
 export type CheckoutDetails = z.input<typeof checkoutDetailsSchema>
+
+/** A saved address in the account: the delivery details without the email. */
+export const addressSchema = checkoutDetailsSchema.omit({ email: true })
+
+export type AddressDetails = z.input<typeof addressSchema>

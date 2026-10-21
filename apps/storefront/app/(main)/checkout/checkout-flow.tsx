@@ -4,7 +4,7 @@ import type { HttpTypes } from "@medusajs/types"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState, type ReactNode } from "react"
+import { useId, useState, type ReactNode } from "react"
 
 import { FormAlert } from "@/components/account/account-shell"
 import { useAppForm, validateOnSubmitThenChange } from "@/components/form"
@@ -190,16 +190,23 @@ function DetailsForm({ cart, onSaved }: { cart: Cart; onSaved: () => void }) {
   const countryCode =
     address?.country_code ?? cart.region?.countries?.[0]?.iso_2 ?? "ng"
 
+  const saved = customer?.addresses ?? []
+  // An untouched checkout starts from the account's default address.
+  const start =
+    address?.address_1 || !saved.length
+      ? address
+      : (saved.find((entry) => entry.is_default_shipping) ?? saved[0])
+
   const form = useAppForm({
     defaultValues: {
       email: cart.email ?? customer?.email ?? "",
-      first_name: address?.first_name ?? customer?.first_name ?? "",
-      last_name: address?.last_name ?? customer?.last_name ?? "",
-      phone: address?.phone ?? customer?.phone ?? "",
-      address_1: address?.address_1 ?? "",
-      address_2: address?.address_2 ?? "",
-      city: address?.city ?? "",
-      province: address?.province ?? "",
+      first_name: start?.first_name ?? customer?.first_name ?? "",
+      last_name: start?.last_name ?? customer?.last_name ?? "",
+      phone: start?.phone ?? customer?.phone ?? "",
+      address_1: start?.address_1 ?? "",
+      address_2: start?.address_2 ?? "",
+      city: start?.city ?? "",
+      province: start?.province ?? "",
     },
     validationLogic: validateOnSubmitThenChange(),
     validators: { onDynamic: checkoutDetailsSchema },
@@ -223,6 +230,24 @@ function DetailsForm({ cart, onSaved }: { cart: Cart; onSaved: () => void }) {
       }}
       className="flex flex-col gap-5"
     >
+      {saved.length > 1 && (
+        <SavedAddressPicker
+          addresses={saved}
+          onPick={(picked) => {
+            for (const key of [
+              "first_name",
+              "last_name",
+              "phone",
+              "address_1",
+              "address_2",
+              "city",
+              "province",
+            ] as const) {
+              form.setFieldValue(key, picked[key] ?? "")
+            }
+          }}
+        />
+      )}
       <form.AppField name="email">
         {(field) => (
           <field.TextField
@@ -584,5 +609,41 @@ function OrderSummary({ cart }: { cart: Cart }) {
         </div>
       </dl>
     </aside>
+  )
+}
+
+/** For signed-in customers with several saved addresses (Account › Addresses). */
+function SavedAddressPicker({
+  addresses,
+  onPick,
+}: {
+  addresses: HttpTypes.StoreCustomerAddress[]
+  onPick: (address: HttpTypes.StoreCustomerAddress) => void
+}) {
+  const id = useId()
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-[13px] font-medium">
+        Use a saved address
+      </label>
+      <select
+        id={id}
+        defaultValue=""
+        onChange={(event) => {
+          const picked = addresses.find((a) => a.id === event.target.value)
+          if (picked) onPick(picked)
+        }}
+        className="h-8 w-full rounded-none border border-input bg-transparent px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+      >
+        <option value="">Choose one</option>
+        {addresses.map((address) => (
+          <option key={address.id} value={address.id}>
+            {[address.address_1, address.city, address.province]
+              .filter(Boolean)
+              .join(", ")}
+          </option>
+        ))}
+      </select>
+    </div>
   )
 }

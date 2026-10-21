@@ -1,10 +1,7 @@
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
-import { redirect } from "next/navigation"
 
-import { EmailVerificationNotice } from "@/components/account/email-verification-notice"
-import { SignOutButton } from "@/components/account/sign-out-button"
 import { formatDate } from "@/components/orders/format"
 import { fetchCustomerOnServer } from "@/features/customer/server"
 import { listCustomerOrdersOnServer } from "@/features/orders/server"
@@ -14,7 +11,7 @@ import {
   getPaymentLabel,
 } from "@/lib/medusa/order"
 import { formatPrice } from "@/lib/medusa/price"
-import { ACCOUNT_PATH, orderPath, SIGN_IN_PATH } from "@/lib/seo/routes"
+import { orderPath } from "@/lib/seo/routes"
 
 export const metadata: Metadata = {
   title: "Your account",
@@ -22,32 +19,14 @@ export const metadata: Metadata = {
 }
 
 export default async function AccountPage() {
-  const customer = await fetchCustomerOnServer()
-
-  if (!customer) {
-    redirect(`${SIGN_IN_PATH}?next=${encodeURIComponent(ACCOUNT_PATH)}`)
-  }
+  // The layout has redirected guests already.
+  const customer = (await fetchCustomerOnServer())!
 
   const orders = (await listCustomerOrdersOnServer()) ?? []
 
   return (
-    <main className="container-wrapper max-w-3xl px-5 py-12 sm:px-6 sm:py-16">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-medium tracking-[-0.01em]">
-            {customer.first_name
-              ? `Hi, ${customer.first_name}`
-              : "Your account"}
-          </h1>
-          <p className="mt-2 text-[13px] text-muted-foreground">
-            {customer.email}
-          </p>
-        </div>
-        <SignOutButton />
-      </div>
-      <EmailVerificationNotice />
-
-      <section aria-labelledby="account-orders" className="mt-12">
+    <>
+      <section aria-labelledby="account-orders" className="mt-8">
         <h2
           id="account-orders"
           className="border-b border-border/70 pb-3 text-[15px] font-medium"
@@ -114,6 +93,6 @@ export default async function AccountPage() {
           </p>
         )}
       </section>
-    </main>
+    </>
   )
 }

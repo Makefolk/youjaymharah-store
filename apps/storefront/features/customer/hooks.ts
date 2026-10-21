@@ -1,5 +1,6 @@
 "use client"
 
+import type { HttpTypes } from "@medusajs/types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 
@@ -125,5 +126,112 @@ export function useVerifyEmail() {
         { method: "POST", body: { token } },
       ),
     onSuccess: onSignedIn,
+  })
+}
+
+/** Writes the returned customer into the cache, so every view updates at once. */
+function useCustomerResult() {
+  const queryClient = useQueryClient()
+  return ({ customer }: { customer: HttpTypes.StoreCustomer }) =>
+    queryClient.setQueryData(queryKeys.customer.me(), customer)
+}
+
+export function useUpdateProfile() {
+  const onSaved = useCustomerResult()
+  return useMutation({
+    mutationFn: (input: {
+      first_name: string
+      last_name: string
+      phone: string
+    }) =>
+      getBrowserSdk().store.customer.update({
+        first_name: input.first_name.trim() || undefined,
+        last_name: input.last_name.trim() || undefined,
+        phone: input.phone.trim() || undefined,
+      }),
+    onSuccess: onSaved,
+  })
+}
+
+export type AddressInput = {
+  first_name: string
+  last_name: string
+  phone: string
+  address_1: string
+  address_2: string
+  city: string
+  province: string
+}
+
+/** Adds an address, or updates `id`'s; `isDefault` makes it the delivery default. */
+export function useSaveAddress() {
+  const onSaved = useCustomerResult()
+  return useMutation({
+    mutationFn: ({
+      id,
+      isDefault,
+      ...address
+    }: AddressInput & { id?: string; isDefault?: boolean }) => {
+      const body = {
+        ...address,
+        address_2: address.address_2.trim() || undefined,
+        country_code: "ng",
+        ...(isDefault !== undefined
+          ? { is_default_shipping: isDefault, is_default_billing: isDefault }
+          : {}),
+      }
+      const sdk = getBrowserSdk()
+      return id
+        ? sdk.store.customer.updateAddress(id, body)
+        : sdk.store.customer.createAddress(body)
+    },
+    onSuccess: onSaved,
+  })
+}
+
+export function useDeleteAddress() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      getBrowserSdk().store.customer.deleteAddress(id),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.customer.me() }),
+  })
+}
+
+export function useSignInMethods() {
+  return useQuery({
+    queryKey: [...queryKeys.customer.all, "sign-in-methods"],
+    queryFn: () =>
+      getBrowserSdk().client.fetch<{ has_password: boolean; google: boolean }>(
+        "/store/customers/me/password",
+      ),
+  })
+}
+
+/** Changes an existing password; refused when the current one is wrong. */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (input: { current_password: string; new_password: string }) =>
+      getBrowserSdk().client.fetch<{ changed: true }>(
+        "/store/customers/me/password/change",
+        { method: "POST", body: input },
+      ),
+  })
+}
+
+/** Adds a password to an account that signs in with Google only. */
+export function useSetPassword() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (password: string) =>
+      getBrowserSdk().client.fetch<{ success: true }>(
+        "/store/customers/me/password",
+        { method: "POST", body: { password } },
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.customer.all, "sign-in-methods"],
+      }),
   })
 }
