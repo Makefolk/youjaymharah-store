@@ -453,6 +453,51 @@ export type StorefrontSettings = {
   };
 };
 
+export type StoreCatalogResponse = {
+  ids: string[];
+  count: number;
+  offset: number;
+  limit: number;
+  facets: {
+    type: {
+      value: string;
+      count: number;
+      hex?: string | null;
+    }[];
+    colour: {
+      value: string;
+      count: number;
+      hex?: string | null;
+    }[];
+    size: {
+      value: string;
+      count: number;
+      hex?: string | null;
+    }[];
+    material: {
+      value: string;
+      count: number;
+      hex?: string | null;
+    }[];
+    fit: {
+      value: string;
+      count: number;
+      hex?: string | null;
+    }[];
+    feature: {
+      value: string;
+      count: number;
+      hex?: string | null;
+    }[];
+  };
+};
+
+export type StoreCatalogFacetValue = {
+  value: string;
+  count: number;
+  hex?: string | null;
+};
+
 export type StoreOrderLookupBody = {
   email: string;
   display_id: number;

@@ -52,6 +52,28 @@ export const queryKeys = {
       [...queryKeys.search.all, "suggestions", term] as const,
     trending: () => [...queryKeys.search.all, "trending"] as const,
   },
+  listing: {
+    all: ["listing"] as const,
+    results: (
+      scope: Record<string, string | undefined>,
+      state: Record<string, unknown>,
+      regionId: string,
+      defaultSort: string,
+    ) =>
+      [
+        ...queryKeys.listing.all,
+        "results",
+        scope,
+        state,
+        regionId,
+        defaultSort,
+      ] as const,
+    count: (
+      scope: Record<string, string | undefined>,
+      state: Record<string, unknown>,
+      regionId: string,
+    ) => [...queryKeys.listing.all, "count", scope, state, regionId] as const,
+  },
   products: {
     all: ["products"] as const,
     list: (params: Record<string, unknown>, context: CatalogContext) =>

@@ -30,15 +30,18 @@ async function toCard(wardrobe: Wardrobe): Promise<Wardrobe | null> {
   }
 }
 
+/** Tiles per department; "View all" opens the department's listing. */
+const WARDROBE_LIMIT = 6
+
 export async function ShopByWardrobe() {
   const model = getWardrobeModel(await getCategoryTree())
   const departments = (
     await Promise.all(
       model.departments.map(async (department) => ({
         ...department,
-        wardrobes: (await Promise.all(department.wardrobes.map(toCard))).filter(
-          (card): card is Wardrobe => card !== null,
-        ),
+        wardrobes: (await Promise.all(department.wardrobes.map(toCard)))
+          .filter((card): card is Wardrobe => card !== null)
+          .slice(0, WARDROBE_LIMIT),
       })),
     )
   ).filter((department) => department.wardrobes.length)
@@ -51,22 +54,36 @@ export async function ShopByWardrobe() {
       className="py-14 sm:py-18 lg:py-24"
     >
       <div className="container-wrapper px-5 sm:px-6 lg:px-12">
-        <h2 id="home-wardrobes-title" className="font-display text-display-lg">
-          Shop by wardrobe
-        </h2>
+        <div className="flex flex-wrap items-end justify-between gap-5">
+          <h2
+            id="home-wardrobes-title"
+            className="font-display text-display-lg"
+          >
+            Shop by wardrobe
+          </h2>
+          {!model.showDepartments && (
+            <ViewAll href={departments[0].href} label="View all" />
+          )}
+        </div>
 
         <div className="mt-8 flex flex-col gap-12 sm:mt-10">
           {departments.map((department) => (
             <div key={department.id}>
               {model.showDepartments && (
-                <Link
-                  href={department.href}
-                  className="mb-5 inline-block text-[13px] font-medium tracking-[0.02em] underline-offset-8 hover:underline"
-                >
-                  {department.label}
-                </Link>
+                <div className="mb-5 flex items-baseline justify-between gap-4">
+                  <Link
+                    href={department.href}
+                    className="text-[13px] font-medium tracking-[0.02em] underline-offset-8 hover:underline"
+                  >
+                    {department.label}
+                  </Link>
+                  <ViewAll
+                    href={department.href}
+                    label={`View all ${department.label}`}
+                  />
+                </div>
               )}
-              <ul className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 lg:grid-cols-4">
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-3">
                 {department.wardrobes.map((wardrobe, index) => (
                   <li key={wardrobe.id} className="min-w-0">
                     <WardrobeTile wardrobe={wardrobe} index={index} />
@@ -78,6 +95,17 @@ export async function ShopByWardrobe() {
         </div>
       </div>
     </section>
+  )
+}
+
+function ViewAll({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="pb-1 text-[11px] leading-relaxed tracking-[0.1em] uppercase underline-offset-8 hover:underline focus-visible:outline-1 focus-visible:outline-offset-4"
+    >
+      {label}
+    </Link>
   )
 }
 
@@ -99,7 +127,7 @@ function WardrobeTile({
             src={wardrobe.image}
             alt=""
             fill
-            sizes="(min-width: 1600px) 360px, (min-width: 1024px) 23vw, 48vw"
+            sizes="(min-width: 1600px) 490px, (min-width: 768px) 31vw, 48vw"
             className="object-cover transition-transform duration-700 ease-out group-hover/wardrobe:scale-[1.02] motion-reduce:transform-none"
           />
         ) : (

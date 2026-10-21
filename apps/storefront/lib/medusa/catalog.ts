@@ -30,32 +30,9 @@ export const CATALOG_TAGS = {
 const PRODUCT_REVALIDATE_SECONDS = 60
 const TAXONOMY_REVALIDATE_SECONDS = 300
 
-/**
- * Baseline card data: price, sale, stock, swatches, the New badge and product
- * gallery. The media preset adds variant thumbnails and gallery photos.
- */
-export const PRODUCT_CARD_FIELDS = [
-  "id",
-  "title",
-  "handle",
-  "thumbnail",
-  "*images",
-  "created_at",
-  "+metadata",
-  "*options",
-  "*variants.calculated_price",
-  "+variants.inventory_quantity",
-  "+variants.manage_inventory",
-  "+variants.allow_backorder",
-  "*variants.options",
-].join(",")
+import { PRODUCT_CARD_FIELDS, PRODUCT_CARD_MEDIA_FIELDS } from "./fields"
 
-/** Default listing fields for the swipe gallery and colour thumbnail jumps. */
-export const PRODUCT_CARD_MEDIA_FIELDS = [
-  PRODUCT_CARD_FIELDS,
-  "*variants.images",
-  "+variants.thumbnail",
-].join(",")
+export { PRODUCT_CARD_FIELDS, PRODUCT_CARD_MEDIA_FIELDS }
 
 /** Everything a product page needs, including per-colour photos. */
 export const PRODUCT_PAGE_FIELDS = [

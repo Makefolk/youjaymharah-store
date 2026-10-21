@@ -431,6 +431,31 @@ const GatewayCheck = z.union([
   z.object({ checked: z.literal(false), reason: z.string() }),
 ]);
 
+const CatalogFacetValue = z.object({
+  value: z.string(),
+  /** Products that would show if this value were ticked. */
+  count: z.number(),
+  /** Colours only: the swatch, when set on the option value. */
+  hex: z.string().nullable().optional(),
+});
+
+const CatalogListing = z.object({
+  /** This page's product ids, in order. Load the cards from /store/products. */
+  ids: z.array(z.string()),
+  /** Products matching the filters, across all pages. */
+  count: z.number(),
+  offset: z.number(),
+  limit: z.number(),
+  facets: z.object({
+    type: z.array(CatalogFacetValue),
+    colour: z.array(CatalogFacetValue),
+    size: z.array(CatalogFacetValue),
+    material: z.array(CatalogFacetValue),
+    fit: z.array(CatalogFacetValue),
+    feature: z.array(CatalogFacetValue),
+  }),
+});
+
 const HomepageHeroHistory = z.object({
   /** Newest first; only the most recent 10 are kept. */
   revisions: z.array(
@@ -792,6 +817,8 @@ export const TYPES: {
   },
   { name: "AdminSetSizeGuideBody", schema: AdminSetSizeGuide, io: "input" },
   { name: "StorefrontSettings", schema: StorefrontSettings, io: "output" },
+  { name: "StoreCatalogResponse", schema: CatalogListing, io: "output" },
+  { name: "StoreCatalogFacetValue", schema: CatalogFacetValue, io: "output" },
   { name: "StoreOrderLookupBody", schema: StoreOrderLookup, io: "input" },
   {
     name: "StoreOrderLookupResponse",
@@ -1853,6 +1880,82 @@ export const ROUTES: RouteDoc[] = [
         description:
           "No such guest wishlist, or no such item on it. An item on any other list reads as not found.",
       },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/store/catalog",
+    tag: "Search",
+    summary: "A listing page's products, filters and counts",
+    description:
+      "For category, collection and new-arrivals pages. Pass at most one of `category` (a handle; its subcategories' products are included) or `collection` (a handle); neither lists the whole catalogue. Repeat a filter to allow several values (`colour=Black&colour=Navy`): values within a filter are alternatives, filters combine. Each facet counts products against the other filters, so ticking a second value shows what it adds. `fit` lists only short labels from `metadata.fit`. Sorts: `recommended` (buyable first, then newest), `newest`, `price_asc`, `price_desc` (cheapest variant in the region). Results reuse the listing's products for 60 seconds. Rate limited to 240 a minute.",
+    auth: "public",
+    query: [
+      {
+        name: "region_id",
+        description: "Prices and sorting use this region.",
+        schema: z.string(),
+      },
+      {
+        name: "category",
+        description: "A category handle.",
+        schema: z.string(),
+      },
+      {
+        name: "collection",
+        description: "A collection handle.",
+        schema: z.string(),
+      },
+      {
+        name: "sort",
+        description: "recommended, newest, price_asc or price_desc.",
+        schema: z.string(),
+      },
+      { name: "offset", description: "Products to skip.", schema: z.number() },
+      {
+        name: "limit",
+        description: "Products per page, 1 to 100 (24).",
+        schema: z.number(),
+      },
+      {
+        name: "type",
+        description: "Product type, repeatable.",
+        schema: z.string(),
+      },
+      {
+        name: "colour",
+        description: "Colour option value, repeatable.",
+        schema: z.string(),
+      },
+      {
+        name: "size",
+        description: "Size option value, repeatable.",
+        schema: z.string(),
+      },
+      {
+        name: "material",
+        description: "Product material, repeatable.",
+        schema: z.string(),
+      },
+      {
+        name: "fit",
+        description: "Fit label, repeatable.",
+        schema: z.string(),
+      },
+      {
+        name: "feature",
+        description: "Product tag, repeatable.",
+        schema: z.string(),
+      },
+    ],
+    response: {
+      description: "The page and its facets.",
+      schema: CatalogListing,
+    },
+    errors: [
+      { status: 400, description: "Invalid query, such as a missing region." },
+      { status: 404, description: "No such category, collection or region." },
+      { status: 429, description: "Too many requests." },
     ],
   },
   {

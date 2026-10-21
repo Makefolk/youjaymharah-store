@@ -370,6 +370,25 @@ const repeatable = z
   .transform((value) => (Array.isArray(value) ? value : [value]))
   .optional();
 
+export const StoreCatalogQuery = z.object({
+  category: z.string().trim().min(1).max(200).optional(),
+  collection: z.string().trim().min(1).max(200).optional(),
+  region_id: z.string().min(1),
+  sort: z
+    .enum(["recommended", "newest", "price_asc", "price_desc"])
+    .default("recommended"),
+  offset: z.coerce.number().int().min(0).max(10_000).default(0),
+  limit: z.coerce.number().int().min(1).max(100).default(24),
+  type: repeatable,
+  colour: repeatable,
+  size: repeatable,
+  material: repeatable,
+  fit: repeatable,
+  feature: repeatable,
+});
+
+export type StoreCatalogQueryType = z.infer<typeof StoreCatalogQuery>;
+
 export const AdminUpdateReturnPolicy = z.object({
   enabled: z.boolean().optional(),
   /** Days after delivery; a year at most. */
@@ -509,6 +528,14 @@ export default defineMiddlewares({
       matcher: "/store/cart-reminders/*",
       method: ["POST"],
       middlewares: [rateLimit("cart-reminder", 30)],
+    },
+    {
+      matcher: "/store/catalog",
+      method: ["GET"],
+      middlewares: [
+        rateLimit("catalog", 240),
+        validateAndTransformQuery<BaseEntity>(StoreCatalogQuery, {}),
+      ],
     },
     {
       matcher: "/store/search",

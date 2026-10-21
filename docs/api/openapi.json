@@ -9391,6 +9391,386 @@
         }
       }
     },
+    "/store/catalog": {
+      "get": {
+        "operationId": "getStoreCatalog",
+        "tags": [
+          "Search"
+        ],
+        "summary": "A listing page's products, filters and counts",
+        "description": "For category, collection and new-arrivals pages. Pass at most one of `category` (a handle; its subcategories' products are included) or `collection` (a handle); neither lists the whole catalogue. Repeat a filter to allow several values (`colour=Black&colour=Navy`): values within a filter are alternatives, filters combine. Each facet counts products against the other filters, so ticking a second value shows what it adds. `fit` lists only short labels from `metadata.fit`. Sorts: `recommended` (buyable first, then newest), `newest`, `price_asc`, `price_desc` (cheapest variant in the region). Results reuse the listing's products for 60 seconds. Rate limited to 240 a minute.",
+        "security": [
+          {
+            "publishableKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "region_id",
+            "in": "query",
+            "required": false,
+            "description": "Prices and sorting use this region.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "A category handle.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "collection",
+            "in": "query",
+            "required": false,
+            "description": "A collection handle.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "recommended, newest, price_asc or price_desc.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Products to skip.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Products per page, 1 to 100 (24).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Product type, repeatable.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "colour",
+            "in": "query",
+            "required": false,
+            "description": "Colour option value, repeatable.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "description": "Size option value, repeatable.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "material",
+            "in": "query",
+            "required": false,
+            "description": "Product material, repeatable.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fit",
+            "in": "query",
+            "required": false,
+            "description": "Fit label, repeatable.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "feature",
+            "in": "query",
+            "required": false,
+            "description": "Product tag, repeatable.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The page and its facets.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "count": {
+                      "type": "number"
+                    },
+                    "offset": {
+                      "type": "number"
+                    },
+                    "limit": {
+                      "type": "number"
+                    },
+                    "facets": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "number"
+                              },
+                              "hex": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "colour": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "number"
+                              },
+                              "hex": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "size": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "number"
+                              },
+                              "hex": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "material": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "number"
+                              },
+                              "hex": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "fit": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "number"
+                              },
+                              "hex": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "feature": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "number"
+                              },
+                              "hex": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "colour",
+                        "size",
+                        "material",
+                        "fit",
+                        "feature"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "ids",
+                    "count",
+                    "offset",
+                    "limit",
+                    "facets"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query, such as a missing region.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such category, collection or region.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/store/search": {
       "get": {
         "operationId": "getStoreSearch",

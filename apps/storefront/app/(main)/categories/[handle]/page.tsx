@@ -1,29 +1,15 @@
 import type { HttpTypes } from "@medusajs/types"
 import type { Metadata } from "next"
-import Link from "next/link"
 import { notFound } from "next/navigation"
 
-import { ProductList } from "@/components/catalog/product-list"
-import {
-  getCategoryByHandle,
-  getCategoryTree,
-  listProducts,
-} from "@/lib/medusa/catalog"
+import { ListingPage } from "@/components/listing/listing-page"
+import type { ListingTab } from "@/components/listing/product-listing"
+import { getCategoryByHandle, getCategoryTree } from "@/lib/medusa/catalog"
 import { getCategorySeo } from "@/lib/medusa/category"
 import { getBreadcrumbs, getMenuModel } from "@/lib/medusa/menu"
 import { categoryPath } from "@/lib/seo/routes"
 
-// Stub: a working category page to replace with the designed one.
-
 type Category = HttpTypes.StoreProductCategory
-
-/** The category and everything under it, so Accessories lists bags too. */
-function subtreeIds(category: Category): string[] {
-  return [
-    category.id,
-    ...(category.category_children ?? []).flatMap(subtreeIds),
-  ]
-}
 
 export async function generateMetadata({
   params,
@@ -39,74 +25,74 @@ export async function generateMetadata({
   return { title: seo.title, description: seo.description ?? undefined }
 }
 
+function findInTree(tree: Category[], id: string): Category | undefined {
+  for (const node of tree) {
+    if (node.id === id) return node
+    const found = findInTree(node.category_children ?? [], id)
+    if (found) return found
+  }
+}
+
+/**
+ * Tabs across the top: a category's own subcategories ("All" first), or,
+ * for a category without any, its siblings under the same parent.
+ */
+function categoryTabs(category: Category, tree: Category[]): ListingTab[] {
+  const children = category.category_children ?? []
+  const parent = category.parent_category_id
+    ? findInTree(tree, category.parent_category_id)
+    : undefined
+  const [owner, entries] = children.length
+    ? [category, children]
+    : parent
+      ? [parent, parent.category_children ?? []]
+      : [category, []]
+
+  return [
+    {
+      label: "All",
+      href: categoryPath(owner.handle),
+      active: owner.id === category.id,
+    },
+    ...entries.map((entry) => ({
+      label: entry.name,
+      href: categoryPath(entry.handle),
+      active: entry.id === category.id,
+    })),
+  ]
+}
+
 export default async function CategoryPage({
   params,
+  searchParams,
 }: PageProps<"/categories/[handle]">) {
-  const category = await getCategoryByHandle((await params).handle)
+  const { handle } = await params
+  const [category, tree] = await Promise.all([
+    getCategoryByHandle(handle),
+    getCategoryTree(),
+  ])
 
   if (!category) {
     notFound()
   }
 
-  const [tree, { products, count }] = await Promise.all([
-    getCategoryTree(),
-    listProducts({ categoryId: subtreeIds(category) }),
-  ])
   const breadcrumbs = getBreadcrumbs(category, getMenuModel(tree))
-  const children = category.category_children ?? []
 
   return (
-    <main className="container-wrapper px-5 py-10 sm:px-6">
-      {breadcrumbs.length > 1 && (
-        <nav
-          aria-label="Breadcrumb"
-          className="text-[12px] text-muted-foreground"
-        >
-          <ol className="flex flex-wrap gap-2">
-            {breadcrumbs.map((crumb, index) => (
-              <li key={crumb.handle} className="flex gap-2">
-                {index > 0 && <span aria-hidden>/</span>}
-                {index === breadcrumbs.length - 1 ? (
-                  <span aria-current="page">{crumb.name}</span>
-                ) : (
-                  <Link href={crumb.href} className="hover:text-foreground">
-                    {crumb.name}
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ol>
-        </nav>
-      )}
-
-      <h1 className="mt-4 text-2xl font-medium tracking-[-0.01em]">
-        {category.name}
-      </h1>
-      {category.description && (
-        <p className="mt-2 max-w-[65ch] text-[15px] text-muted-foreground">
-          {category.description}
-        </p>
-      )}
-
-      {children.length > 0 && (
-        <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[13px] font-medium">
-          {children.map((child) => (
-            <li key={child.id}>
-              <Link
-                href={categoryPath(child.handle)}
-                className="hover:underline"
-              >
-                {child.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <p className="mt-8 mb-4 text-[13px] text-muted-foreground">
-        {count} {count === 1 ? "item" : "items"}
-      </p>
-      <ProductList products={products} />
-    </main>
+    <ListingPage
+      title={category.name}
+      scope={{ category: category.handle }}
+      defaultSort="recommended"
+      searchParams={searchParams}
+      breadcrumbs={breadcrumbs.length > 1 ? breadcrumbs.slice(0, -1) : []}
+      tabs={categoryTabs(category, tree)}
+      footer={
+        category.description ? (
+          <p className="mx-auto mt-20 max-w-[65ch] px-5 text-[15px] leading-7 text-muted-foreground sm:px-6">
+            {category.description}
+          </p>
+        ) : null
+      }
+    />
   )
 }
