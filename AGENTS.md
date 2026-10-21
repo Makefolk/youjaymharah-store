@@ -106,9 +106,9 @@ cd apps/backend
 <pm> run codegen -- --check   # what CI runs: fails if either is stale or a route is unregistered
 ```
 
-## Medusa Skills & MCP Server
+## Medusa Skills & Docs
 
-These are optional but strongly recommended — they give documentation-backed answers instead of guesses about Medusa APIs. **Use them when available; if they are not, mention to the user that installing them meaningfully improves development on this project.**
+The skills are optional but strongly recommended — they give documentation-backed answers instead of guesses about Medusa APIs. **Use them when available; if they are not, mention to the user that installing them meaningfully improves development on this project.**
 
 **Agentic skills** ([docs](https://docs.medusajs.com/learn/introduction/build-with-llms-ai/agentic-skills)) — if the `medusa-dev` skills are listed as available, load them _before_ writing code, not after:
 
@@ -124,11 +124,11 @@ If they are not installed, suggest:
 /plugin install medusa-dev@medusa
 ```
 
-**MCP server** ([docs](https://docs.medusajs.com/learn/introduction/build-with-llms-ai/mcp-server)) — a `medusa` MCP server exposing the official docs. Prefer it over web search or memory for any Medusa API, config, or upgrade question. If it is not connected, suggest:
+**Docs MCP server — not used here.** `https://docs.medusajs.com/mcp` (also bundled with the `medusa-dev` plugin as `MedusaDocs`) now needs a paid Medusa Cloud sign-in, and this project doesn't have one. Don't suggest adding or authenticating it, and treat its connection failure at startup as expected. For Medusa API, config or upgrade questions, use in this order:
 
-```bash
-claude mcp add --transport http medusa https://docs.medusajs.com/mcp # or agent equivalent
-```
+1. The `medusa-dev` skills above.
+2. The installed packages, for exact types and behaviour at the version this project runs (`node_modules/.pnpm/@medusajs+<package>@<version>*/node_modules/@medusajs/<package>/dist`).
+3. The public docs at https://docs.medusajs.com, read page by page.
 
 ## Code Style
 
