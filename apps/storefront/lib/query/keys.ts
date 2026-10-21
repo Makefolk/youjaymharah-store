@@ -12,6 +12,8 @@ export const queryKeys = {
   customer: {
     all: ["customer"] as const,
     me: () => [...queryKeys.customer.all, "me"] as const,
+    emailVerification: () =>
+      [...queryKeys.customer.all, "email-verification"] as const,
   },
   cart: {
     all: ["cart"] as const,

@@ -4,9 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 
 import { postJson } from "@/lib/http/post-json"
+import { getBrowserSdk } from "@/lib/medusa/browser"
 import { privateQueryRoots, queryKeys } from "@/lib/query/keys"
 
-import { customerQueries } from "./queries"
+import { customerQueries, type EmailVerificationState } from "./queries"
 
 type Success = { success: true }
 
@@ -84,5 +85,45 @@ export function useResetPassword() {
   return useMutation({
     mutationFn: (input: { token: string; email: string; password: string }) =>
       postJson<Success>("/api/auth/password-reset/confirm", input),
+  })
+}
+
+export function useEmailVerification({ enabled = true } = {}) {
+  return useQuery({ ...customerQueries.emailVerification(), enabled })
+}
+
+/** Emails the signed-in customer a link to verify their account's email. */
+export function useSendVerificationEmail() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () =>
+      getBrowserSdk().client.fetch<EmailVerificationState & { sent: boolean }>(
+        "/store/customers/me/email-verification",
+        { method: "POST" },
+      ),
+    onSuccess: ({ email, verified }) =>
+      queryClient.setQueryData(queryKeys.customer.emailVerification(), {
+        email,
+        verified,
+      }),
+  })
+}
+
+/**
+ * Spends the token from a verification email. Works signed out; when signed
+ * in, the account's orders are refetched, as guest orders join it shortly
+ * after.
+ */
+export function useVerifyEmail() {
+  const onSignedIn = useSignedInSync()
+
+  return useMutation({
+    mutationFn: (token: string) =>
+      getBrowserSdk().client.fetch<{ email: string; verified: true }>(
+        "/store/customers/verify-email",
+        { method: "POST", body: { token } },
+      ),
+    onSuccess: onSignedIn,
   })
 }

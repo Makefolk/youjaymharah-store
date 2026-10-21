@@ -52,6 +52,8 @@ export const REGISTER_PATH = "/account/register"
 export const FORGOT_PASSWORD_PATH = "/account/forgot-password"
 /** Must match the link in the backend's password reset email. */
 export const RESET_PASSWORD_PATH = "/account/reset-password"
+/** Must match the link in the backend's verification email. */
+export const VERIFY_EMAIL_PATH = "/account/verify"
 
 /**
  * Where to go after signing in: `next` when it is a page on this site, so a

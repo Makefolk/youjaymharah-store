@@ -7,13 +7,18 @@ import {
   primaryButtonClass,
 } from "@/components/account/account-shell"
 import { useAppForm, validateOnSubmitThenChange } from "@/components/form"
-import { useRegister } from "@/features/customer/hooks"
+import { toast } from "@/components/ui/toaster"
+import {
+  useRegister,
+  useSendVerificationEmail,
+} from "@/features/customer/hooks"
 import { registerSchema } from "@/features/customer/schema"
 import { errorStatus } from "@/lib/medusa/errors"
 
 export function RegisterForm({ next }: { next: string }) {
   const router = useRouter()
   const register = useRegister()
+  const sendVerification = useSendVerificationEmail()
   const form = useAppForm({
     defaultValues: { first_name: "", last_name: "", email: "", password: "" },
     validationLogic: validateOnSubmitThenChange(),
@@ -26,6 +31,20 @@ export function RegisterForm({ next }: { next: string }) {
           first_name: value.first_name.trim() || undefined,
           last_name: value.last_name.trim() || undefined,
         })
+        // Not awaited: the account works before the email is verified.
+        // The promise, not mutate's callbacks: those are skipped once this
+        // form unmounts on the redirect.
+        sendVerification
+          .mutateAsync()
+          .then(({ sent, email }) => {
+            if (sent)
+              toast.success("Check your inbox", {
+                description: `We've sent a link to verify ${email}.`,
+              })
+          })
+          .catch(() => {
+            // The account page offers to send it again.
+          })
         router.replace(next)
       } catch {
         // Shown below the form.

@@ -3,6 +3,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
+import { EmailVerificationNotice } from "@/components/account/email-verification-notice"
 import { SignOutButton } from "@/components/account/sign-out-button"
 import { formatDate } from "@/components/orders/format"
 import { fetchCustomerOnServer } from "@/features/customer/server"
@@ -44,6 +45,7 @@ export default async function AccountPage() {
         </div>
         <SignOutButton />
       </div>
+      <EmailVerificationNotice />
 
       <section aria-labelledby="account-orders" className="mt-12">
         <h2
@@ -108,7 +110,7 @@ export default async function AccountPage() {
         ) : (
           <p className="py-6 text-[15px] text-muted-foreground">
             You haven&apos;t ordered with this account yet. Orders placed as a
-            guest with {customer.email} don&apos;t appear here automatically.
+            guest with {customer.email} appear here once the email is verified.
           </p>
         )}
       </section>
