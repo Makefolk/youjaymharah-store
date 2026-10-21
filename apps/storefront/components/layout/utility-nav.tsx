@@ -15,7 +15,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useCart } from "@/features/cart/hooks"
 import { useOverlay } from "@/features/layout/overlays"
+import { getBagCount } from "@/lib/medusa/product-page"
 import { ACCOUNT_PATH, SHOPPING_BAG_PATH } from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
 
@@ -54,10 +56,33 @@ export function UtilityNav({ className }: { className?: string }) {
         }
       </UtilityItem>
 
-      <UtilityItem label="Shopping bag" href={SHOPPING_BAG_PATH}>
-        <BagIcon />
-      </UtilityItem>
+      <BagItem />
     </nav>
+  )
+}
+
+/** The bag icon with how many items are in it, counting quantities. */
+function BagItem() {
+  const { data: cart } = useCart()
+  const count = getBagCount(cart)
+  const label = count
+    ? `Shopping bag, ${count} ${count === 1 ? "item" : "items"}`
+    : "Shopping bag"
+
+  return (
+    <UtilityItem label={label} href={SHOPPING_BAG_PATH}>
+      <BagIcon />
+      {count > 0 && (
+        <span
+          // Re-mounts on each change, so the badge pops when items are added.
+          key={count}
+          aria-hidden
+          className="absolute top-1/2 left-1/2 -mt-3.5 ml-0.5 flex h-4 min-w-4 animate-in items-center justify-center rounded-full bg-foreground px-1 text-[10px] leading-none font-medium text-background tabular-nums duration-200 zoom-in-50 motion-reduce:animate-none"
+        >
+          {count > 9 ? "9+" : count}
+        </span>
+      )}
+    </UtilityItem>
   )
 }
 
