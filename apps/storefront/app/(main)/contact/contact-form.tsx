@@ -14,27 +14,37 @@ import { toast } from "@/components/ui/toaster"
 import { useCustomer } from "@/features/customer/hooks"
 import { getBrowserSdk } from "@/lib/medusa/browser"
 
-const TOPICS = [
+export const TOPICS = [
   "An order",
+  "Delivery",
   "A return or refund",
   "A product or sizing",
   "Something else",
 ] as const
 
-type Topic = (typeof TOPICS)[number]
+export type Topic = (typeof TOPICS)[number]
 
 const selectClass =
   "h-10 w-full rounded-none border border-input bg-transparent px-3 text-[15px] outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
 
 /** Sends to the support inbox; replies come to the email given here. */
-export function ContactForm({ responseTime }: { responseTime: string | null }) {
+export function ContactForm({
+  responseTime,
+  initialTopic = "",
+  initialOrderNumber = "",
+}: {
+  responseTime: string | null
+  /** From the link that brought the shopper here, e.g. an order page. */
+  initialTopic?: Topic | ""
+  initialOrderNumber?: string
+}) {
   const id = useId()
   const customer = useCustomer()
   // Null until edited, so a signed-in customer's details fill in.
   const [name, setName] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
-  const [topic, setTopic] = useState<Topic | "">("")
-  const [orderNumber, setOrderNumber] = useState("")
+  const [topic, setTopic] = useState<Topic | "">(initialTopic)
+  const [orderNumber, setOrderNumber] = useState(initialOrderNumber)
   const [message, setMessage] = useState("")
   const [website, setWebsite] = useState("")
   const [problem, setProblem] = useState<string | null>(null)

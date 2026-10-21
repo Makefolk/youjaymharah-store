@@ -49,6 +49,18 @@ export const TRACK_ORDER_PATH = "/track-order"
 
 export const PRODUCTS_PATH = "/products"
 export const CONTACT_PATH = "/contact"
+
+/** The contact page with its form filled in for the problem at hand. */
+export function contactPath({
+  order,
+  topic,
+}: { order?: number | string | null; topic?: string } = {}): string {
+  const query = new URLSearchParams()
+  if (topic) query.set("topic", topic)
+  if (order) query.set("order", String(order))
+  const search = query.toString()
+  return search ? `${CONTACT_PATH}?${search}` : CONTACT_PATH
+}
 export const ABOUT_PATH = "/about"
 export const PRIVACY_PATH = "/privacy"
 export const TERMS_PATH = "/terms"

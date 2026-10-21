@@ -11,7 +11,7 @@ import {
   TRACK_ORDER_PATH,
 } from "@/lib/seo/routes"
 
-import { ContactForm } from "./contact-form"
+import { ContactForm, TOPICS, type Topic } from "./contact-form"
 
 export const metadata: Metadata = {
   title: "Contact us",
@@ -21,8 +21,19 @@ export const metadata: Metadata = {
 
 const linkClass = "text-foreground underline underline-offset-4"
 
-export default async function ContactPage() {
-  const { brand, support, returns } = await getStorefrontSettings()
+export default async function ContactPage({
+  searchParams,
+}: PageProps<"/contact">) {
+  const [{ brand, support, returns }, params] = await Promise.all([
+    getStorefrontSettings(),
+    searchParams,
+  ])
+  // Prefilled by links such as an order page's "Get help with this order".
+  const topic = TOPICS.find((value) => value === params.topic) ?? ""
+  const order =
+    typeof params.order === "string" && /^\d{1,10}$/.test(params.order)
+      ? params.order
+      : ""
 
   // Only what the store has set; an unset way to reach us is left out.
   const channels = [
@@ -136,7 +147,11 @@ export default async function ContactPage() {
           <h2 id="contact-form" className="sr-only">
             Send a message
           </h2>
-          <ContactForm responseTime={support.response_time} />
+          <ContactForm
+            responseTime={support.response_time}
+            initialTopic={topic as Topic | ""}
+            initialOrderNumber={order}
+          />
         </section>
 
         {channels.length > 0 && (

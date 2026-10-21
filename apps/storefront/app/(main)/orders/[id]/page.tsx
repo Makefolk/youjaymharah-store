@@ -1,6 +1,7 @@
 import type { HttpTypes } from "@medusajs/types"
 import type { StoreReturnOptionsResponse } from "@youjaymharah/api-types"
 import type { Metadata } from "next"
+import type { ReactNode } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -22,8 +23,7 @@ import {
   type Shipment,
 } from "@/lib/medusa/order"
 import { formatPrice } from "@/lib/medusa/price"
-import { getStorefrontSettings } from "@/lib/medusa/storefront-settings"
-import { orderReturnPath } from "@/lib/seo/routes"
+import { contactPath, orderReturnPath } from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
 
 export const metadata: Metadata = {
@@ -46,10 +46,9 @@ export default async function OrderPage({
 }: PageProps<"/orders/[id]">) {
   const { id } = await params
   const justPlaced = (await searchParams).placed === "1"
-  const [order, returns, settings] = await Promise.all([
+  const [order, returns] = await Promise.all([
     fetchOrderOnServer(id) as Promise<Order | null>,
     fetchReturnOptionsOnServer(id),
-    getStorefrontSettings(),
   ])
 
   if (!order) {
@@ -58,7 +57,6 @@ export default async function OrderPage({
 
   const progress = getOrderProgress(order)
   const shipments = getShipments(order.fulfillments)
-  const supportEmail = settings.brand.support_email
 
   return (
     <main className="container-wrapper max-w-3xl px-5 py-12 sm:px-6 sm:py-16">
@@ -205,22 +203,26 @@ export default async function OrderPage({
           orderId={order.id}
           returns={returns}
           items={order.items ?? []}
-          supportEmail={supportEmail}
+          displayId={order.display_id}
         />
       )}
 
-      {supportEmail && (
-        <p className="mt-12 border-t border-border/70 pt-6 text-[13px] text-muted-foreground">
-          Questions about this order? Email{" "}
-          <a
-            href={`mailto:${supportEmail}?subject=${encodeURIComponent(`Order ${formatOrderNumber(order.display_id)}`)}`}
-            className="text-foreground underline underline-offset-4"
-          >
-            {supportEmail}
-          </a>{" "}
-          with your order number.
+      <section className="mt-12 border-t border-border/70 pt-6">
+        <h2 className="text-[15px] font-medium">Need help with this order?</h2>
+        <p className="mt-2 text-[13px] text-muted-foreground">
+          Message us and we&apos;ll reply by email; your order number is filled
+          in for you.
         </p>
-      )}
+        <Link
+          href={contactPath({
+            order: order.display_id,
+            topic: "An order",
+          })}
+          className="mt-3 inline-block text-[13px] text-foreground underline underline-offset-4"
+        >
+          Get help with this order
+        </Link>
+      </section>
     </main>
   )
 }
@@ -363,12 +365,12 @@ function ReturnsSection({
   orderId,
   returns,
   items,
-  supportEmail,
+  displayId,
 }: {
   orderId: string
   returns: StoreReturnOptionsResponse
   items: HttpTypes.StoreOrderLineItem[]
-  supportEmail: string | null
+  displayId: number | undefined
 }) {
   const { eligibility, return_policy: policy } = returns
   const nameOf = (itemId: string) => {
@@ -381,12 +383,24 @@ function ReturnsSection({
     .sort()
     .at(-1)
 
-  let message: string | null = null
+  let message: ReactNode = null
   switch (eligibility.reason) {
     case "disabled":
-      message = supportEmail
-        ? `To return something, email ${supportEmail} with your order number.`
-        : "To return something, contact us with your order number."
+      message = (
+        <>
+          To return something,{" "}
+          <Link
+            href={contactPath({
+              order: displayId,
+              topic: "A return or refund",
+            })}
+            className="text-foreground underline underline-offset-4"
+          >
+            message us
+          </Link>{" "}
+          and we&apos;ll arrange it.
+        </>
+      )
       break
     case "not_shipped":
       message = "You can request a return once your order has been delivered."

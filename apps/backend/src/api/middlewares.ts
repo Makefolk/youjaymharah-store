@@ -468,6 +468,7 @@ export type AdminResendShippingEmailType = z.infer<
 
 export const CONTACT_TOPICS = [
   "An order",
+  "Delivery",
   "A return or refund",
   "A product or sizing",
   "Something else",

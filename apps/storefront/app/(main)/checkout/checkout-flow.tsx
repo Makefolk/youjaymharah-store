@@ -28,7 +28,11 @@ import {
   NIGERIAN_STATES,
 } from "@/lib/medusa/checkout"
 import { formatPrice } from "@/lib/medusa/price"
-import { orderConfirmationPath, SHOPPING_BAG_PATH } from "@/lib/seo/routes"
+import {
+  contactPath,
+  orderConfirmationPath,
+  SHOPPING_BAG_PATH,
+} from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
 
 type Cart = HttpTypes.StoreCart
@@ -337,8 +341,14 @@ function DeliveryOptions({ cart }: { cart: Cart }) {
   if (options.isError || !options.data?.length) {
     return (
       <FormAlert>
-        We can&apos;t deliver to this address yet. Check the state, or contact
-        us and we&apos;ll arrange it.
+        We can&apos;t deliver to this address yet. Check the state, or{" "}
+        <Link
+          href={contactPath({ topic: "Delivery" })}
+          className="underline underline-offset-4"
+        >
+          message us
+        </Link>{" "}
+        and we&apos;ll arrange it.
       </FormAlert>
     )
   }

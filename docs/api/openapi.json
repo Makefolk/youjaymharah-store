@@ -11363,6 +11363,7 @@
                         "type": "string",
                         "enum": [
                           "An order",
+                          "Delivery",
                           "A return or refund",
                           "A product or sizing",
                           "Something else"
