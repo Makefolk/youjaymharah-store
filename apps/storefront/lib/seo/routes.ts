@@ -31,6 +31,17 @@ export const orderPath = (id: string) => `/orders/${encodeURIComponent(id)}`
 
 export const orderReturnPath = (id: string) => `${orderPath(id)}/return`
 
+export const CHECKOUT_PATH = "/checkout"
+
+/**
+ * Where Paystack and Credo send the shopper back. Must match the backend's
+ * PAYMENT_CALLBACK_URL.
+ */
+export const CHECKOUT_CALLBACK_PATH = "/checkout/callback"
+
+/** An order's page straight after checkout, with the thank-you message. */
+export const orderConfirmationPath = (id: string) => `${orderPath(id)}?placed=1`
+
 /** Finding a guest order from its number and email. */
 export const TRACK_ORDER_PATH = "/track-order"
 

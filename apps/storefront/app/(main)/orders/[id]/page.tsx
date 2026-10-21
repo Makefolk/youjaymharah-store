@@ -40,8 +40,12 @@ type Order = HttpTypes.StoreOrder & {
  * An order's status, open to anyone with its link, as in the confirmation
  * email. Requesting a return asks for more proof than the link.
  */
-export default async function OrderPage({ params }: PageProps<"/orders/[id]">) {
+export default async function OrderPage({
+  params,
+  searchParams,
+}: PageProps<"/orders/[id]">) {
   const { id } = await params
+  const justPlaced = (await searchParams).placed === "1"
   const [order, returns, settings] = await Promise.all([
     fetchOrderOnServer(id) as Promise<Order | null>,
     fetchReturnOptionsOnServer(id),
@@ -64,6 +68,18 @@ export default async function OrderPage({ params }: PageProps<"/orders/[id]">) {
       <h1 className="mt-1 text-2xl font-medium tracking-[-0.01em]">
         Order {formatOrderNumber(order.display_id)}
       </h1>
+
+      {justPlaced && (
+        <div role="status" className="mt-6 border-l-2 border-gold pl-3">
+          <p className="text-[15px] font-medium">Thank you for your order.</p>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            {getPaymentLabel(order.payment_status) === "Paid"
+              ? `A confirmation is on its way to ${order.email}.`
+              : `We'll confirm by email to ${order.email} once your payment arrives. Bank transfers can take a few minutes.`}{" "}
+            Bookmark this page to follow your order.
+          </p>
+        </div>
+      )}
 
       <ProgressSteps progress={progress} />
 

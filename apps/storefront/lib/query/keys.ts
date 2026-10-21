@@ -16,6 +16,14 @@ export const queryKeys = {
   cart: {
     all: ["cart"] as const,
     current: () => [...queryKeys.cart.all, "current"] as const,
+    /** Under the cart root, so signing out removes them with it. */
+    shippingOptions: (cartId: string) =>
+      [...queryKeys.cart.all, "shipping-options", cartId] as const,
+  },
+  paymentProviders: {
+    all: ["payment-providers"] as const,
+    region: (regionId: string) =>
+      [...queryKeys.paymentProviders.all, regionId] as const,
   },
   wishlist: {
     all: ["wishlist"] as const,
