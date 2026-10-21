@@ -18,13 +18,16 @@ export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
 }
 
-export default async function PageLayout(props: LayoutProps<"/">) {
+export default async function PageLayout(
+  props: LayoutProps<"/"> & { quickView: React.ReactNode },
+) {
   return (
     <HeaderOverlayProvider>
       <AnnouncementBanner />
 
       <Header />
       <main className="flex-1">{props.children}</main>
+      {props.quickView}
 
       <Footer />
     </HeaderOverlayProvider>

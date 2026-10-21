@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useQueryStates } from "nuqs"
 import { useEffect, useMemo, useState } from "react"
 
+import { QuickViewLink } from "@/components/catalog/quick-view-link"
 import { ProductCard } from "@/components/catalog/product-card"
 import { listingQueries } from "@/features/listing/queries"
 import {
@@ -241,6 +242,14 @@ export function ProductListing({
                 showBadges={details}
                 showWishlist={details}
                 showQuickAdd={details}
+                quickView={
+                  details ? (
+                    <QuickViewLink
+                      handle={product.handle}
+                      title={product.title}
+                    />
+                  ) : undefined
+                }
                 showCarouselArrows={details}
                 showCarouselDots={details}
                 showColourSelector={details}

@@ -10,9 +10,8 @@ export type ProductCardProps = {
   /** settings.products.new_badge_days; omit to hide the New badge. */
   newBadgeDays?: number
   /**
-   * Reserved for the quick-view trigger. The dialog/drawer and intercepted
-   * route are not implemented yet; omit this slot until they are wired up.
-   * It sits outside the product link so interactive controls are not nested.
+   * The quick-view trigger, e.g. <QuickViewLink>. It sits outside the
+   * product link so interactive controls are not nested.
    */
   quickView?: ReactNode
   /** Defaults to showDetails; false also suppresses a supplied slot. */
@@ -144,19 +143,14 @@ export type ProductCardProps = {
  * - Ratings/review counts, delivery estimates and "X people viewing" have no
  *   product-card data source here. Do not invent them from product metadata.
  *
- * Quick-view routing contract (stub): use an intercepted /products/[handle]
- * route, not a persistent query-param modal. A button-styled Link with
- * scroll={false} opens a Dialog (or Drawer) over the current listing. Create
- * app/(main)/@quickView/(.)products/[handle]/page.tsx, render that parallel
- * slot in the main layout, and provide null default.tsx and [[...catchAll]]
- * page.tsx fallbacks so navigation away, including home, clears the overlay.
- * Fetch full detail only there, not for every card. Close/Escape calls
- * router.back(); Back closes and Forward reopens. Refresh, a new tab or a
- * fresh visit renders the existing full product page at the same URL.
- * Interception applies to ALL soft links to that route: to keep image/title
- * and "View full details" links opening a full page, use hard navigation for
- * those when wiring this up. Give the overlay an accessible title, trap focus
- * and return focus to its trigger. No route or modal behavior is active yet.
+ * Quick view: QuickViewLink (components/catalog/quick-view-link) links to
+ * /products/[handle]/quick-view with scroll={false}; app/(main)/@quickView
+ * intercepts only that URL and opens QuickViewDialog over the page, so the
+ * card's image and title links still open the full product page. Closing
+ * calls router.back(), so Back closes and Forward reopens it. Loaded fresh
+ * (refresh, new tab, shared link), the URL redirects to the product page.
+ * The slot's [...catchAll] and default render nothing, closing it whenever
+ * the shopper navigates elsewhere.
  */
 export function ProductCard({ newBadgeDays, ...props }: ProductCardProps) {
   return (
