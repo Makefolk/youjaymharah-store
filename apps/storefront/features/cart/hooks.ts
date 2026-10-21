@@ -184,3 +184,39 @@ export function useRemoveLineItem() {
     },
   })
 }
+
+/**
+ * Applies a promo code. Medusa ignores a code it doesn't recognise rather
+ * than failing, so the caller checks whether it appears on the cart.
+ */
+export function useApplyPromoCode() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationKey: CART_MUTATION_KEY,
+    mutationFn: async (code: string): Promise<Cart> =>
+      (
+        await getBrowserSdk().client.fetch<{ cart: Cart }>(
+          `/store/carts/${CURRENT_CART_ID}/promotions`,
+          { method: "POST", body: { promo_codes: [code] } },
+        )
+      ).cart,
+    onSettled: (cart) => settleCart(queryClient, cart),
+  })
+}
+
+export function useRemovePromoCode() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationKey: CART_MUTATION_KEY,
+    mutationFn: async (code: string): Promise<Cart> =>
+      (
+        await getBrowserSdk().client.fetch<{ cart: Cart }>(
+          `/store/carts/${CURRENT_CART_ID}/promotions`,
+          { method: "DELETE", body: { promo_codes: [code] } },
+        )
+      ).cart,
+    onSettled: (cart) => settleCart(queryClient, cart),
+  })
+}

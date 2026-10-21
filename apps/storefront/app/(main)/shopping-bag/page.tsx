@@ -1,9 +1,12 @@
 import type { Metadata } from "next"
 
-import { CartContents } from "./cart-contents"
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query"
 
-// Stub: shows the cart and explains a failed restore link. Replace with the
-// designed page.
+import { cartQueries } from "@/features/cart/queries"
+import { fetchCartOnServer } from "@/features/cart/server"
+import { getQueryClient } from "@/lib/query/client"
+
+import { BagView } from "./bag-view"
 
 export const metadata: Metadata = {
   title: "Shopping bag",
@@ -25,8 +28,14 @@ export default async function CartPage({
   const message =
     typeof restore === "string" ? RESTORE_MESSAGES[restore] : undefined
 
+  const queryClient = getQueryClient()
+  await queryClient.prefetchQuery({
+    ...cartQueries.current(),
+    queryFn: fetchCartOnServer,
+  })
+
   return (
-    <main className="container-wrapper px-5 py-10 sm:px-6">
+    <main className="container-wrapper px-5 pt-8 pb-16 sm:px-6 lg:px-12 lg:pt-12 lg:pb-24">
       <h1 className="text-2xl font-medium tracking-[-0.01em]">Shopping bag</h1>
 
       {message && (
@@ -38,9 +47,9 @@ export default async function CartPage({
         </p>
       )}
 
-      <div className="mt-8">
-        <CartContents />
-      </div>
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <BagView />
+      </HydrationBoundary>
     </main>
   )
 }
