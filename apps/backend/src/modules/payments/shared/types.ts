@@ -38,6 +38,20 @@ export type RedirectSessionData = {
    * the transaction for a guest.
    */
   payer?: Payer;
+  /**
+   * Set just before staff record a refund they already made in the gateway's
+   * own dashboard (Credo has no refund API): lets exactly that refund through
+   * without calling the gateway. Removed again by the same refund.
+   */
+  dashboard_refund?: DashboardRefund | null;
+};
+
+export type DashboardRefund = {
+  /** The refund's reference in the gateway's dashboard. */
+  reference: string;
+  amount_in_minor: number;
+  /** The admin user recording it. */
+  recorded_by: string;
 };
 
 /** Who the gateway should address the receipt to. */

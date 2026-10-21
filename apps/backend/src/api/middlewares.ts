@@ -485,6 +485,18 @@ export type StoreVerifyCustomerEmailType = z.infer<
   typeof StoreVerifyCustomerEmail
 >;
 
+export const AdminRecordCredoRefund = z.object({
+  payment_id: z.string().min(1),
+  /** In naira, as the admin shows amounts. */
+  amount: z.number().positive(),
+  /** The refund's reference in the Credo dashboard. */
+  reference: z.string().trim().min(3).max(100),
+  refund_reason_id: z.string().min(1).nullable().optional(),
+  note: z.string().trim().max(500).nullable().optional(),
+});
+
+export type AdminRecordCredoRefundType = z.infer<typeof AdminRecordCredoRefund>;
+
 export const AdminResolveEmailDelivery = z.discriminatedUnion("resolution", [
   z.object({
     resolution: z.literal("sent"),
@@ -731,6 +743,13 @@ export default defineMiddlewares({
       matcher: "/admin/cart-reminders/stats",
       method: ["GET"],
       policies: [{ resource: "cart_reminder", operation: "read" }],
+    },
+    {
+      // As Medusa's own refund route: whoever may refund may record one.
+      matcher: "/admin/orders/:id/credo-refunds",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(AdminRecordCredoRefund)],
+      policies: [{ resource: "refund", operation: "create" }],
     },
     {
       matcher: "/admin/email-review",

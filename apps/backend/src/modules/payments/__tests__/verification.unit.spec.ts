@@ -210,3 +210,52 @@ describe("verified payments", () => {
     },
   );
 });
+
+describe("Credo dashboard refunds", () => {
+  it("refuses a refund nobody recorded from the dashboard", async () => {
+    global.fetch = jest.fn();
+    await expect(
+      credo().refundPayment({ data: session, amount: 10000 }),
+    ).rejects.toThrow(/Credo dashboard/);
+    await expect(
+      credo().refundPayment({
+        data: {
+          ...session,
+          dashboard_refund: {
+            reference: "CR-1",
+            amount_in_minor: 500000,
+            recorded_by: "user_1",
+          },
+        },
+        amount: 10000,
+      }),
+    ).rejects.toThrow(/Credo dashboard/);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it("records an authorized one without calling Credo, once", async () => {
+    global.fetch = jest.fn();
+    const { data } = await credo().refundPayment({
+      data: {
+        ...session,
+        dashboard_refund: {
+          reference: "CR-1",
+          amount_in_minor: 1000000,
+          recorded_by: "user_1",
+        },
+      },
+      amount: 10000,
+    });
+    expect(data!.dashboard_refund).toBeNull();
+    expect(data!.refund).toMatchObject({
+      source: "credo_dashboard",
+      reference: "CR-1",
+      recorded_by: "user_1",
+    });
+    expect(global.fetch).not.toHaveBeenCalled();
+    // The authorization is spent: the stored data can't refund again.
+    await expect(
+      credo().refundPayment({ data: data!, amount: 10000 }),
+    ).rejects.toThrow(/Credo dashboard/);
+  });
+});

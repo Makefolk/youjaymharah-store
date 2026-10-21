@@ -21,6 +21,7 @@ import {
   AdminUpdateReturnPolicy,
   AdminUpdateSupportInfo,
   AdminResolveEmailDelivery,
+  AdminRecordCredoRefund,
   StoreContactMessage,
   AdminCreateOrderFromPayment,
   AdminResendShippingEmail,
@@ -2320,6 +2321,32 @@ export const ROUTES: RouteDoc[] = [
       { status: 400, description: "The order has no email address." },
       { status: 404, description: "No such order." },
       { status: 429, description: "Too many requests." },
+    ],
+  },
+  {
+    method: "POST",
+    path: "/admin/orders/{id}/credo-refunds",
+    tag: "Support",
+    summary: "Record a refund made in the Credo dashboard",
+    description:
+      "Credo has no refund API, so staff refund in its dashboard and record it here. Runs Medusa's refund for exactly that amount on the order's Credo payment, without calling Credo: the refund is attributed to the caller with the Credo reference in its note, the order's balance updates, and the customer gets the refund email. Medusa's checks apply, so it can't exceed what was captured. The ordinary refund route keeps refusing Credo payments.",
+    auth: "admin",
+    policies: ["refund:create"],
+    body: AdminRecordCredoRefund,
+    response: {
+      description: "Recorded.",
+      schema: z.object({ recorded: z.literal(true) }),
+    },
+    errors: [
+      {
+        status: 400,
+        description:
+          "Not a Credo payment, or more than what is left to refund.",
+      },
+      {
+        status: 404,
+        description: "No such order, or the payment isn't on it.",
+      },
     ],
   },
   {

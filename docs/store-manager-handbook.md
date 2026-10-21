@@ -213,15 +213,17 @@ Check the order's **Payments** section for the provider.
 
 - **Paystack:** payment `⋯ › Refund`, amount, reason, note, **Save**. Paystack
   returns the money to the card; settlement can take several working days.
-- **Credo:** the Refund button shows "Credo refunds must be issued from the
-  Credo dashboard". Refund there and record the Credo reference in your
-  refunds log; the admin will still show the order as unrefunded.
+- **Credo:** Credo has no refund API, so refund in the Credo dashboard first.
+  Then, on the order, use **Credo refund › Record refund** with the amount and
+  Credo's refund reference. The order's balance and Payments section update,
+  the refund is recorded under your name with the reference in its note, and
+  the customer gets the refund email. The ordinary Refund button refuses Credo
+  payments, so nothing is marked refunded that wasn't.
 - **Manual Payment / transfer:** send the money back, then record it with the
   refund form.
 
-Recording a refund here (Paystack or manual) emails the customer the amount and
-reason, never your note. A refund made in the Credo dashboard sends nothing, so
-tell the customer yourself.
+Recording a refund here (Paystack, Credo or manual) emails the customer the
+amount and reason, never your note.
 
 Refunds are final. Guide: <https://docs.medusajs.com/user-guide/orders/payments>
 
@@ -483,7 +485,7 @@ failed, ask the developer to review it before repeatedly resending. See
 
 | Area                                     | Status        | Meanwhile                                                                                            |
 | ---------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------- |
-| Credo refunds                            | Manual        | Refund in the Credo dashboard; log the reference                                                     |
+| Credo refunds                            | Two steps     | Refund in the Credo dashboard, then **Record refund** on the order                                   |
 | Customer exchanges and claims            | Not built     | Customers email you; you create the exchange or claim                                                |
 | POS app                                  | Workaround    | Draft orders with a separate shop location                                                           |
 | Gift cards, store credit, loyalty points | Not available | One-off promo codes as a substitute                                                                  |
