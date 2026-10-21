@@ -406,6 +406,26 @@ export const StoreRequestReturn = z.object({
 
 export type StoreRequestReturnType = z.infer<typeof StoreRequestReturn>;
 
+export const AdminPaymentLookup = z
+  .object({
+    /** From the customer's receipt or bank alert. */
+    reference: z.string().trim().min(1).max(200).optional(),
+    email: z.email().optional(),
+  })
+  .refine((query) => Boolean(query.reference) !== Boolean(query.email), {
+    message: "Search by either a payment reference or an email.",
+  });
+
+export type AdminPaymentLookupType = z.infer<typeof AdminPaymentLookup>;
+
+export const AdminCreateOrderFromPayment = z.object({
+  session_id: z.string().regex(/^payses_/, "Not a payment session id."),
+});
+
+export type AdminCreateOrderFromPaymentType = z.infer<
+  typeof AdminCreateOrderFromPayment
+>;
+
 export const StoreSearchProducts = z.object({
   q: z.string().trim().min(1).max(128).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(24),
@@ -578,6 +598,20 @@ export default defineMiddlewares({
       matcher: "/admin/cart-reminders/stats",
       method: ["GET"],
       policies: [{ resource: "cart_reminder", operation: "read" }],
+    },
+    {
+      matcher: "/admin/payment-lookup",
+      method: ["GET"],
+      middlewares: [
+        validateAndTransformQuery<BaseEntity>(AdminPaymentLookup, {}),
+      ],
+      policies: [{ resource: "order", operation: "read" }],
+    },
+    {
+      matcher: "/admin/payment-lookup/create-order",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(AdminCreateOrderFromPayment)],
+      policies: [{ resource: "order", operation: "create" }],
     },
     {
       matcher: "/admin/return-policy",

@@ -6,6 +6,10 @@ import {
   validateProductionEnvironment,
   validateSearchEnvironment,
 } from "./src/lib/environment-safety";
+import {
+  credoOptionsFromEnv,
+  paystackOptionsFromEnv,
+} from "./src/modules/payments/options";
 
 loadEnv(process.env.NODE_ENV || "development", process.cwd());
 
@@ -338,22 +342,12 @@ module.exports = defineConfig({
           {
             resolve: "./src/modules/payments/credo",
             id: "credo",
-            options: {
-              publicKey: process.env.CREDO_PUBLIC_KEY,
-              secretKey: process.env.CREDO_SECRET_KEY,
-              mode: process.env.CREDO_MODE ?? "test",
-              callbackUrl: process.env.PAYMENT_CALLBACK_URL,
-              webhookToken: process.env.CREDO_WEBHOOK_TOKEN,
-              businessCode: process.env.CREDO_BUSINESS_CODE,
-            },
+            options: credoOptionsFromEnv(),
           },
           {
             resolve: "./src/modules/payments/paystack",
             id: "paystack",
-            options: {
-              secretKey: process.env.PAYSTACK_SECRET_KEY,
-              callbackUrl: process.env.PAYMENT_CALLBACK_URL,
-            },
+            options: paystackOptionsFromEnv(),
           },
         ],
       },

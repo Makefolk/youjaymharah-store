@@ -67,7 +67,7 @@
     },
     {
       "name": "Support",
-      "description": "Context for customer support in the admin: the emails sent about an order or to a customer and whether they arrived, resending an order confirmation, and a customer's saved items, alerts and cart reminders."
+      "description": "Context for customer support in the admin: the emails sent about an order or to a customer and whether they arrived, resending an order confirmation, a customer's saved items, alerts and cart reminders, and looking up payments that didn't become orders."
     },
     {
       "name": "Operations",
@@ -10618,6 +10618,511 @@
           },
           "429": {
             "description": "Too many requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/payment-lookup": {
+      "get": {
+        "operationId": "getAdminPaymentLookup",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Look up a payment",
+        "description": "Pass exactly one of `reference` or `email`. By reference (the one on the customer's Paystack or Credo receipt, or a payment session id): the payment, its cart and order, what the gateway says about it now, and a `verdict` -- `order_placed`, `paid_no_order` (create the order with POST /admin/payment-lookup/create-order), `amount_mismatch` (refund from the gateway's dashboard), `not_paid` or `unknown` (the gateway couldn't be asked). By email: up to 20 recent payment attempts on carts with that email, without asking the gateway.",
+        "x-required-policies": [
+          "order:read"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "reference",
+            "in": "query",
+            "required": false,
+            "description": "A payment reference or payment session id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "required": false,
+            "description": "The customer's email, to list their recent attempts.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The payment and verdict, or the attempts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "attempt": {
+                          "type": "object",
+                          "properties": {
+                            "session_id": {
+                              "type": "string"
+                            },
+                            "reference": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "provider_id": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "number"
+                            },
+                            "currency_code": {
+                              "type": "string"
+                            },
+                            "created_at": {
+                              "type": "string"
+                            },
+                            "cart": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "email": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "completed_at": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "email",
+                                    "completed_at"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "order": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "display_id": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "display_id"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "session_id",
+                            "reference",
+                            "provider_id",
+                            "status",
+                            "amount",
+                            "currency_code",
+                            "created_at",
+                            "cart",
+                            "order"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "gateway": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "checked": {
+                                  "type": "boolean",
+                                  "const": true
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "successful",
+                                    "pending",
+                                    "failed",
+                                    "canceled"
+                                  ]
+                                },
+                                "amount_in_minor": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "currency_code": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "checked",
+                                "status",
+                                "amount_in_minor",
+                                "currency_code"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "checked": {
+                                  "type": "boolean",
+                                  "const": false
+                                },
+                                "reason": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "checked",
+                                "reason"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "verdict": {
+                          "type": "string",
+                          "enum": [
+                            "order_placed",
+                            "paid_no_order",
+                            "amount_mismatch",
+                            "not_paid",
+                            "unknown"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "attempt",
+                        "gateway",
+                        "verdict"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "attempts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "session_id": {
+                                "type": "string"
+                              },
+                              "reference": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "provider_id": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "amount": {
+                                "type": "number"
+                              },
+                              "currency_code": {
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string"
+                              },
+                              "cart": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "email": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "completed_at": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "email",
+                                      "completed_at"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "order": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "display_id": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "display_id"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "session_id",
+                              "reference",
+                              "provider_id",
+                              "status",
+                              "amount",
+                              "currency_code",
+                              "created_at",
+                              "cart",
+                              "order"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "attempts"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither or both of reference and email.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No payment has that reference.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/payment-lookup/create-order": {
+      "post": {
+        "operationId": "postAdminPaymentLookupCreateOrder",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Create the order for a paid cart",
+        "description": "For a payment the gateway confirms but that has no order. Asks the gateway again, then completes the cart as the storefront would: payment verified, stock reserved, confirmation emailed. Refused unless the verdict is `paid_no_order`; fails without side effects if an item sold out meanwhile.",
+        "x-required-policies": [
+          "order:create"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "session_id": {
+                    "type": "string",
+                    "pattern": "^payses_"
+                  }
+                },
+                "required": [
+                  "session_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "order": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "display_id": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "display_id"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "order"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a paid cart without an order (the message says why), or the cart can't be completed (e.g. out of stock).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such payment session.",
             "content": {
               "application/json": {
                 "schema": {

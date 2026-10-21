@@ -19,6 +19,7 @@ import {
   AdminUpdateStorefrontSettings,
   AdminUpdateCartReminderSettings,
   AdminUpdateReturnPolicy,
+  AdminCreateOrderFromPayment,
   StoreOrderLookup,
   StoreRequestReturn,
   StoreCartReminderToken,
@@ -399,6 +400,37 @@ const CustomerSupportContext = z.object({
   }),
 });
 
+const PaymentAttempt = z.object({
+  session_id: z.string(),
+  /** As on the customer's receipt; null if the payment page never opened. */
+  reference: z.string().nullable(),
+  provider_id: z.string(),
+  status: z.string(),
+  /** In the major unit, as Medusa stores prices. */
+  amount: z.number(),
+  currency_code: z.string(),
+  created_at: z.string(),
+  cart: z
+    .object({
+      id: z.string(),
+      email: z.string().nullable(),
+      completed_at: z.string().nullable(),
+    })
+    .nullable(),
+  order: z.object({ id: z.string(), display_id: z.number() }).nullable(),
+});
+
+const GatewayCheck = z.union([
+  z.object({
+    checked: z.literal(true),
+    status: z.enum(["successful", "pending", "failed", "canceled"]),
+    /** Kobo for NGN. */
+    amount_in_minor: z.number().nullable(),
+    currency_code: z.string().nullable(),
+  }),
+  z.object({ checked: z.literal(false), reason: z.string() }),
+]);
+
 const HomepageHeroHistory = z.object({
   /** Newest first; only the most recent 10 are kept. */
   revisions: z.array(
@@ -587,7 +619,7 @@ export const TAGS: Record<string, string> = {
   Returns:
     "Customer self-service after purchase: finding a guest order from its number and email, what can still be returned under the store's return policy, and requesting a return. A request becomes a requested return in the admin, without return shipping; staff arrange collection, receive the items and refund.",
   Support:
-    "Context for customer support in the admin: the emails sent about an order or to a customer and whether they arrived, resending an order confirmation, and a customer's saved items, alerts and cart reminders.",
+    "Context for customer support in the admin: the emails sent about an order or to a customer and whether they arrived, resending an order confirmation, a customer's saved items, alerts and cart reminders, and looking up payments that didn't become orders.",
   Operations:
     "Endpoints for deployment and monitoring rather than shoppers or staff.",
   Scaffolding:
@@ -2030,6 +2062,74 @@ export const ROUTES: RouteDoc[] = [
       },
       { status: 404, description: "No such order." },
       { status: 429, description: "Too many requests." },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/admin/payment-lookup",
+    tag: "Support",
+    summary: "Look up a payment",
+    description:
+      "Pass exactly one of `reference` or `email`. By reference (the one on the customer's Paystack or Credo receipt, or a payment session id): the payment, its cart and order, what the gateway says about it now, and a `verdict` -- `order_placed`, `paid_no_order` (create the order with POST /admin/payment-lookup/create-order), `amount_mismatch` (refund from the gateway's dashboard), `not_paid` or `unknown` (the gateway couldn't be asked). By email: up to 20 recent payment attempts on carts with that email, without asking the gateway.",
+    auth: "admin",
+    policies: ["order:read"],
+    query: [
+      {
+        name: "reference",
+        description: "A payment reference or payment session id.",
+        schema: z.string(),
+      },
+      {
+        name: "email",
+        description: "The customer's email, to list their recent attempts.",
+        schema: z.string(),
+      },
+    ],
+    response: {
+      description: "The payment and verdict, or the attempts.",
+      schema: z.union([
+        z.object({
+          attempt: PaymentAttempt,
+          gateway: GatewayCheck,
+          verdict: z.enum([
+            "order_placed",
+            "paid_no_order",
+            "amount_mismatch",
+            "not_paid",
+            "unknown",
+          ]),
+        }),
+        z.object({ attempts: z.array(PaymentAttempt) }),
+      ]),
+    },
+    errors: [
+      { status: 400, description: "Neither or both of reference and email." },
+      { status: 404, description: "No payment has that reference." },
+    ],
+  },
+  {
+    method: "POST",
+    path: "/admin/payment-lookup/create-order",
+    tag: "Support",
+    summary: "Create the order for a paid cart",
+    description:
+      "For a payment the gateway confirms but that has no order. Asks the gateway again, then completes the cart as the storefront would: payment verified, stock reserved, confirmation emailed. Refused unless the verdict is `paid_no_order`; fails without side effects if an item sold out meanwhile.",
+    auth: "admin",
+    policies: ["order:create"],
+    body: AdminCreateOrderFromPayment,
+    response: {
+      description: "The new order.",
+      schema: z.object({
+        order: z.object({ id: z.string(), display_id: z.number() }),
+      }),
+    },
+    errors: [
+      {
+        status: 400,
+        description:
+          "Not a paid cart without an order (the message says why), or the cart can't be completed (e.g. out of stock).",
+      },
+      { status: 404, description: "No such payment session." },
     ],
   },
   {
