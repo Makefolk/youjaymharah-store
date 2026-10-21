@@ -59,12 +59,17 @@ const PAYMENTS = [
   "payment_collection",
   "payment_method",
   "payment_session",
-  // Medusa's Refund and Capture routes check these, not `payment`
-  // (registered in src/policies/refund-capture.ts).
-  "refund",
-  "capture",
   "refund_reason",
 ];
+/**
+ * Medusa's Refund and Capture routes check these, not `payment`. Only read
+ * and create exist (src/policies/refund-capture.ts): refunds and captures
+ * are never edited.
+ */
+const REFUNDS = {
+  resources: ["refund", "capture"],
+  operations: [READ, "create"],
+};
 const CUSTOMERS = ["customer", "customer_address", "customer_group"];
 const PROMOTIONS = ["campaign", "promotion"];
 const SHIPPING = [
@@ -101,6 +106,7 @@ const ROLES: RoleDefinition[] = [
       { resources: INVENTORY, operations: FULL },
       { resources: ORDERS, operations: FULL },
       { resources: PAYMENTS, operations: WRITE },
+      REFUNDS,
       { resources: CUSTOMERS, operations: FULL },
       { resources: PROMOTIONS, operations: FULL },
       { resources: SHIPPING, operations: FULL },
@@ -142,6 +148,7 @@ const ROLES: RoleDefinition[] = [
       // Refunds run through the payment resources -- there is no way to grant
       // "can refund" without also granting sight of payment records.
       { resources: PAYMENTS, operations: WRITE },
+      REFUNDS,
       // Needed to render order lines; deliberately read-only so support can
       // never touch pricing or the catalog.
       { resources: CATALOG, operations: [READ] },
