@@ -16,14 +16,21 @@ import { NewsletterSignup } from "@/components/newsletter/newsletter-signup"
 import { Button } from "@/components/ui/button"
 import { useStorefrontSettings } from "@/features/site-settings/provider"
 import { StorefrontSettings } from "@/lib/medusa/storefront-settings"
-import { TRACK_ORDER_PATH } from "@/lib/seo/routes"
+import {
+  CONTACT_PATH,
+  DELIVERY_PATH,
+  RETURNS_POLICY_PATH,
+  TRACK_ORDER_PATH,
+} from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
 
 const navLinks = [
   { href: "#", label: "Catalog" },
   { href: TRACK_ORDER_PATH, label: "Track an order" },
+  { href: DELIVERY_PATH, label: "Delivery" },
+  { href: RETURNS_POLICY_PATH, label: "Returns" },
   { href: "#", label: "About" },
-  { href: "#", label: "Contact" },
+  { href: CONTACT_PATH, label: "Contact" },
   { href: "#", label: "Privacy" },
 ]
 

@@ -6,7 +6,10 @@ import {
   absoluteUrl,
   categoryPath,
   collectionPath,
+  CONTACT_PATH,
+  DELIVERY_PATH,
   productPath,
+  RETURNS_POLICY_PATH,
 } from "@/lib/seo/routes"
 
 /** Regenerated at most hourly, so new products appear without a deploy. */
@@ -67,7 +70,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return []
   }
 
-  const home: MetadataRoute.Sitemap = [{ url: absoluteUrl("/"), priority: 1 }]
+  const home: MetadataRoute.Sitemap = [
+    { url: absoluteUrl("/"), priority: 1 },
+    ...[CONTACT_PATH, DELIVERY_PATH, RETURNS_POLICY_PATH].map((path) => ({
+      url: absoluteUrl(path),
+      priority: 0.3,
+    })),
+  ]
 
   try {
     const [products, categories, collections] = await Promise.all([

@@ -65,6 +65,13 @@ const FALLBACK: StorefrontSettings = {
   returns: { enabled: true, window_days: 7 },
   // Unknown without the backend; the button would only lead to an error.
   sign_in: { google: false },
+  support: {
+    hours: null,
+    response_time: null,
+    phone: null,
+    whatsapp: null,
+    delivery_information: null,
+  },
 }
 
 /**
