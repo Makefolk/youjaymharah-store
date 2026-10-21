@@ -87,11 +87,19 @@ export async function checkWithGateway(
  *   can create it from the cart.
  * - amount_mismatch: paid, but not the amount Medusa expected. Creating the
  *   order would be refused; refund it from the gateway's dashboard.
- * - not_paid: the gateway has no successful payment. Nothing was charged.
+ * - pending: the gateway hasn't finished with it -- the customer may still be
+ *   paying, a bank transfer may be on its way, or it is under review. It may
+ *   yet succeed, so nobody should be told they weren't charged.
+ * - not_paid: the gateway says it failed or was canceled. Nothing was charged.
  * - unknown: the gateway couldn't be asked.
  */
 export type PaymentVerdict =
-  "order_placed" | "paid_no_order" | "amount_mismatch" | "not_paid" | "unknown";
+  | "order_placed"
+  | "paid_no_order"
+  | "amount_mismatch"
+  | "pending"
+  | "not_paid"
+  | "unknown";
 
 export function getPaymentVerdict({
   hasOrder,
@@ -106,6 +114,7 @@ export function getPaymentVerdict({
 }): PaymentVerdict {
   if (hasOrder) return "order_placed";
   if (!gateway.checked) return "unknown";
+  if (gateway.status === "pending") return "pending";
   if (gateway.status !== "successful") return "not_paid";
   if (
     (expectedMinor !== null &&

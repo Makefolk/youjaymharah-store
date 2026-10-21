@@ -2258,7 +2258,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Support",
     summary: "Look up a payment",
     description:
-      "Pass exactly one of `reference` or `email`. By reference (the one on the customer's Paystack or Credo receipt, or a payment session id): the payment, its cart and order, what the gateway says about it now, and a `verdict` -- `order_placed`, `paid_no_order` (create the order with POST /admin/payment-lookup/create-order), `amount_mismatch` (refund from the gateway's dashboard), `not_paid` or `unknown` (the gateway couldn't be asked). By email: up to 20 recent payment attempts on carts with that email, without asking the gateway.",
+      "Pass exactly one of `reference` or `email`. By reference (the one on the customer's Paystack or Credo receipt, or a payment session id): the payment, its cart and order, what the gateway says about it now, and a `verdict` -- `order_placed`, `paid_no_order` (create the order with POST /admin/payment-lookup/create-order), `amount_mismatch` (refund from the gateway's dashboard), `pending` (the gateway hasn't finished; it may still succeed), `not_paid` (failed or canceled) or `unknown` (the gateway couldn't be asked). By email: up to 20 recent payment attempts on carts with that email, without asking the gateway.",
     auth: "admin",
     policies: ["order:read"],
     query: [
@@ -2283,6 +2283,7 @@ export const ROUTES: RouteDoc[] = [
             "order_placed",
             "paid_no_order",
             "amount_mismatch",
+            "pending",
             "not_paid",
             "unknown",
           ]),

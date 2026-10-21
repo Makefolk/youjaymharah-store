@@ -44,7 +44,12 @@ type GatewayCheck =
   | { checked: false; reason: string };
 
 type Verdict =
-  "order_placed" | "paid_no_order" | "amount_mismatch" | "not_paid" | "unknown";
+  | "order_placed"
+  | "paid_no_order"
+  | "amount_mismatch"
+  | "pending"
+  | "not_paid"
+  | "unknown";
 
 type LookupResult = {
   attempt: PaymentAttempt;
@@ -79,11 +84,17 @@ const VERDICTS: Record<
     advice:
       "The amount paid doesn't match the bag, so no order can be made from it. Refund the payment from the gateway's dashboard and ask the customer to order again.",
   },
+  pending: {
+    label: "Not finished",
+    color: "orange",
+    advice:
+      "The gateway hasn't finished with this payment: the customer may still be paying, a bank transfer may be on its way, or the gateway is reviewing it. It may still go through, so don't ask them to pay again yet. Check again in a few minutes; if it stays like this for more than an hour, look it up in the gateway's dashboard.",
+  },
   not_paid: {
     label: "Not paid",
     color: "grey",
     advice:
-      "The gateway has no successful payment for this reference, so the customer wasn't charged. They can check out again. If their bank shows a debit, it is usually reversed within a few days; ask them to share the alert if not.",
+      "The gateway says this payment failed or was canceled, so the customer wasn't charged. They can check out again. If their bank shows a debit, it is usually reversed within a few days; ask them to share the alert if not.",
   },
   unknown: {
     label: "Couldn't check",

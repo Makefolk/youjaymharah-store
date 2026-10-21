@@ -53,6 +53,23 @@ describe("getPaymentVerdict", () => {
     ).toBe("amount_mismatch");
   });
 
+  it("keeps an unfinished payment apart from a failed one", () => {
+    expect(
+      getPaymentVerdict({
+        hasOrder: false,
+        gateway: { ...paid, status: "pending" },
+        ...expected,
+      }),
+    ).toBe("pending");
+    expect(
+      getPaymentVerdict({
+        hasOrder: false,
+        gateway: { ...paid, status: "failed" },
+        ...expected,
+      }),
+    ).toBe("not_paid");
+  });
+
   it("separates unpaid from unknown", () => {
     expect(
       getPaymentVerdict({

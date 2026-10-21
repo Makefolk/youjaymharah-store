@@ -32,24 +32,42 @@ export function CompletePayment() {
   }, [complete, router])
 
   if (complete.isError) {
-    // No cart in this browser: it was completed already (for instance by the
-    // gateway's webhook in another tab), or the shopper paid on another device.
+    // No bag in this browser: the shopper paid on another device, or this
+    // browser lost its cookie. Says nothing about whether the payment went
+    // through (a completed bag would have returned its order), so neither
+    // promise an order nor suggest paying again.
     if (isNotFound(complete.error)) {
       return (
         <div className="flex flex-col gap-4">
           <h1 className="text-2xl font-medium tracking-[-0.01em]">
-            We couldn&apos;t find your bag
+            We can&apos;t confirm this payment here
           </h1>
           <p className="text-[15px] text-muted-foreground">
-            If you paid, your order is confirmed and the confirmation email is
-            on its way. You can also find the order with its number and your
-            email.
+            This browser no longer has your bag, so we can&apos;t tell from here
+            whether the payment went through. If it did, your order confirmation
+            email will arrive within a few minutes. Please check for it before
+            paying again.
+          </p>
+          <p className="text-[15px] text-muted-foreground">
+            If money left your account and no confirmation arrives within an
+            hour, email{" "}
+            {supportEmail ? (
+              <a
+                href={`mailto:${supportEmail}`}
+                className="text-foreground underline underline-offset-4"
+              >
+                {supportEmail}
+              </a>
+            ) : (
+              "us"
+            )}{" "}
+            with your bank alert and we&apos;ll sort it out.
           </p>
           <Link
             href={TRACK_ORDER_PATH}
             className="self-start underline underline-offset-4"
           >
-            Find your order
+            Find an order by its number
           </Link>
         </div>
       )

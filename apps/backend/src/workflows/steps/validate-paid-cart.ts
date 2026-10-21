@@ -42,6 +42,8 @@ export const validatePaidCartStep = createStep(
           order_placed: "This payment already has an order.",
           amount_mismatch:
             "The amount paid doesn't match the cart, so no order can be made from it. Refund it from the gateway's dashboard.",
+          pending:
+            "The gateway hasn't finished with this payment yet. Check again in a few minutes.",
           not_paid: "The gateway doesn't show a successful payment.",
           unknown:
             "The gateway couldn't confirm the payment. Try again shortly.",
