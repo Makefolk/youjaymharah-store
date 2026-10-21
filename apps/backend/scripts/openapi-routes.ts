@@ -19,6 +19,8 @@ import {
   AdminUpdateStorefrontSettings,
   AdminUpdateCartReminderSettings,
   AdminUpdateReturnPolicy,
+  AdminUpdateSupportInfo,
+  StoreContactMessage,
   AdminCreateOrderFromPayment,
   AdminResendShippingEmail,
   StoreVerifyCustomerEmail,
@@ -520,6 +522,19 @@ const PublicStorefrontSettings = z.object({
   returns: z.lazy(() => ReturnPolicy),
   /** Sign-in methods besides email and password that are switched on. */
   sign_in: z.object({ google: z.boolean() }),
+  support: z.lazy(() => SupportInfo),
+});
+
+const SupportInfo = z.object({
+  /** e.g. "Monday to Friday, 9am to 6pm (WAT)". */
+  hours: z.string().nullable(),
+  /** e.g. "within one working day". */
+  response_time: z.string().nullable(),
+  /** International form, e.g. +2348012345678. */
+  phone: z.string().nullable(),
+  whatsapp: z.string().nullable(),
+  /** Plain text, possibly several lines. */
+  delivery_information: z.string().nullable(),
 });
 
 const ReturnPolicy = z.object({
@@ -1129,7 +1144,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Storefront",
     summary: "Get the settings the storefront renders with",
     description:
-      "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
+      "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days), `support` (contact details and delivery information; each null when not set) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
     auth: "public",
     response: {
       description: "The public storefront settings.",
@@ -2153,6 +2168,60 @@ export const ROUTES: RouteDoc[] = [
         description:
           "Processing failed. Retry the delivery; pending receipts are also recovered by a scheduled job.",
       },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/admin/support-info",
+    tag: "Support",
+    summary: "Get the contact details shown on the website",
+    description:
+      "Support hours, typical reply time, phone and WhatsApp numbers, and delivery information, as the contact and delivery pages show them. The support email itself is part of branding.",
+    auth: "admin",
+    policies: ["support_info:read"],
+    response: {
+      description: "The contact details; each null when not set.",
+      schema: z.object({ support_info: SupportInfo }),
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/support-info",
+    tag: "Support",
+    summary: "Change the contact details shown on the website",
+    description:
+      "Fields left out keep their value; an empty string or null clears one, and the website then leaves it out. Phone numbers are stored in international form with spaces and dashes removed.",
+    auth: "admin",
+    policies: ["support_info:update"],
+    body: AdminUpdateSupportInfo,
+    response: {
+      description: "The contact details after the change.",
+      schema: z.object({ support_info: SupportInfo }),
+    },
+    errors: [
+      {
+        status: 400,
+        description:
+          "Too long, or a phone number not in international form (+234...).",
+      },
+    ],
+  },
+  {
+    method: "POST",
+    path: "/store/contact",
+    tag: "Support",
+    summary: "Send a message from the contact page",
+    description:
+      "Emails the message to the support address in branding, with the customer as reply-to so staff answer from their inbox, and emails the customer an acknowledgement quoting the typical reply time. With an order number, the staff email says whether it belongs to an order placed with the same email. `website` must be left empty: it is hidden from people, and a filled one is answered as sent without sending anything. Rate limited to 5 a minute.",
+    auth: "public",
+    body: StoreContactMessage,
+    response: {
+      description: "Always `sent: true` once accepted.",
+      schema: z.object({ sent: z.literal(true) }),
+    },
+    errors: [
+      { status: 400, description: "A field is missing or invalid." },
+      { status: 429, description: "Too many requests." },
     ],
   },
   {

@@ -53,4 +53,10 @@ export const StorefrontSettings = model.define("storefront_settings", {
   returns_enabled: model.boolean().default(true),
   /** Days after delivery (or dispatch, when delivery wasn't recorded) a return can be requested. */
   return_window_days: model.number().default(7),
+  /**
+   * How customers reach the team, shown on the contact page: opening hours,
+   * typical reply time, phone and WhatsApp, and delivery information. See
+   * support-info.ts for the shape; missing keys read as not set.
+   */
+  support_info: model.json().default({}),
 });

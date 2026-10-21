@@ -756,6 +756,13 @@ export type StoreStorefrontSettingsResponse = {
     sign_in: {
       google: boolean;
     };
+    support: {
+      hours: string | null;
+      response_time: string | null;
+      phone: string | null;
+      whatsapp: string | null;
+      delivery_information: string | null;
+    };
   };
 };
 

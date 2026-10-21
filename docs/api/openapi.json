@@ -65,12 +65,12 @@
       "description": "Products a shopper has saved. One entry per product, optionally remembering the colour and size they chose. Signed-in customers use /store/customers/me/wishlist; guests use /store/wishlists, where the wishlist ID works like a guest cart's ID, and the guest list is merged into the customer's at sign-in."
     },
     {
-      "name": "Returns",
-      "description": "Customer self-service after purchase: finding a guest order from its number and email, what can still be returned under the store's return policy, and requesting a return. A request becomes a requested return in the admin, without return shipping; staff arrange collection, receive the items and refund."
-    },
-    {
       "name": "Support",
       "description": "Context for customer support in the admin: the emails sent about an order or to a customer and whether they arrived, resending an order confirmation, a customer's saved items, alerts and cart reminders, and looking up payments that didn't become orders."
+    },
+    {
+      "name": "Returns",
+      "description": "Customer self-service after purchase: finding a guest order from its number and email, what can still be returned under the store's return policy, and requesting a return. A request becomes a requested return in the admin, without return shipping; staff arrange collection, receive the items and refund."
     },
     {
       "name": "Operations",
@@ -2990,7 +2990,7 @@
           "Storefront"
         ],
         "summary": "Get the settings the storefront renders with",
-        "description": "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
+        "description": "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days), `support` (contact details and delivery information; each null when not set) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
         "security": [
           {
             "publishableKey": []
@@ -3407,6 +3407,69 @@
                             "google"
                           ],
                           "additionalProperties": false
+                        },
+                        "support": {
+                          "type": "object",
+                          "properties": {
+                            "hours": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "response_time": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "phone": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "whatsapp": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "delivery_information": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "hours",
+                            "response_time",
+                            "phone",
+                            "whatsapp",
+                            "delivery_information"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
@@ -3416,7 +3479,8 @@
                         "homepage",
                         "products",
                         "returns",
-                        "sign_in"
+                        "sign_in",
+                        "support"
                       ],
                       "additionalProperties": false
                     }
@@ -10626,6 +10690,422 @@
           },
           "503": {
             "description": "Signing secret is not configured.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/support-info": {
+      "get": {
+        "operationId": "getAdminSupportInfo",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Get the contact details shown on the website",
+        "description": "Support hours, typical reply time, phone and WhatsApp numbers, and delivery information, as the contact and delivery pages show them. The support email itself is part of branding.",
+        "x-required-policies": [
+          "support_info:read"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The contact details; each null when not set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "support_info": {
+                      "type": "object",
+                      "properties": {
+                        "hours": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "response_time": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "phone": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "whatsapp": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "delivery_information": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "hours",
+                        "response_time",
+                        "phone",
+                        "whatsapp",
+                        "delivery_information"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "support_info"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postAdminSupportInfo",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Change the contact details shown on the website",
+        "description": "Fields left out keep their value; an empty string or null clears one, and the website then leaves it out. Phone numbers are stored in international form with spaces and dashes removed.",
+        "x-required-policies": [
+          "support_info:update"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "hours": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "response_time": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "phone": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "whatsapp": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "delivery_information": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The contact details after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "support_info": {
+                      "type": "object",
+                      "properties": {
+                        "hours": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "response_time": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "phone": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "whatsapp": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "delivery_information": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "hours",
+                        "response_time",
+                        "phone",
+                        "whatsapp",
+                        "delivery_information"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "support_info"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Too long, or a phone number not in international form (+234...).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/store/contact": {
+      "post": {
+        "operationId": "postStoreContact",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Send a message from the contact page",
+        "description": "Emails the message to the support address in branding, with the customer as reply-to so staff answer from their inbox, and emails the customer an acknowledgement quoting the typical reply time. With an order number, the staff email says whether it belongs to an order placed with the same email. `website` must be left empty: it is hidden from people, and a filled one is answered as sent without sending anything. Rate limited to 5 a minute.",
+        "security": [
+          {
+            "publishableKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "topic": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "An order",
+                          "A return or refund",
+                          "A product or sizing",
+                          "Something else"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "order_number": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 4000
+                  },
+                  "website": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "name",
+                  "email",
+                  "message"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Always `sent: true` once accepted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sent": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "sent"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A field is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests.",
             "content": {
               "application/json": {
                 "schema": {

@@ -393,6 +393,43 @@ export const StoreCatalogQuery = z.object({
 
 export type StoreCatalogQueryType = z.infer<typeof StoreCatalogQuery>;
 
+/** Blank clears a field, so the contact page leaves it out. */
+const clearableText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .transform((value) => value || null)
+    .nullable()
+    .optional();
+
+/** International form, as tel: and wa.me links need: +2348012345678. */
+const phoneNumber = z
+  .string()
+  .trim()
+  .transform((value) => value.replace(/[\s()-]/g, ""))
+  .pipe(
+    z
+      .string()
+      .regex(
+        /^(\+[1-9]\d{6,14})?$/,
+        "Use the international form, starting with +, like +2348012345678.",
+      ),
+  )
+  .transform((value) => value || null)
+  .nullable()
+  .optional();
+
+export const AdminUpdateSupportInfo = z.object({
+  hours: clearableText(120),
+  response_time: clearableText(80),
+  phone: phoneNumber,
+  whatsapp: phoneNumber,
+  delivery_information: clearableText(2000),
+});
+
+export type AdminUpdateSupportInfoType = z.infer<typeof AdminUpdateSupportInfo>;
+
 export const AdminUpdateReturnPolicy = z.object({
   enabled: z.boolean().optional(),
   /** Days after delivery; a year at most. */
@@ -410,6 +447,35 @@ export const AdminResendShippingEmail = z.object({
 export type AdminResendShippingEmailType = z.infer<
   typeof AdminResendShippingEmail
 >;
+
+export const CONTACT_TOPICS = [
+  "An order",
+  "A return or refund",
+  "A product or sizing",
+  "Something else",
+] as const;
+
+export const StoreContactMessage = z.object({
+  name: z.string().trim().min(1).max(100),
+  email: z.email(),
+  topic: z.enum(CONTACT_TOPICS).nullable().optional(),
+  /** "#1042" or "1042". */
+  order_number: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/^#/, ""))
+    .pipe(
+      z.string().regex(/^\d{0,10}$/, "Enter the number from your order email."),
+    )
+    .transform((value) => value || null)
+    .nullable()
+    .optional(),
+  message: z.string().trim().min(10).max(4000),
+  /** Hidden from people; anything here marks the sender as a bot. */
+  website: z.string().max(200).optional(),
+});
+
+export type StoreContactMessageType = z.infer<typeof StoreContactMessage>;
 
 export const StoreVerifyCustomerEmail = z.object({
   token: z.string().trim().min(1).max(512),
@@ -664,6 +730,17 @@ export default defineMiddlewares({
       policies: [{ resource: "order", operation: "create" }],
     },
     {
+      matcher: "/admin/support-info",
+      method: ["GET"],
+      policies: [{ resource: "support_info", operation: "read" }],
+    },
+    {
+      matcher: "/admin/support-info",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(AdminUpdateSupportInfo)],
+      policies: [{ resource: "support_info", operation: "update" }],
+    },
+    {
       matcher: "/admin/return-policy",
       method: ["GET"],
       policies: [{ resource: "return_policy", operation: "read" }],
@@ -797,6 +874,15 @@ export default defineMiddlewares({
       matcher: "/store/customers/me/marketing",
       method: ["POST"],
       middlewares: [validateAndTransformBody(StoreSetMarketingPreference)],
+    },
+    {
+      // Each message sends two emails.
+      matcher: "/store/contact",
+      method: ["POST"],
+      middlewares: [
+        rateLimit("contact", 5),
+        validateAndTransformBody(StoreContactMessage),
+      ],
     },
     {
       matcher: "/store/customers/verify-email",

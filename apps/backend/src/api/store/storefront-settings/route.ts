@@ -7,6 +7,7 @@ import type BrandingModuleService from "../../../modules/branding/service";
 import { STOREFRONT_SETTINGS_MODULE } from "../../../modules/storefront-settings";
 import { completeHomepageHero } from "../../../modules/storefront-settings/homepage-hero";
 import type StorefrontSettingsModuleService from "../../../modules/storefront-settings/service";
+import { completeSupportInfo } from "../../../modules/storefront-settings/support-info";
 import { completeSocialLinks } from "../../../modules/storefront-settings/social-networks";
 import {
   completeStoreMenuPromos,
@@ -70,6 +71,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       sign_in: {
         google: googleSignInEnabled(process.env),
       },
+      support: completeSupportInfo(settings.support_info),
       navigation: {
         store_menu_cards: await resolveStoreMenuPromos(
           req,

@@ -24,3 +24,17 @@ export const sendPreparedEmailStep = createStep(
     return new StepResponse(null);
   },
 );
+
+/** Several prepared emails at once; each keeps its own idempotency key. */
+export const sendPreparedEmailsStep = createStep(
+  { name: "send-prepared-emails", maxRetries: 5, retryInterval: 15 },
+  async (notifications: CreateNotificationDTO[], { container }) => {
+    if (notifications.length) {
+      const service: INotificationModuleService = container.resolve(
+        Modules.NOTIFICATION,
+      );
+      await service.createNotifications(notifications);
+    }
+    return new StepResponse(null);
+  },
+);

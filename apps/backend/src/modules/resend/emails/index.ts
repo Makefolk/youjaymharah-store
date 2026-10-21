@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { cartReminderCopy, cartReminderEmail } from "./cart-reminder";
 import { claimCreatedEmail } from "./claim-created";
+import { contactMessageEmail, contactReceivedEmail } from "./contact-message";
 import { STORE_NAME } from "./constants";
 import { emailVerificationEmail } from "./email-verification";
 import { exchangeCreatedEmail } from "./exchange-created";
@@ -45,6 +46,8 @@ export const EmailTemplates = {
   PRODUCT_BACK_IN_STOCK: "product-back-in-stock",
   PRODUCT_LAUNCHED: "product-launched",
   CART_REMINDER: "cart-reminder",
+  CONTACT_MESSAGE: "contact-message",
+  CONTACT_RECEIVED: "contact-received",
 } as const;
 
 export type EmailTemplate =
@@ -173,6 +176,21 @@ const registry: Record<EmailTemplate, TemplateEntry> = {
       react: returnAccessEmail(data as Parameters<typeof returnAccessEmail>[0]),
     };
   },
+  [EmailTemplates.CONTACT_MESSAGE]: (data) => {
+    const { name, topic } = data as { name?: string; topic?: string };
+    return {
+      subject: `Contact form: ${topic ? `${topic}, ` : ""}from ${name ?? "a customer"}`,
+      react: contactMessageEmail(
+        data as Parameters<typeof contactMessageEmail>[0],
+      ),
+    };
+  },
+  [EmailTemplates.CONTACT_RECEIVED]: (data) => ({
+    subject: brandName(data, `We've got your message`),
+    react: contactReceivedEmail(
+      data as Parameters<typeof contactReceivedEmail>[0],
+    ),
+  }),
   [EmailTemplates.PASSWORD_RESET]: (data) => ({
     subject: `Reset your ${STORE_NAME} password`,
     react: passwordResetEmail(data as Parameters<typeof passwordResetEmail>[0]),
