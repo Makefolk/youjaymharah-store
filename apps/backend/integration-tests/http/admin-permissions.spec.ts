@@ -77,6 +77,21 @@ medusaIntegrationTestRunner({
         ).rejects.toMatchObject({ response: { status: 403 } });
       });
 
+      it("lets Support load what Medusa's customer and order screens read", async () => {
+        const auth = await login("role_support");
+        for (const path of [
+          "/admin/customer-groups",
+          "/admin/notifications",
+          "/admin/reservations",
+          "/admin/stock-locations",
+        ]) {
+          expect((await api.get(path, auth)).status).toBe(200);
+        }
+        await expect(
+          api.post("/admin/stock-locations", { name: "Not allowed" }, auth),
+        ).rejects.toMatchObject({ response: { status: 403 } });
+      });
+
       it("does not grant a logged-in roleless user protected settings access", async () => {
         const auth = await login(null);
         await expect(

@@ -139,6 +139,12 @@ const ROLES: RoleDefinition[] = [
       // Needed to render order lines; deliberately read-only so support can
       // never touch pricing or the catalog.
       { resources: CATALOG, operations: [READ] },
+      // Read-only views Medusa's own screens load for these tasks: the
+      // customer page lists groups (and fails to render without them), the
+      // order page shows reservations, fulfilling picks a stock location, and
+      // the notification bell polls on every page.
+      { resources: INVENTORY, operations: [READ] },
+      { resources: ["customer_group", "notification"], operations: [READ] },
       { resources: ["region", "sales_channel"], operations: [READ] },
       {
         resources: [
