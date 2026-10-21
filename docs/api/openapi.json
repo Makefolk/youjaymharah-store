@@ -2990,7 +2990,7 @@
           "Storefront"
         ],
         "summary": "Get the settings the storefront renders with",
-        "description": "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days), `support` (contact details and delivery information; each null when not set) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
+        "description": "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days), `support` (contact details and delivery information; each null when not set), `pages` (whether the About, Privacy and Terms pages have text) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
         "security": [
           {
             "publishableKey": []
@@ -3470,6 +3470,26 @@
                             "delivery_information"
                           ],
                           "additionalProperties": false
+                        },
+                        "pages": {
+                          "type": "object",
+                          "properties": {
+                            "about": {
+                              "type": "boolean"
+                            },
+                            "privacy": {
+                              "type": "boolean"
+                            },
+                            "terms": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "about",
+                            "privacy",
+                            "terms"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
@@ -3480,7 +3500,8 @@
                         "products",
                         "returns",
                         "sign_in",
-                        "support"
+                        "support",
+                        "pages"
                       ],
                       "additionalProperties": false
                     }
@@ -10690,6 +10711,314 @@
           },
           "503": {
             "description": "Signing secret is not configured.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/content-pages": {
+      "get": {
+        "operationId": "getAdminContentPages",
+        "tags": [
+          "Storefront"
+        ],
+        "summary": "Get the About, Privacy and Terms page text",
+        "description": "Plain text: paragraphs separated by a blank line, `## ` starting a heading, `- ` a bullet point. Null when not written.",
+        "x-required-policies": [
+          "storefront_settings:read"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Each page's text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pages": {
+                      "type": "object",
+                      "properties": {
+                        "about": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "privacy": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "terms": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "about",
+                        "privacy",
+                        "terms"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "pages"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postAdminContentPages",
+        "tags": [
+          "Storefront"
+        ],
+        "summary": "Change the About, Privacy and Terms page text",
+        "description": "Pages left out keep their text. An empty string or null clears one, which also takes its link out of the footer. Up to 30,000 characters each.",
+        "x-required-policies": [
+          "storefront_settings:update"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "about": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 30000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "privacy": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 30000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "terms": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 30000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Each page's text after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pages": {
+                      "type": "object",
+                      "properties": {
+                        "about": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "privacy": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "terms": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "about",
+                        "privacy",
+                        "terms"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "pages"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/store/content-pages/{page}": {
+      "get": {
+        "operationId": "getStoreContentPagesPage",
+        "tags": [
+          "Storefront"
+        ],
+        "summary": "Get a page's text",
+        "description": "`page` is `about`, `privacy` or `terms`. 404 until it has text.",
+        "security": [
+          {
+            "publishableKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "path",
+            "required": true,
+            "description": "The page of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "enum": [
+                            "about",
+                            "privacy",
+                            "terms"
+                          ]
+                        },
+                        "text": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "text"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid publishable API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such page, or not written yet.",
             "content": {
               "application/json": {
                 "schema": {

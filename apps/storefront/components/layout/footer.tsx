@@ -17,15 +17,17 @@ import { Button } from "@/components/ui/button"
 import { useStorefrontSettings } from "@/features/site-settings/provider"
 import { StorefrontSettings } from "@/lib/medusa/storefront-settings"
 import {
+  ABOUT_PATH,
   CONTACT_PATH,
   DELIVERY_PATH,
+  PRIVACY_PATH,
   PRODUCTS_PATH,
+  TERMS_PATH,
   RETURNS_POLICY_PATH,
   TRACK_ORDER_PATH,
 } from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
 
-// About and Privacy return once their pages are written.
 const navLinks = [
   { href: PRODUCTS_PATH, label: "Catalog" },
   { href: TRACK_ORDER_PATH, label: "Track an order" },
@@ -37,7 +39,14 @@ const navLinks = [
 type TSocialPlatform = keyof StorefrontSettings["seo"]["social_links"]
 
 export function Footer() {
-  const { brand, seo } = useStorefrontSettings()
+  const { brand, seo, pages } = useStorefrontSettings()
+  // About, Privacy and Terms only once written (Settings › Pages).
+  const links = [
+    ...navLinks,
+    ...(pages.about ? [{ href: ABOUT_PATH, label: "About" }] : []),
+    ...(pages.privacy ? [{ href: PRIVACY_PATH, label: "Privacy" }] : []),
+    ...(pages.terms ? [{ href: TERMS_PATH, label: "Terms" }] : []),
+  ]
 
   return (
     <footer className="dark bg-background py-6 text-foreground">
@@ -78,7 +87,7 @@ export function Footer() {
 
         <nav>
           <ul className="flex flex-wrap gap-4 text-sm font-medium text-foreground md:gap-6">
-            {navLinks.map((link) => (
+            {links.map((link) => (
               <li key={link.label}>
                 <a
                   className="underline-offset-5 hover:underline"

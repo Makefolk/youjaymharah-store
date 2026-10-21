@@ -65,6 +65,7 @@ const FALLBACK: StorefrontSettings = {
   returns: { enabled: true, window_days: 7 },
   // Unknown without the backend; the button would only lead to an error.
   sign_in: { google: false },
+  pages: { about: false, privacy: false, terms: false },
   support: {
     hours: null,
     response_time: null,
@@ -104,6 +105,28 @@ export const getStorefrontSettings = cache(
       )
 
       return FALLBACK
+    }
+  },
+)
+
+/**
+ * An About, Privacy or Terms page's text from Settings › Pages, or null until it
+ * has been written. Cached like the settings, and refreshed with them.
+ */
+export const getContentPage = cache(
+  async (page: "about" | "privacy" | "terms"): Promise<string | null> => {
+    try {
+      const { page: found } = await sdk.client.fetch<{
+        page: { name: string; text: string }
+      }>(`/store/content-pages/${page}`, {
+        next: {
+          revalidate: REVALIDATE_SECONDS,
+          tags: [STOREFRONT_SETTINGS_TAG],
+        },
+      })
+      return found.text
+    } catch {
+      return null
     }
   },
 )

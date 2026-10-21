@@ -420,6 +420,24 @@ const phoneNumber = z
   .nullable()
   .optional();
 
+/** Blank clears a page, which also takes it out of the footer. */
+const pageText = z
+  .string()
+  .max(30000)
+  .transform((value) => (value.trim() ? value.trim() : null))
+  .nullable()
+  .optional();
+
+export const AdminUpdateContentPages = z.object({
+  about: pageText,
+  privacy: pageText,
+  terms: pageText,
+});
+
+export type AdminUpdateContentPagesType = z.infer<
+  typeof AdminUpdateContentPages
+>;
+
 export const AdminUpdateSupportInfo = z.object({
   hours: clearableText(120),
   response_time: clearableText(80),
@@ -780,6 +798,17 @@ export default defineMiddlewares({
       method: ["POST"],
       middlewares: [validateAndTransformBody(AdminCreateOrderFromPayment)],
       policies: [{ resource: "order", operation: "create" }],
+    },
+    {
+      matcher: "/admin/content-pages",
+      method: ["GET"],
+      policies: [{ resource: "storefront_settings", operation: "read" }],
+    },
+    {
+      matcher: "/admin/content-pages",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(AdminUpdateContentPages)],
+      policies: [{ resource: "storefront_settings", operation: "update" }],
     },
     {
       matcher: "/admin/support-info",

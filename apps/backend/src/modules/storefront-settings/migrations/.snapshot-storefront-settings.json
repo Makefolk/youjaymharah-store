@@ -1,7 +1,5 @@
 {
-  "namespaces": [
-    "public"
-  ],
+  "namespaces": ["public"],
   "name": "public",
   "tables": [
     {
@@ -117,9 +115,7 @@
         },
         {
           "keyName": "homepage_hero_revision_pkey",
-          "columnNames": [
-            "id"
-          ],
+          "columnNames": ["id"],
           "composite": false,
           "constraint": true,
           "primary": true,
@@ -388,6 +384,22 @@
           "enumItems": [],
           "mappedType": "json"
         },
+        "content_pages": {
+          "name": "content_pages",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'{}'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamptz",
@@ -451,9 +463,7 @@
         },
         {
           "keyName": "storefront_settings_pkey",
-          "columnNames": [
-            "id"
-          ],
+          "columnNames": ["id"],
           "composite": false,
           "constraint": true,
           "primary": true,

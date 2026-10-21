@@ -763,6 +763,11 @@ export type StoreStorefrontSettingsResponse = {
       whatsapp: string | null;
       delivery_information: string | null;
     };
+    pages: {
+      about: boolean;
+      privacy: boolean;
+      terms: boolean;
+    };
   };
 };
 

@@ -8,6 +8,7 @@ import { STOREFRONT_SETTINGS_MODULE } from "../../../modules/storefront-settings
 import { completeHomepageHero } from "../../../modules/storefront-settings/homepage-hero";
 import type StorefrontSettingsModuleService from "../../../modules/storefront-settings/service";
 import { completeSupportInfo } from "../../../modules/storefront-settings/support-info";
+import { completeContentPages } from "../../../modules/storefront-settings/content-pages";
 import { completeSocialLinks } from "../../../modules/storefront-settings/social-networks";
 import {
   completeStoreMenuPromos,
@@ -72,6 +73,12 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
         google: googleSignInEnabled(process.env),
       },
       support: completeSupportInfo(settings.support_info),
+      // Which pages have text, for the footer; the text is fetched per page.
+      pages: Object.fromEntries(
+        Object.entries(completeContentPages(settings.content_pages)).map(
+          ([page, text]) => [page, Boolean(text)],
+        ),
+      ),
       navigation: {
         store_menu_cards: await resolveStoreMenuPromos(
           req,

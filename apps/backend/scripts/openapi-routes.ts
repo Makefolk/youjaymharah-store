@@ -20,6 +20,7 @@ import {
   AdminUpdateCartReminderSettings,
   AdminUpdateReturnPolicy,
   AdminUpdateSupportInfo,
+  AdminUpdateContentPages,
   AdminResolveEmailDelivery,
   AdminRecordCredoRefund,
   StoreContactMessage,
@@ -525,6 +526,12 @@ const PublicStorefrontSettings = z.object({
   /** Sign-in methods besides email and password that are switched on. */
   sign_in: z.object({ google: z.boolean() }),
   support: z.lazy(() => SupportInfo),
+  /** Whether each page has text; fetch it from /store/content-pages/{page}. */
+  pages: z.object({
+    about: z.boolean(),
+    privacy: z.boolean(),
+    terms: z.boolean(),
+  }),
 });
 
 const SupportInfo = z.object({
@@ -1146,7 +1153,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Storefront",
     summary: "Get the settings the storefront renders with",
     description:
-      "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days), `support` (contact details and delivery information; each null when not set) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
+      "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days), `support` (contact details and delivery information; each null when not set), `pages` (whether the About, Privacy and Terms pages have text) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
     auth: "public",
     response: {
       description: "The public storefront settings.",
@@ -2171,6 +2178,66 @@ export const ROUTES: RouteDoc[] = [
           "Processing failed. Retry the delivery; pending receipts are also recovered by a scheduled job.",
       },
     ],
+  },
+  {
+    method: "GET",
+    path: "/admin/content-pages",
+    tag: "Storefront",
+    summary: "Get the About, Privacy and Terms page text",
+    description:
+      "Plain text: paragraphs separated by a blank line, `## ` starting a heading, `- ` a bullet point. Null when not written.",
+    auth: "admin",
+    policies: ["storefront_settings:read"],
+    response: {
+      description: "Each page's text.",
+      schema: z.object({
+        pages: z.object({
+          about: z.string().nullable(),
+          privacy: z.string().nullable(),
+          terms: z.string().nullable(),
+        }),
+      }),
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/content-pages",
+    tag: "Storefront",
+    summary: "Change the About, Privacy and Terms page text",
+    description:
+      "Pages left out keep their text. An empty string or null clears one, which also takes its link out of the footer. Up to 30,000 characters each.",
+    auth: "admin",
+    policies: ["storefront_settings:update"],
+    body: AdminUpdateContentPages,
+    response: {
+      description: "Each page's text after the change.",
+      schema: z.object({
+        pages: z.object({
+          about: z.string().nullable(),
+          privacy: z.string().nullable(),
+          terms: z.string().nullable(),
+        }),
+      }),
+    },
+  },
+  {
+    method: "GET",
+    path: "/store/content-pages/{page}",
+    tag: "Storefront",
+    summary: "Get a page's text",
+    description:
+      "`page` is `about`, `privacy` or `terms`. 404 until it has text.",
+    auth: "public",
+    response: {
+      description: "The page.",
+      schema: z.object({
+        page: z.object({
+          name: z.enum(["about", "privacy", "terms"]),
+          text: z.string(),
+        }),
+      }),
+    },
+    errors: [{ status: 404, description: "No such page, or not written yet." }],
   },
   {
     method: "GET",

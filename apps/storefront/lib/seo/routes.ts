@@ -47,6 +47,9 @@ export const TRACK_ORDER_PATH = "/track-order"
 
 export const PRODUCTS_PATH = "/products"
 export const CONTACT_PATH = "/contact"
+export const ABOUT_PATH = "/about"
+export const PRIVACY_PATH = "/privacy"
+export const TERMS_PATH = "/terms"
 export const RETURNS_POLICY_PATH = "/help/returns"
 export const DELIVERY_PATH = "/help/delivery"
 

@@ -59,4 +59,9 @@ export const StorefrontSettings = model.define("storefront_settings", {
    * support-info.ts for the shape; missing keys read as not set.
    */
   support_info: model.json().default({}),
+  /**
+   * The text of the About and Privacy pages, written in the admin (see
+   * content-pages.ts). A page with no text isn't linked from the footer.
+   */
+  content_pages: model.json().default({}),
 });
