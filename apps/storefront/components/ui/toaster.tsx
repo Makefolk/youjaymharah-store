@@ -40,12 +40,16 @@ export const toast = {
   info: show("info"),
 }
 
-/** Mounted once in the root layout. */
+/**
+ * Mounted once in the root layout. Starts below the announcement bar and
+ * header (112px), so a toast never covers the bag or account icons it is
+ * often about.
+ */
 export function Toaster() {
   return (
     <Toast.Provider toastManager={toastManager} limit={3}>
       <Toast.Portal>
-        <Toast.Viewport className="fixed top-20 right-4 left-4 z-120 flex flex-col items-center gap-2 outline-none sm:right-6 sm:left-auto sm:w-88 sm:items-stretch">
+        <Toast.Viewport className="fixed top-30 right-4 left-4 z-120 flex flex-col items-center gap-2 outline-none sm:right-6 sm:left-auto sm:w-88 sm:items-stretch">
           <ToastList />
         </Toast.Viewport>
       </Toast.Portal>
