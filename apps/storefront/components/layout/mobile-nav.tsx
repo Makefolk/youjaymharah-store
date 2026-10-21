@@ -22,7 +22,12 @@ import { useCatalog } from "@/features/catalog/provider"
 import { useOverlay } from "@/features/layout/overlays"
 import { useActiveMenuItem } from "@/features/catalog/use-active-menu-item"
 import { getMenuGroups, type MenuDepartment } from "@/lib/medusa/menu"
-import { NEW_ARRIVALS_PATH } from "@/lib/seo/routes"
+import {
+  CONTACT_PATH,
+  NEW_ARRIVALS_PATH,
+  TRACK_ORDER_PATH,
+  WISHLIST_PATH,
+} from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
 import NextLink from "next/link"
 import { useStorefrontSettings } from "@/features/site-settings/provider"
@@ -220,6 +225,22 @@ function RootPanel({ menu, collectionMenu, onDrill, onNavigate }: NavProps) {
           </ActionLink>
         </li>
       )}
+      {/* The header hides the wishlist on phones; these are its way in. */}
+      <li className="mt-6 border-t border-border/70 pt-2">
+        <LinkRow href={WISHLIST_PATH} onNavigate={onNavigate}>
+          Wishlist
+        </LinkRow>
+      </li>
+      <li>
+        <LinkRow href={TRACK_ORDER_PATH} onNavigate={onNavigate}>
+          Track an order
+        </LinkRow>
+      </li>
+      <li>
+        <LinkRow href={CONTACT_PATH} onNavigate={onNavigate}>
+          Help and contact
+        </LinkRow>
+      </li>
     </ul>
   )
 }

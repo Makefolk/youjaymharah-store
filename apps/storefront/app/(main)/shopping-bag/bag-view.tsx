@@ -31,7 +31,12 @@ import {
   MAX_LINE_QUANTITY,
 } from "@/lib/medusa/bag"
 import { formatPrice } from "@/lib/medusa/price"
-import { CHECKOUT_PATH, NEW_ARRIVALS_PATH, productPath } from "@/lib/seo/routes"
+import {
+  CHECKOUT_PATH,
+  NEW_ARRIVALS_PATH,
+  productPath,
+  WISHLIST_PATH,
+} from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
 
 type Cart = HttpTypes.StoreCart
@@ -554,7 +559,7 @@ function EmptyBag() {
             variant="outline"
             size="lg"
             nativeButton={false}
-            render={<Link href="/wishlist" />}
+            render={<Link href={WISHLIST_PATH} />}
             className="h-12 px-8 text-[13px] tracking-[0.06em] uppercase"
           >
             Your wishlist ({saved})

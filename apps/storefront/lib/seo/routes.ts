@@ -23,6 +23,8 @@ export const NEW_ARRIVALS_PATH = "/new-arrivals"
 /** The cart, called "shopping bag" everywhere a shopper can see it. */
 export const SHOPPING_BAG_PATH = "/shopping-bag"
 
+export const WISHLIST_PATH = "/wishlist"
+
 /** Full search results. The query travels as `?q=`. */
 export const SEARCH_PATH = "/search"
 
@@ -82,6 +84,7 @@ export const PRIVATE_PATHS = [
   "/account",
   "/orders/",
   SHOPPING_BAG_PATH,
+  WISHLIST_PATH,
   "/checkout",
   // Landing pages for emailed confirm and unsubscribe links: one per token.
   "/newsletter",

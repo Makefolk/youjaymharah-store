@@ -18,7 +18,11 @@ import {
 import { useCart } from "@/features/cart/hooks"
 import { useOverlay } from "@/features/layout/overlays"
 import { getBagCount } from "@/lib/medusa/product-page"
-import { ACCOUNT_PATH, SHOPPING_BAG_PATH } from "@/lib/seo/routes"
+import {
+  ACCOUNT_PATH,
+  SHOPPING_BAG_PATH,
+  WISHLIST_PATH,
+} from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
 
 export function UtilityNav({ className }: { className?: string }) {
@@ -35,7 +39,11 @@ export function UtilityNav({ className }: { className?: string }) {
         <MagnifyingGlassIcon />
       </UtilityItem>
 
-      <UtilityItem href="/wishlist" className="max-md:hidden" label="Wishlist">
+      <UtilityItem
+        href={WISHLIST_PATH}
+        className="max-md:hidden"
+        label="Wishlist"
+      >
         <HeartIcon />
       </UtilityItem>
 
