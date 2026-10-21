@@ -42,6 +42,9 @@
       "description": "A signed-in customer's marketing email preference, backed by the newsletter list and its double opt-in."
     },
     {
+      "name": "Customers"
+    },
+    {
       "name": "Branding",
       "description": "The store's name, logo and support email, used across customer emails and the storefront."
     },
@@ -6306,6 +6309,201 @@
           },
           "401": {
             "description": "No customer is logged in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/store/customers/me/email-verification": {
+      "get": {
+        "operationId": "getStoreCustomersMeEmailVerification",
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Whether the customer's email is verified",
+        "description": "True once the customer opened a verification link for the account's current email, or always for accounts that sign in with Google, which only accepts verified emails.",
+        "security": [
+          {
+            "publishableKey": [],
+            "customerJwt": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account's email and whether it is verified.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string"
+                    },
+                    "verified": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "email",
+                    "verified"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No customer is logged in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postStoreCustomersMeEmailVerification",
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Send a verification email",
+        "description": "Emails a single-use link, valid for 15 minutes, to the account's own email (never one from the request). Sending again replaces the previous link. Nothing is sent once the email is verified. Rate limited to 5 a minute.",
+        "security": [
+          {
+            "publishableKey": [],
+            "customerJwt": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Whether an email was sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string"
+                    },
+                    "verified": {
+                      "type": "boolean"
+                    },
+                    "sent": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "email",
+                    "verified",
+                    "sent"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No customer is logged in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/store/customers/verify-email": {
+      "post": {
+        "operationId": "postStoreCustomersVerifyEmail",
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Confirm a verification link",
+        "description": "Spends the token from a verification email; no sign-in is needed. Only counts if the account still uses the email it was sent to. Afterwards the orders placed as a guest with that email move into the account in the background, recorded on each order as a transfer. Rate limited to 20 a minute.",
+        "security": [
+          {
+            "publishableKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The verified email.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string"
+                    },
+                    "verified": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "email",
+                    "verified"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The link is invalid, used, expired, or for an email the account no longer uses.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests.",
             "content": {
               "application/json": {
                 "schema": {

@@ -409,6 +409,14 @@ export type AdminResendShippingEmailType = z.infer<
   typeof AdminResendShippingEmail
 >;
 
+export const StoreVerifyCustomerEmail = z.object({
+  token: z.string().trim().min(1).max(512),
+});
+
+export type StoreVerifyCustomerEmailType = z.infer<
+  typeof StoreVerifyCustomerEmail
+>;
+
 export const StoreOrderLookup = z.object({
   email: z.email(),
   /** The order number on the confirmation, with or without its "#". */
@@ -761,6 +769,20 @@ export default defineMiddlewares({
       matcher: "/store/customers/me/marketing",
       method: ["POST"],
       middlewares: [validateAndTransformBody(StoreSetMarketingPreference)],
+    },
+    {
+      matcher: "/store/customers/verify-email",
+      method: ["POST"],
+      middlewares: [
+        rateLimit("verify-email", 20),
+        validateAndTransformBody(StoreVerifyCustomerEmail),
+      ],
+    },
+    {
+      // Each call sends an email, so a few a minute is plenty.
+      matcher: "/store/customers/me/email-verification",
+      method: ["POST"],
+      middlewares: [rateLimit("verify-email-send", 5)],
     },
     // Built-in product permissions, so whoever may edit a product may also
     // launch it, and whoever may view it sees who is waiting.

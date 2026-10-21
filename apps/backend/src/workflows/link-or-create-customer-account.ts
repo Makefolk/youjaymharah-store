@@ -6,8 +6,11 @@ import {
 } from "@medusajs/framework/workflows-sdk";
 import {
   createCustomerAccountWorkflow,
+  emitEventStep,
   setAuthAppMetadataStep,
 } from "@medusajs/medusa/core-flows";
+
+import { CUSTOMER_EMAIL_VERIFIED_EVENT } from "../lib/customer-events";
 
 import { resolveSocialCustomerStep } from "./steps/resolve-social-customer";
 
@@ -77,6 +80,17 @@ export const linkOrCreateCustomerAccountWorkflow = createWorkflow(
         data.createdCustomer?.id) as string,
       linked: !!data.linkedCustomerId,
     }));
+
+    // The provider verified the email, so the customer's guest orders can
+    // join the account straight away.
+    const verified = transform({ result, resolved }, (data) => ({
+      customer_id: data.result.customer_id,
+      email: data.resolved.email.trim().toLowerCase(),
+    }));
+    emitEventStep({
+      eventName: CUSTOMER_EMAIL_VERIFIED_EVENT,
+      data: verified,
+    });
 
     return new WorkflowResponse(result);
   },

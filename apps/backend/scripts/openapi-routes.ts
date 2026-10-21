@@ -21,6 +21,7 @@ import {
   AdminUpdateReturnPolicy,
   AdminCreateOrderFromPayment,
   AdminResendShippingEmail,
+  StoreVerifyCustomerEmail,
   StoreOrderLookup,
   StoreRequestReturn,
   StoreCartReminderToken,
@@ -64,6 +65,11 @@ export type RouteDoc = {
   response: { description: string; schema: z.ZodType };
   errors?: { status: number; description: string }[];
 };
+
+const EmailVerificationState = z.object({
+  email: z.string(),
+  verified: z.boolean(),
+});
 
 const Branding = z.object({
   id: z.string(),
@@ -1424,6 +1430,59 @@ export const ROUTES: RouteDoc[] = [
     errors: [
       { status: 400, description: "Newsletter signup is switched off." },
       { status: 401, description: "No customer is logged in." },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/store/customers/me/email-verification",
+    tag: "Customers",
+    summary: "Whether the customer's email is verified",
+    description:
+      "True once the customer opened a verification link for the account's current email, or always for accounts that sign in with Google, which only accepts verified emails.",
+    auth: "customer",
+    response: {
+      description: "The account's email and whether it is verified.",
+      schema: EmailVerificationState,
+    },
+    errors: [{ status: 401, description: "No customer is logged in." }],
+  },
+  {
+    method: "POST",
+    path: "/store/customers/me/email-verification",
+    tag: "Customers",
+    summary: "Send a verification email",
+    description:
+      "Emails a single-use link, valid for 15 minutes, to the account's own email (never one from the request). Sending again replaces the previous link. Nothing is sent once the email is verified. Rate limited to 5 a minute.",
+    auth: "customer",
+    response: {
+      description: "Whether an email was sent.",
+      schema: EmailVerificationState.extend({ sent: z.boolean() }),
+    },
+    errors: [
+      { status: 401, description: "No customer is logged in." },
+      { status: 429, description: "Too many requests." },
+    ],
+  },
+  {
+    method: "POST",
+    path: "/store/customers/verify-email",
+    tag: "Customers",
+    summary: "Confirm a verification link",
+    description:
+      "Spends the token from a verification email; no sign-in is needed. Only counts if the account still uses the email it was sent to. Afterwards the orders placed as a guest with that email move into the account in the background, recorded on each order as a transfer. Rate limited to 20 a minute.",
+    auth: "public",
+    body: StoreVerifyCustomerEmail,
+    response: {
+      description: "The verified email.",
+      schema: z.object({ email: z.string(), verified: z.literal(true) }),
+    },
+    errors: [
+      {
+        status: 400,
+        description:
+          "The link is invalid, used, expired, or for an email the account no longer uses.",
+      },
+      { status: 429, description: "Too many requests." },
     ],
   },
   {
