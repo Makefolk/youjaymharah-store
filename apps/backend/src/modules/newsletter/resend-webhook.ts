@@ -30,12 +30,16 @@ export function webhookReceiptId(id: string): string {
   return `rsev_${createHash("sha256").update(id).digest("hex")}`;
 }
 
-export function verifyResendWebhook(
+/**
+ * The authenticated payload of a Resend webhook. Several features read the
+ * same event (newsletter consent, email delivery outcomes), so verification
+ * is separate from interpreting it.
+ */
+export function verifyResendWebhookPayload(
   rawBody: unknown,
   headers: Record<string, unknown>,
   secret: string,
-): ResendConsentEvent | null {
-  let verified: unknown;
+): unknown {
   try {
     const id = headers["svix-id"];
     const timestamp = headers["svix-timestamp"];
@@ -49,7 +53,7 @@ export function verifyResendWebhook(
       id.length > 256
     )
       throw new MedusaError(MedusaError.Types.INVALID_DATA, "Invalid webhook");
-    verified = verificationClient.webhooks.verify({
+    return verificationClient.webhooks.verify({
       payload: rawBody.toString(),
       headers: { id, timestamp, signature },
       webhookSecret: secret,
@@ -60,7 +64,17 @@ export function verifyResendWebhook(
       "Invalid webhook signature.",
     );
   }
-  return normalizeResendWebhook(verified, String(headers["svix-id"]));
+}
+
+export function verifyResendWebhook(
+  rawBody: unknown,
+  headers: Record<string, unknown>,
+  secret: string,
+): ResendConsentEvent | null {
+  return normalizeResendWebhook(
+    verifyResendWebhookPayload(rawBody, headers, secret),
+    String(headers["svix-id"]),
+  );
 }
 
 export function normalizeResendWebhook(

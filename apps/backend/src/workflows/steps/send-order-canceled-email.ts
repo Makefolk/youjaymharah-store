@@ -79,6 +79,8 @@ export const sendOrderCanceledEmailStep = createStep(
     await notificationModuleService.createNotifications({
       to: recipient,
       channel: "email",
+      resource_type: "order",
+      resource_id: order.id,
       template: EmailTemplates.ORDER_CANCELED,
       ...emailIdempotency(`order-canceled:${input.id}`),
       data: { order, brand },

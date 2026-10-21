@@ -7,7 +7,15 @@ import type BrandingModuleService from "../../modules/branding/service";
 import { EmailTemplates } from "../../modules/resend/emails";
 import { emailIdempotency } from "../../modules/resend/idempotency";
 
-export type SendOrderConfirmationInput = { id: string };
+export type SendOrderConfirmationInput = {
+  id: string;
+  /**
+   * Set when staff resend the confirmation. Each resend needs its own
+   * delivery identity: reusing the original one returns the earlier receipt
+   * (or the blocked review state) instead of sending.
+   */
+  resend_key?: string;
+};
 
 export type SendOrderConfirmationOutput = {
   order_id: string;
@@ -89,8 +97,14 @@ export const sendOrderConfirmationStep = createStep(
     await notificationModuleService.createNotifications({
       to: recipient,
       channel: "email",
+      resource_type: "order",
+      resource_id: order.id,
       template: EmailTemplates.ORDER_PLACED,
-      ...emailIdempotency(`order-placed:${input.id}`),
+      ...emailIdempotency(
+        input.resend_key
+          ? `order-placed:${input.id}:resend:${input.resend_key}`
+          : `order-placed:${input.id}`,
+      ),
       data: { order, brand },
     });
 

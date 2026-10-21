@@ -303,6 +303,99 @@ const CartReminderStats = z.object({
   }),
 });
 
+const EmailHistoryEntry = z.object({
+  /** The delivery ledger ID when known, otherwise the notification's. */
+  id: z.string(),
+  template: z.string(),
+  to: z.string(),
+  status: z.enum(["sending", "sent", "failed", "needs_review"]),
+  created_at: z.string(),
+  sent_at: z.string().nullable(),
+  /** The latest Resend delivery event, once one has arrived. */
+  outcome: z
+    .enum([
+      "delivered",
+      "delayed",
+      "bounced",
+      "complained",
+      "suppressed",
+      "failed",
+    ])
+    .nullable(),
+  outcome_at: z.string().nullable(),
+  outcome_detail: z.string().nullable(),
+});
+
+const SupportProductRef = z.object({
+  id: z.string(),
+  title: z.string().nullable(),
+  thumbnail: z.string().nullable(),
+});
+
+const CustomerSupportContext = z.object({
+  email: z.string().nullable(),
+  emails: z.array(EmailHistoryEntry),
+  newsletter: z
+    .object({
+      status: z.enum(["pending", "subscribed", "unsubscribed"]),
+      confirmed_at: z.string().nullable(),
+      unsubscribed_at: z.string().nullable(),
+      suppressed_at: z.string().nullable(),
+      suppression_reason: z
+        .enum(["hard_bounce", "complaint", "provider_suppression"])
+        .nullable(),
+    })
+    .nullable(),
+  wishlist: z.object({
+    count: z.number(),
+    items: z.array(
+      z.object({
+        id: z.string(),
+        product: SupportProductRef,
+        variant_title: z.string().nullable(),
+        created_at: z.string(),
+      }),
+    ),
+  }),
+  product_alerts: z.object({
+    count: z.number(),
+    items: z.array(
+      z.object({
+        id: z.string(),
+        product: SupportProductRef,
+        variant_title: z.string().nullable(),
+        reason: z.enum(["restock", "launch"]),
+        status: z.enum(["waiting", "sent", "cancelled", "failed"]),
+        notified_at: z.string().nullable(),
+        created_at: z.string(),
+      }),
+    ),
+  }),
+  cart_reminders: z.object({
+    count: z.number(),
+    /** The address used a reminder's stop link. */
+    opted_out: z.boolean(),
+    items: z.array(
+      z.object({
+        id: z.string(),
+        cart_id: z.string(),
+        status: z.enum([
+          "active",
+          "finished",
+          "recovered",
+          "stopped",
+          "failed",
+        ]),
+        reminders_sent: z.number(),
+        last_sent_at: z.string().nullable(),
+        restored_at: z.string().nullable(),
+        recovered_at: z.string().nullable(),
+        order_id: z.string().nullable(),
+      }),
+    ),
+  }),
+});
+
 const HomepageHeroHistory = z.object({
   /** Newest first; only the most recent 10 are kept. */
   revisions: z.array(
@@ -452,6 +545,10 @@ export const TAGS: Record<string, string> = {
     "Settings the storefront renders with, edited from Settings › Storefront: home page content (hero, featured collection), sharing & search defaults (title, description, share image, social profiles, indexing, Search Console verification) and product display (New badge days). The public route also includes the brand.",
   "Size guides":
     "Measurement tables for product pages. A product shows its own guide, else the nearest category's (walking up the category tree), else the store default. Measurements are stored in cm; the storefront converts to inches for display.",
+  Support:
+    "Context for customer support in the admin: the emails sent about an order or to a customer and whether they arrived, resending an order confirmation, and a customer's saved items, alerts and cart reminders.",
+  Operations:
+    "Endpoints for deployment and monitoring rather than shoppers or staff.",
   Scaffolding:
     "Placeholder routes left by the Medusa starter. They return 200 with no body and can be deleted.",
 };
@@ -1776,9 +1873,9 @@ export const ROUTES: RouteDoc[] = [
     method: "POST",
     path: "/webhooks/resend",
     tag: "Newsletter",
-    summary: "Receive signed Resend consent and suppression events",
+    summary: "Receive signed Resend consent, suppression and delivery events",
     description:
-      "Requires svix-id, svix-timestamp, and svix-signature computed over the original request bytes. No publishable key or customer session is used. Supports contact.updated opt-outs, permanent email.bounced, email.complained, email.suppressed and suppression.added. Other events are acknowledged without changing consent. Delivery limit: 64 KiB.",
+      "Requires svix-id, svix-timestamp, and svix-signature computed over the original request bytes. No publishable key or customer session is used. Supports contact.updated opt-outs, permanent email.bounced, email.complained, email.suppressed and suppression.added for consent. email.delivered, email.delivery_delayed, email.bounced, email.complained, email.suppressed and email.failed are also recorded against the sent email for the admin's order and customer pages. Other events are acknowledged without changes. Delivery limit: 64 KiB.",
     auth: "webhook",
     body: z.object({
       type: z.string(),
@@ -1799,6 +1896,78 @@ export const ROUTES: RouteDoc[] = [
         status: 500,
         description:
           "Processing failed. Retry the delivery; pending receipts are also recovered by a scheduled job.",
+      },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/admin/orders/{id}/emails",
+    tag: "Support",
+    summary: "Emails sent about an order",
+    description:
+      "Newest first, up to 50. One entry per email: retries are folded together. `outcome` comes from Resend's delivery webhooks (email.delivered, email.delivery_delayed, email.bounced, email.complained, email.suppressed, email.failed) and stays null until one arrives. Only emails sent after orders began being recorded on notifications are listed.",
+    auth: "admin",
+    policies: ["order:read"],
+    response: {
+      description: "The order's emails.",
+      schema: z.object({ emails: z.array(EmailHistoryEntry) }),
+    },
+    errors: [{ status: 404, description: "No such order." }],
+  },
+  {
+    method: "POST",
+    path: "/admin/orders/{id}/emails/resend-confirmation",
+    tag: "Support",
+    summary: "Resend the order confirmation",
+    description:
+      "Sends the order confirmation again to the order's current email, as a new email. Each call sends once more, so the dashboard disables the button while a request is in flight.",
+    auth: "admin",
+    policies: ["order:update"],
+    response: {
+      description:
+        "Where it was sent. `sent_to` is null when the order has no email, or when `pending` is true: the first attempt failed and the workflow engine is retrying.",
+      schema: z.object({
+        sent_to: z.string().nullable(),
+        pending: z.boolean(),
+      }),
+    },
+    errors: [{ status: 404, description: "No such order." }],
+  },
+  {
+    method: "GET",
+    path: "/admin/customers/{id}/support-context",
+    tag: "Support",
+    summary: "A customer's emails, saved items, alerts and cart reminders",
+    description:
+      "Up to 10 of each, newest first, with totals. Emails are matched on the account's address, so they include emails sent before it existed. Alerts and cart reminders are matched on customer ID or address; the wishlist on the account only.",
+    auth: "admin",
+    policies: ["customer:read"],
+    response: {
+      description: "The customer's support context.",
+      schema: CustomerSupportContext,
+    },
+    errors: [{ status: 404, description: "No such customer." }],
+  },
+  {
+    method: "GET",
+    path: "/health",
+    tag: "Operations",
+    summary: "Readiness check",
+    description:
+      "Replaces Medusa's built-in /health: probes the database and, when REDIS_URL is set, Redis, each with a 2-second timeout. The deploy gate, its rollback and the uptime probe read it. Never cached. A dependency this deployment does not use is `not_configured`.",
+    auth: "public",
+    response: {
+      description: "Every configured dependency answered.",
+      schema: z.object({
+        status: z.enum(["ok", "unavailable"]),
+        checks: z.record(z.string(), z.enum(["ok", "fail", "not_configured"])),
+      }),
+    },
+    errors: [
+      {
+        status: 503,
+        description:
+          "A dependency failed or timed out; the body has the same shape with `status: unavailable`.",
       },
     ],
   },

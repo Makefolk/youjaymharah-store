@@ -1,6 +1,10 @@
 /** Anything shaped like an address, including one inside <> or (). */
 const EMAIL_ADDRESS = /[^\s<>()"',;:@]+@[^\s<>()"',;:@]+/g;
 
+export function redactEmailAddresses(text: string): string {
+  return text.replace(EMAIL_ADDRESS, "[email]");
+}
+
 /**
  * Resend's reason for a refused send, fit for a log line: its error code and
  * HTTP status, and its message with email addresses blanked. Some messages
@@ -25,9 +29,7 @@ export function describeSendFailure(error: unknown): string {
     .filter(Boolean)
     .join(" ");
   const detail =
-    typeof message === "string"
-      ? message.replace(EMAIL_ADDRESS, "[email]")
-      : "";
+    typeof message === "string" ? redactEmailAddresses(message) : "";
 
   return [code, detail].filter(Boolean).join(": ") || "no reason given";
 }

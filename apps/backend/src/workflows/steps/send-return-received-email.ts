@@ -143,6 +143,8 @@ export const sendReturnReceivedEmailStep = createStep(
     await notificationModuleService.createNotifications({
       to: recipient,
       channel: "email",
+      resource_type: "order",
+      resource_id: order.id,
       template: EmailTemplates.RETURN_RECEIVED,
       ...emailIdempotency(`return-received:${input.return_id}`),
       data: { order, orderReturn: summary, brand },

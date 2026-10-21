@@ -105,6 +105,8 @@ export const prepareOrderUpdatedEmailStep = createStep(
       notification: {
         to: recipient,
         channel: "email",
+        resource_type: "order",
+        resource_id: order.id,
         template: EmailTemplates.ORDER_UPDATED,
         ...emailIdempotency(
           JSON.stringify([

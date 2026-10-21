@@ -324,6 +324,7 @@ module.exports = defineConfig({
                 orders: process.env.RESEND_FROM_ORDERS_EMAIL,
                 marketing: process.env.RESEND_FROM_MARKETING_EMAIL,
               },
+              reply_to: process.env.SUPPORT_EMAIL,
               encryption_key: process.env.EMAIL_DELIVERY_ENCRYPTION_KEY,
             },
           },

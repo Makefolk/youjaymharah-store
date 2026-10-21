@@ -143,6 +143,8 @@ export const sendExchangeCreatedEmailStep = createStep(
     await notificationModuleService.createNotifications({
       to: recipient,
       channel: "email",
+      resource_type: "order",
+      resource_id: order.id,
       template: EmailTemplates.EXCHANGE_CREATED,
       ...emailIdempotency(`exchange-created:${input.exchange_id}`),
       data: { order, exchange: summary, brand },

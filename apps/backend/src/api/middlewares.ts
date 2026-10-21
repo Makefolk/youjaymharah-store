@@ -543,6 +543,21 @@ export default defineMiddlewares({
       method: ["GET"],
       policies: [{ resource: "cart_reminder", operation: "read" }],
     },
+    {
+      matcher: "/admin/orders/:id/emails",
+      method: ["GET"],
+      policies: [{ resource: "order", operation: "read" }],
+    },
+    {
+      matcher: "/admin/orders/:id/emails/resend-confirmation",
+      method: ["POST"],
+      policies: [{ resource: "order", operation: "update" }],
+    },
+    {
+      matcher: "/admin/customers/:id/support-context",
+      method: ["GET"],
+      policies: [{ resource: "customer", operation: "read" }],
+    },
     // Finishing a social sign-in: the caller holds a token for an auth
     // identity that may not have a customer yet, so `allowUnregistered`
     // mirrors how Medusa gates its own POST /store/customers.

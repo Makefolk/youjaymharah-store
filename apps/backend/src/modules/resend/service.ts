@@ -16,7 +16,11 @@ import type EmailDeliveryModuleService from "../email-delivery/service";
 import { deliverEmail } from "./delivery";
 import { describeSendFailure } from "./send-failure";
 import { snapshotKey } from "./snapshot";
-import { resolveEmailSender, type EmailSenderOptions } from "./email-sender";
+import {
+  resolveEmailSender,
+  resolveReplyTo,
+  type EmailSenderOptions,
+} from "./email-sender";
 import type { CreateEmailOptions } from "resend";
 
 type ResendOptions = EmailSenderOptions & {
@@ -145,10 +149,7 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
         notification.from,
       ),
       to: notification.to,
-      replyTo:
-        typeof notification.data?.reply_to === "string"
-          ? notification.data.reply_to
-          : undefined,
+      replyTo: resolveReplyTo(notification.data, this.options),
       // An explicit subject from the caller overrides the template's default.
       subject:
         notification.content?.subject ?? resolved?.subject ?? "Notification",

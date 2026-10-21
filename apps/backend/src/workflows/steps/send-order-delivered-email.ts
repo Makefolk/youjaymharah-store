@@ -110,6 +110,8 @@ export const sendOrderDeliveredEmailStep = createStep(
     await notificationModuleService.createNotifications({
       to: recipient,
       channel: "email",
+      resource_type: "order",
+      resource_id: order.id,
       template: EmailTemplates.ORDER_DELIVERED,
       ...emailIdempotency(`order-delivered:${input.fulfillment_id}`),
       data: { order, delivery, brand },

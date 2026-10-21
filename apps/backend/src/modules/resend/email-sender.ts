@@ -6,6 +6,8 @@ type SenderGroup = "onboarding" | "accounts" | "orders" | "marketing";
 export type EmailSenderOptions = {
   from: string;
   from_addresses?: Partial<Record<SenderGroup, string>>;
+  /** Used when an email carries neither its own reply-to nor brand data. */
+  reply_to?: string;
 };
 
 const templateSenders = {
@@ -58,4 +60,25 @@ export function resolveEmailSender(
 
   const sender = senders[group];
   return `${sender.name} <${sender.mailbox}@${domain}>`;
+}
+
+const nonEmpty = (value: unknown) =>
+  typeof value === "string" && value.trim() ? value.trim() : undefined;
+
+/**
+ * Where a customer's reply goes. The sending mailboxes (orders@, accounts@)
+ * may not be read, so without this a reply to an order email can vanish.
+ * The brand's support address is the one the email footers already show,
+ * and it follows edits made in the dashboard.
+ */
+export function resolveReplyTo(
+  data: Record<string, unknown> | null | undefined,
+  options: EmailSenderOptions,
+): string | undefined {
+  const brand = data?.brand as { support_email?: unknown } | undefined;
+  return (
+    nonEmpty(data?.reply_to) ??
+    nonEmpty(brand?.support_email) ??
+    nonEmpty(options.reply_to)
+  );
 }

@@ -8,6 +8,11 @@ import { openSnapshot, sealSnapshot } from "./snapshot";
 // Leave a margin before Resend expires its 24-hour idempotency record.
 export const SAFE_RETRY_WINDOW_MS = 23 * 60 * 60 * 1000;
 
+/** The ledger row for a notification's `provider_data.idempotency_key`. */
+export function emailDeliveryId(key: string): string {
+  return `emdel_${createHash("sha256").update(key).digest("hex")}`;
+}
+
 export async function deliverEmail({
   service,
   locking,
@@ -23,7 +28,7 @@ export async function deliverEmail({
   prepare: () => Promise<CreateEmailOptions>;
   send: (payload: CreateEmailOptions, key: string) => Promise<string>;
 }): Promise<{ id: string }> {
-  const id = `emdel_${createHash("sha256").update(key).digest("hex")}`;
+  const id = emailDeliveryId(key);
   return locking.execute(
     `email-delivery:${id}`,
     async () => {

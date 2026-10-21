@@ -160,6 +160,8 @@ export const sendClaimCreatedEmailStep = createStep(
     await notificationModuleService.createNotifications({
       to: recipient,
       channel: "email",
+      resource_type: "order",
+      resource_id: order.id,
       template: EmailTemplates.CLAIM_CREATED,
       ...emailIdempotency(`claim-created:${input.claim_id}`),
       data: { order, claim: summary, brand },

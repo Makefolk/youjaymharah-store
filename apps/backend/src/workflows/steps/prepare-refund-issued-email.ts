@@ -125,6 +125,8 @@ export const prepareRefundIssuedEmailStep = createStep(
       notification: {
         to: recipient,
         channel: "email",
+        resource_type: "order",
+        resource_id: order.id,
         template: EmailTemplates.REFUND_ISSUED,
         ...emailIdempotency(JSON.stringify(["refund-issued", refund.id])),
         data: { order, refund: summary, brand },
