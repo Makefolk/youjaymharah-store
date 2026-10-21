@@ -16,6 +16,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useCart } from "@/features/cart/hooks"
+import { useCustomer, useEmailVerification } from "@/features/customer/hooks"
+import { useSupportRequests } from "@/features/support/hooks"
 import { useOverlay } from "@/features/layout/overlays"
 import { getBagCount } from "@/lib/medusa/product-page"
 import {
@@ -47,22 +49,7 @@ export function UtilityNav({ className }: { className?: string }) {
         <HeartIcon />
       </UtilityItem>
 
-      <UtilityItem label="Account" href={ACCOUNT_PATH}>
-        <UserIcon />
-        {
-          // Show only when there's an account notification or user is not logged in
-          <>
-            <span
-              aria-hidden
-              className="absolute bottom-1/5 left-1/2 inline-block size-1 -translate-x-1/2 rounded-full bg-gold"
-            />
-            <span
-              aria-hidden
-              className="absolute bottom-1/5 left-1/2 inline-block size-1 -translate-x-1/2 animate-ping rounded-full bg-gold motion-reduce:animate-none"
-            />
-          </>
-        }
-      </UtilityItem>
+      <AccountItem />
 
       <BagItem />
     </nav>
@@ -140,5 +127,45 @@ function UtilityItem({
 
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
+  )
+}
+
+/**
+ * The account icon, with a dot when something there needs the customer: an
+ * email to verify, or a support reply waiting. Guests get no dot.
+ */
+function AccountItem() {
+  const { data: customer } = useCustomer()
+  const verification = useEmailVerification({ enabled: Boolean(customer) })
+  const requests = useSupportRequests()
+  const replies = (requests.data ?? []).filter(
+    (request) => request.status === "awaiting_customer",
+  ).length
+  const unverified = verification.data?.verified === false
+  const updates = replies + (unverified ? 1 : 0)
+
+  return (
+    <UtilityItem
+      label={
+        updates
+          ? `Account (${updates} ${updates === 1 ? "update" : "updates"})`
+          : "Account"
+      }
+      href={ACCOUNT_PATH}
+    >
+      <UserIcon />
+      {updates > 0 && (
+        <>
+          <span
+            aria-hidden
+            className="absolute bottom-1/5 left-1/2 inline-block size-1 -translate-x-1/2 rounded-full bg-gold"
+          />
+          <span
+            aria-hidden
+            className="absolute bottom-1/5 left-1/2 inline-block size-1 -translate-x-1/2 animate-ping rounded-full bg-gold motion-reduce:animate-none"
+          />
+        </>
+      )}
+    </UtilityItem>
   )
 }

@@ -4,25 +4,33 @@ import Link from "next/link"
 
 import { formatDate } from "@/components/orders/format"
 import { fetchCustomerOnServer } from "@/features/customer/server"
-import { listCustomerOrdersOnServer } from "@/features/orders/server"
+import {
+  listCustomerOrdersOnServer,
+  ORDERS_PAGE_SIZE,
+} from "@/features/orders/server"
 import {
   formatOrderNumber,
   getOrderProgress,
   getPaymentLabel,
 } from "@/lib/medusa/order"
 import { formatPrice } from "@/lib/medusa/price"
-import { orderPath } from "@/lib/seo/routes"
+import { ACCOUNT_PATH, orderPath } from "@/lib/seo/routes"
 
 export const metadata: Metadata = {
   title: "Your account",
   robots: { index: false },
 }
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: PageProps<"/account">) {
   // The layout has redirected guests already.
   const customer = (await fetchCustomerOnServer())!
-
-  const orders = (await listCustomerOrdersOnServer()) ?? []
+  const { page: pageParam } = await searchParams
+  const page = Math.max(1, Number(pageParam) || 1)
+  const result = await listCustomerOrdersOnServer(page)
+  const orders = result?.orders ?? []
+  const pages = Math.ceil((result?.count ?? 0) / ORDERS_PAGE_SIZE)
 
   return (
     <>
@@ -86,11 +94,47 @@ export default async function AccountPage() {
               )
             })}
           </ul>
+        ) : page > 1 ? (
+          <p className="py-6 text-[15px] text-muted-foreground">
+            No more orders.
+          </p>
         ) : (
           <p className="py-6 text-[15px] text-muted-foreground">
             You haven&apos;t ordered with this account yet. Orders placed as a
             guest with {customer.email} appear here once the email is verified.
           </p>
+        )}
+        {pages > 1 && (
+          <nav
+            aria-label="Order pages"
+            className="flex items-center justify-between border-t border-border/70 pt-5 text-[13px]"
+          >
+            {page > 1 ? (
+              <Link
+                href={
+                  page === 2 ? ACCOUNT_PATH : `${ACCOUNT_PATH}?page=${page - 1}`
+                }
+                className="underline underline-offset-4"
+              >
+                Newer orders
+              </Link>
+            ) : (
+              <span />
+            )}
+            <span className="text-muted-foreground">
+              Page {page} of {pages}
+            </span>
+            {page < pages ? (
+              <Link
+                href={`${ACCOUNT_PATH}?page=${page + 1}`}
+                className="underline underline-offset-4"
+              >
+                Older orders
+              </Link>
+            ) : (
+              <span />
+            )}
+          </nav>
         )}
       </section>
     </>

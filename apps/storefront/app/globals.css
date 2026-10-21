@@ -174,3 +174,13 @@
     }
   }
 }
+
+/* The thin bar app/(main)/loading.tsx shows while a page loads. */
+@keyframes loading {
+  from {
+    left: -33%;
+  }
+  to {
+    left: 100%;
+  }
+}

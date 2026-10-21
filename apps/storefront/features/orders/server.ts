@@ -28,20 +28,30 @@ export async function fetchOrderOnServer(
   }
 }
 
-/** The signed-in customer's orders, newest first; null for a guest. */
-export async function listCustomerOrdersOnServer(): Promise<
-  HttpTypes.StoreOrder[] | null
-> {
+export const ORDERS_PAGE_SIZE = 20
+
+/**
+ * A page of the signed-in customer's orders, newest first, with the total;
+ * null for a guest.
+ */
+export async function listCustomerOrdersOnServer(
+  page = 1,
+): Promise<{ orders: HttpTypes.StoreOrder[]; count: number } | null> {
   const headers = await getAuthHeaders()
   if (!headers.authorization) return null
 
   try {
-    const { orders } = await sdk.store.order.list(
-      { fields: ORDER_LIST_FIELDS, order: "-created_at", limit: 50 },
+    const { orders, count } = await sdk.store.order.list(
+      {
+        fields: ORDER_LIST_FIELDS,
+        order: "-created_at",
+        limit: ORDERS_PAGE_SIZE,
+        offset: (Math.max(1, page) - 1) * ORDERS_PAGE_SIZE,
+      },
       headers,
     )
 
-    return orders
+    return { orders, count }
   } catch (error) {
     if (isUnauthorized(error)) return null
     throw error
