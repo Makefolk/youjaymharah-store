@@ -51,14 +51,9 @@ export async function ShopByWardrobe() {
       className="py-14 sm:py-18 lg:py-24"
     >
       <div className="container-wrapper px-5 sm:px-6 lg:px-12">
-        <div className="border-t border-border/70 pt-8 sm:pt-10">
-          <h2
-            id="home-wardrobes-title"
-            className="font-display text-display-lg"
-          >
-            Shop by wardrobe
-          </h2>
-        </div>
+        <h2 id="home-wardrobes-title" className="font-display text-display-lg">
+          Shop by wardrobe
+        </h2>
 
         <div className="mt-8 flex flex-col gap-12 sm:mt-10">
           {departments.map((department) => (

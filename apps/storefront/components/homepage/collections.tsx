@@ -48,7 +48,7 @@ export async function Collections() {
       className="py-14 sm:py-18 lg:py-24"
     >
       <div className="container-wrapper px-5 sm:px-6 lg:px-12">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-5 border-t border-border/70 pt-8 sm:mb-10 sm:pt-10">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-5 sm:mb-10">
           <h2
             id="home-collections-title"
             className="font-display text-4xl leading-none tracking-[-0.02em] sm:text-5xl lg:text-6xl"

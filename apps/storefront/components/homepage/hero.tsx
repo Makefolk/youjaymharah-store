@@ -46,7 +46,7 @@ export async function Hero() {
 
   if (!content.hasMedia) {
     return (
-      <section className="border-b bg-muted px-5 py-32 text-center sm:px-6">
+      <section className="bg-muted px-5 py-32 text-center sm:px-6">
         <Copy content={content} />
       </section>
     )
