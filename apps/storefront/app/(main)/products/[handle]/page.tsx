@@ -1,15 +1,18 @@
 import type { Metadata } from "next"
 import Image from "next/image"
 import { notFound } from "next/navigation"
+import { Suspense } from "react"
 
-import { getProductByHandle } from "@/lib/medusa/catalog"
-import { formatPrice, getProductPrice } from "@/lib/medusa/price"
+import { ProductList } from "@/components/catalog/product-list"
+import { ProductView } from "@/components/product/product-view"
+import { JsonLd } from "@/components/seo/json-ld"
+import { fetchSizeGuideOnServer } from "@/features/size-guide/server"
+import { getProductByHandle, listProducts } from "@/lib/medusa/catalog"
+import { isNew } from "@/lib/medusa/product"
+import { getStoreRegion } from "@/lib/medusa/region"
 import { getStorefrontSettings } from "@/lib/medusa/storefront-settings"
-import { getColourChoices, getSizeChoices } from "@/lib/medusa/variants"
+import { productJsonLd } from "@/lib/seo/json-ld"
 import { buildProductMetadata } from "@/lib/seo/metadata"
-
-// Stub: enough of a product page for menu and listing links to land on.
-// Replace with the designed page (gallery, selection, add to bag).
 
 export async function generateMetadata({
   params,
@@ -32,59 +35,69 @@ export default async function ProductPage({
     notFound()
   }
 
-  const price = getProductPrice(product)
-  const colours = getColourChoices(product)
-  const sizes = getSizeChoices(product)
+  const categoryId = product.categories?.[0]?.id
+  const [settings, region, sizeGuide, related] = await Promise.all([
+    getStorefrontSettings(),
+    getStoreRegion(),
+    fetchSizeGuideOnServer(product.id),
+    categoryId
+      ? listProducts({ categoryId, limit: 5 })
+      : Promise.resolve({ products: [] }),
+  ])
+  const alsoLike = related.products
+    .filter((candidate) => candidate.id !== product.id)
+    .slice(0, 4)
 
   return (
-    <main className="container-wrapper grid gap-10 px-5 py-10 sm:px-6 md:grid-cols-2">
-      <div className="relative aspect-3/4 bg-muted">
-        {product.thumbnail && (
-          <Image
-            src={product.thumbnail}
-            alt={product.title}
-            fill
-            priority
-            sizes="(min-width: 768px) 50vw, 100vw"
-            className="object-cover"
+    <main className="container-wrapper px-5 pt-4 pb-24 sm:px-6 md:pt-8 lg:px-12">
+      <JsonLd data={productJsonLd(product, region.currency_code, settings)} />
+
+      <Suspense
+        fallback={
+          <div className="grid gap-8 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+            <div className="relative aspect-3/4 bg-muted">
+              {product.thumbnail && (
+                <Image
+                  src={product.thumbnail}
+                  alt={product.title}
+                  fill
+                  priority
+                  sizes="(min-width: 768px) 58vw, 100vw"
+                  className="object-cover"
+                />
+              )}
+            </div>
+            <h1 className="text-2xl font-medium">{product.title}</h1>
+          </div>
+        }
+      >
+        <ProductView
+          product={product}
+          sizeGuide={sizeGuide.size_guide}
+          isNew={isNew(product, settings.products.new_badge_days)}
+          returns={settings.returns}
+          supportEmail={settings.brand.support_email}
+        />
+      </Suspense>
+
+      {alsoLike.length > 0 && (
+        <section aria-labelledby="also-like" className="mt-24">
+          <h2
+            id="also-like"
+            className="mb-8 text-2xl font-medium tracking-[-0.01em]"
+          >
+            You may also like
+          </h2>
+          <ProductList
+            products={alsoLike}
+            newBadgeDays={settings.products.new_badge_days}
+            gutter="default"
+            showDetails
+            showBadges
+            showWishlist
           />
-        )}
-      </div>
-
-      <div>
-        <h1 className="text-2xl font-medium tracking-[-0.01em]">
-          {product.title}
-        </h1>
-        {price && (
-          <p className="mt-2 text-[15px] tabular-nums">
-            {price.isRange && "From "}
-            {formatPrice(price.price.amount, price.price.currencyCode)}
-          </p>
-        )}
-
-        {colours.length > 0 && (
-          <p className="mt-6 text-[13px]">
-            <span className="font-medium">Colour: </span>
-            {colours.map((choice) => choice.value).join(", ")}
-          </p>
-        )}
-        {sizes.length > 0 && (
-          <p className="mt-2 text-[13px]">
-            <span className="font-medium">Sizes: </span>
-            {sizes
-              .map((choice) =>
-                choice.available ? choice.value : `${choice.value} (sold out)`,
-              )
-              .join(", ")}
-          </p>
-        )}
-
-        {product.description && (
-          <p className="mt-6 max-w-[65ch] text-[15px] leading-7">
-            {product.description}
-          </p>
-        )}
-      </div>
+        </section>
+      )}
     </main>
   )
 }
