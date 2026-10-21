@@ -496,6 +496,14 @@ export const StoreContactMessage = z.object({
 
 export type StoreContactMessageType = z.infer<typeof StoreContactMessage>;
 
+export const StoreChangePassword = z.object({
+  current_password: z.string().min(1).max(128),
+  /** The storefront's own minimum; Medusa accepts any. */
+  new_password: z.string().min(8).max(128),
+});
+
+export type StoreChangePasswordType = z.infer<typeof StoreChangePassword>;
+
 export const StoreVerifyCustomerEmail = z.object({
   token: z.string().trim().min(1).max(512),
 });
@@ -964,6 +972,15 @@ export default defineMiddlewares({
       middlewares: [
         rateLimit("contact", 5),
         validateAndTransformBody(StoreContactMessage),
+      ],
+    },
+    {
+      // Checks the current password, so it is rate limited like sign-in.
+      matcher: "/store/customers/me/password/change",
+      method: ["POST"],
+      middlewares: [
+        rateLimit("change-password", 5),
+        validateAndTransformBody(StoreChangePassword),
       ],
     },
     {

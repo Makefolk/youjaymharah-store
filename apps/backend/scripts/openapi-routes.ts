@@ -27,6 +27,7 @@ import {
   AdminCreateOrderFromPayment,
   AdminResendShippingEmail,
   StoreVerifyCustomerEmail,
+  StoreChangePassword,
   StoreOrderLookup,
   StoreRequestReturn,
   StoreCartReminderToken,
@@ -1778,6 +1779,43 @@ export const ROUTES: RouteDoc[] = [
         description:
           "This sign-in method may not be linked to an existing account.",
       },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/store/customers/me/password",
+    tag: "Accounts",
+    summary: "How the customer signs in",
+    description:
+      "Whether the account has a password (so the account page offers to change it, or to set one) and whether it signs in with Google.",
+    auth: "customer",
+    response: {
+      description: "The sign-in methods.",
+      schema: z.object({ has_password: z.boolean(), google: z.boolean() }),
+    },
+    errors: [{ status: 401, description: "No customer is logged in." }],
+  },
+  {
+    method: "POST",
+    path: "/store/customers/me/password/change",
+    tag: "Accounts",
+    summary: "Change the password",
+    description:
+      "Checks the current password, then sets the new one (8 to 128 characters). Accounts without a password set one with POST /store/customers/me/password instead. Rate limited to 5 a minute.",
+    auth: "customer",
+    body: StoreChangePassword,
+    response: {
+      description: "Changed.",
+      schema: z.object({ changed: z.literal(true) }),
+    },
+    errors: [
+      {
+        status: 400,
+        description:
+          "The current password is wrong, the new one is too short, or the account has no password.",
+      },
+      { status: 401, description: "No customer is logged in." },
+      { status: 429, description: "Too many requests." },
     ],
   },
   {
