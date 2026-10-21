@@ -15,21 +15,30 @@ import { PRODUCT_ALERT_MODULE } from "../../../../../modules/product-alert";
 import type ProductAlertModuleService from "../../../../../modules/product-alert/service";
 import { WISHLIST_MODULE } from "../../../../../modules/wishlist";
 import type WishlistModuleService from "../../../../../modules/wishlist/service";
+import { SUPPORT_MODULE } from "../../../../../modules/support";
+import type SupportModuleService from "../../../../../modules/support/service";
 import { listEmailHistory } from "../../../email-history";
 
-const LIMIT = 10;
+/** Rows per section; the admin's "Show more" asks for up to 100. */
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 100;
 
 /**
  * What a support agent needs beside Medusa's own customer page: the emails
  * the customer was sent and whether they arrived, whether their address is
  * suppressed, and what they were waiting on or left in their bag. Records
  * kept by address (alerts, reminders, newsletter) are matched on the
- * account's email as well as its ID, so guest activity shows too.
+ * account's email as well as its ID, so guest activity shows too. `limit`
+ * (10 by default, up to 100) caps each section.
  */
 export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse,
 ) => {
+  const LIMIT = Math.min(
+    MAX_LIMIT,
+    Math.max(1, Number(req.query.limit) || DEFAULT_LIMIT),
+  );
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
   const {
     data: [customer],
@@ -51,6 +60,7 @@ export const GET = async (
     req.scope.resolve(PRODUCT_ALERT_MODULE);
   const reminders: CartReminderModuleService =
     req.scope.resolve(CART_REMINDER_MODULE);
+  const support: SupportModuleService = req.scope.resolve(SUPPORT_MODULE);
 
   const byCustomerOrEmail = email
     ? { $or: [{ customer_id: customer.id }, { email }] }
@@ -63,6 +73,7 @@ export const GET = async (
     [alertRows, alertCount],
     [reminderRows, reminderCount],
     optOuts,
+    [requestRows, requestCount],
   ] = await Promise.all([
     email
       ? listEmailHistory(
@@ -119,6 +130,18 @@ export const GET = async (
     email
       ? reminders.listCartReminderOptOuts({ email }, { select: ["id"] })
       : [],
+    support.listAndCountSupportRequests(byCustomerOrEmail, {
+      select: [
+        "id",
+        "reference",
+        "kind",
+        "status",
+        "order_display_id",
+        "last_message_at",
+      ],
+      order: { last_message_at: "DESC" },
+      take: LIMIT,
+    }),
   ]);
 
   const wishlistItems = [...(wishlist?.items ?? [])]
@@ -220,5 +243,7 @@ export const GET = async (
       opted_out: optOuts.length > 0,
       items: reminderRows,
     },
+    support_requests: { count: requestCount, items: requestRows },
+    limit: LIMIT,
   });
 };

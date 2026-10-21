@@ -439,6 +439,21 @@ const CustomerSupportContext = z.object({
       }),
     ),
   }),
+  support_requests: z.object({
+    count: z.number(),
+    items: z.array(
+      z.object({
+        id: z.string(),
+        reference: z.string(),
+        kind: z.string(),
+        status: z.enum(["open", "awaiting_customer", "resolved"]),
+        order_display_id: z.number().nullable(),
+        last_message_at: z.string(),
+      }),
+    ),
+  }),
+  /** The rows per section this response used. */
+  limit: z.number(),
 });
 
 const PaymentAttempt = z.object({
@@ -2892,11 +2907,19 @@ export const ROUTES: RouteDoc[] = [
     method: "GET",
     path: "/admin/customers/{id}/support-context",
     tag: "Support",
-    summary: "A customer's emails, saved items, alerts and cart reminders",
+    summary:
+      "A customer's support requests, emails, saved items, alerts and cart reminders",
     description:
-      "Up to 10 of each, newest first, with totals. Emails are matched on the account's address, so they include emails sent before it existed. Alerts and cart reminders are matched on customer ID or address; the wishlist on the account only.",
+      "Up to `limit` of each (10 by default, up to 100), newest first, with totals. Emails are matched on the account's address, so they include emails sent before it existed. Alerts and cart reminders are matched on customer ID or address; the wishlist on the account only.",
     auth: "admin",
     policies: ["customer:read"],
+    query: [
+      {
+        name: "limit",
+        description: "Rows per section, 1 to 100; 10 by default.",
+        schema: z.number(),
+      },
+    ],
     response: {
       description: "The customer's support context.",
       schema: CustomerSupportContext,

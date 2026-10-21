@@ -3,9 +3,9 @@ import type {
   AdminCustomer,
   DetailWidgetProps,
 } from "@medusajs/framework/types";
-import { Container, Heading, StatusBadge, Text } from "@medusajs/ui";
+import { Button, Container, Heading, StatusBadge, Text } from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -54,6 +54,18 @@ type SupportContext = {
       created_at: string;
     }[];
   };
+  support_requests: {
+    count: number;
+    items: {
+      id: string;
+      reference: string;
+      kind: string;
+      status: "open" | "awaiting_customer" | "resolved";
+      order_display_id: number | null;
+      last_message_at: string;
+    }[];
+  };
+  limit: number;
   cart_reminders: {
     count: number;
     opted_out: boolean;
@@ -164,6 +176,15 @@ function ProductLine({
   );
 }
 
+const REQUEST_STATUS: Record<
+  "open" | "awaiting_customer" | "resolved",
+  { label: string; color: "orange" | "blue" | "green" }
+> = {
+  open: { label: "Waiting on us", color: "orange" },
+  awaiting_customer: { label: "Waiting on them", color: "blue" },
+  resolved: { label: "Resolved", color: "green" },
+};
+
 /**
  * Beside Medusa's customer page: whether emails reach this customer, and what
  * they saved, asked to be told about, or left in their bag.
@@ -171,13 +192,25 @@ function ProductLine({
 const CustomerSupportWidget = ({
   data: customer,
 }: DetailWidgetProps<AdminCustomer>) => {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["customer-support-context", customer.id],
+  const [limit, setLimit] = useState(10);
+  const { data, isLoading, isError, isFetching } = useQuery({
+    queryKey: ["customer-support-context", customer.id, limit],
     queryFn: () =>
       sdk.client.fetch<SupportContext>(
         `/admin/customers/${customer.id}/support-context`,
+        { query: { limit } },
       ),
+    placeholderData: (previous) => previous,
   });
+  // More exists when a section filled its page and holds more than it shows.
+  const hasMore =
+    data &&
+    limit < 100 &&
+    (data.emails.length >= data.limit ||
+      data.wishlist.count > data.wishlist.items.length ||
+      data.product_alerts.count > data.product_alerts.items.length ||
+      data.cart_reminders.count > data.cart_reminders.items.length ||
+      data.support_requests.count > data.support_requests.items.length);
 
   function renderEmailStatus(context: SupportContext) {
     const notes: string[] = [];
@@ -229,6 +262,35 @@ const CustomerSupportWidget = ({
       >
         {data ? (
           <>
+            <Section
+              title="Support requests"
+              count={data.support_requests.count}
+            >
+              {data.support_requests.items.length ? (
+                data.support_requests.items.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between gap-x-3"
+                  >
+                    <Link
+                      to={`/support-inbox/${request.id}`}
+                      className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover txt-compact-small"
+                    >
+                      {request.reference}
+                      {request.order_display_id
+                        ? ` · order #${request.order_display_id}`
+                        : ""}
+                    </Link>
+                    <StatusBadge color={REQUEST_STATUS[request.status].color}>
+                      {REQUEST_STATUS[request.status].label}
+                    </StatusBadge>
+                  </div>
+                ))
+              ) : (
+                <Muted>No support requests.</Muted>
+              )}
+            </Section>
+
             <Section title="Emails">
               {data.emails.length ? (
                 <EmailHistoryList emails={data.emails} showRecipient={false} />
@@ -316,6 +378,19 @@ const CustomerSupportWidget = ({
                 <Muted>No bag reminders sent.</Muted>
               )}
             </Section>
+
+            {hasMore && (
+              <div className="px-6 py-3">
+                <Button
+                  size="small"
+                  variant="transparent"
+                  isLoading={isFetching}
+                  onClick={() => setLimit(limit < 50 ? 50 : 100)}
+                >
+                  Show more
+                </Button>
+              </div>
+            )}
           </>
         ) : null}
       </RenderFromQuery>
