@@ -18,9 +18,19 @@ medusaIntegrationTestRunner({
   testSuite: ({ api, getContainer, utils }) => {
     describe("recording Credo dashboard refunds", () => {
       const subjects: string[] = [];
+      let gatewayRefund: Record<string, unknown>;
+      const submissions: string[] = [];
 
       beforeEach(async () => {
         subjects.length = 0;
+        submissions.length = 0;
+        gatewayRefund = {
+          id: 123,
+          transaction: 777,
+          amount: 50000,
+          currency: "NGN",
+          status: "processed",
+        };
         await provisionRbacRoles(getContainer());
         jest.spyOn(global, "fetch").mockImplementation(async (url, options) => {
           const target = new URL(String(url));
@@ -30,12 +40,28 @@ medusaIntegrationTestRunner({
           }
           if (target.origin !== "https://api.paystack.co")
             throw new Error("Unexpected external request in refund test");
+          if (target.pathname === "/refund") {
+            submissions.push("POST /refund");
+            throw new Error(
+              "Refund submission must never be retried or initiated here",
+            );
+          }
+          if (target.pathname === "/refund/123")
+            return new Response(
+              JSON.stringify({ status: true, data: gatewayRefund }),
+            );
           const body = options?.body ? JSON.parse(String(options.body)) : {};
           const reference =
             body.reference ??
             decodeURIComponent(target.pathname.split("/").at(-1)!);
           const data = target.pathname.startsWith("/transaction/verify/")
-            ? { reference, status: "success", currency: "NGN", amount: 129000 }
+            ? {
+                id: 777,
+                reference,
+                status: "success",
+                currency: "NGN",
+                amount: 129000,
+              }
             : { reference, authorization_url: "https://example.com/pay" };
           return new Response(JSON.stringify({ status: true, data }));
         });
@@ -145,6 +171,59 @@ medusaIntegrationTestRunner({
           await new Promise((resolve) => setTimeout(resolve, 250));
         }
         expect(subjects.some((subject) => /refund/i.test(subject))).toBe(true);
+        const duplicate = await api.post(
+          `/admin/orders/${orderId}/credo-refunds`,
+          { payment_id: paymentId, amount: 500, reference: "crd-ref-123" },
+          { ...support, validateStatus: () => true },
+        );
+        expect(duplicate.status).toBe(409);
+        expect((await paymentState(paymentId)).refunds).toHaveLength(1);
+      });
+
+      it("records only a completed Paystack refund, once under concurrent requests", async () => {
+        const { orderId, paymentId } = await paidOrder({ credo: false });
+        const support = await login("role_support");
+        const options = { ...support, validateStatus: () => true };
+        const body = { payment_id: paymentId, amount: 500, reference: "123" };
+        const ordinary = await api.post(
+          `/admin/payments/${paymentId}/refund`,
+          { amount: 500 },
+          options,
+        );
+        expect(ordinary.status).toBe(400);
+        for (const change of [
+          { status: "pending" },
+          { status: "failed" },
+          { status: "processing" },
+          { transaction: 888 },
+          { currency: "USD" },
+          { amount: 1 },
+        ]) {
+          const original = { ...gatewayRefund };
+          gatewayRefund = { ...gatewayRefund, ...change };
+          const rejected = await api.post(
+            `/admin/orders/${orderId}/paystack-refunds`,
+            body,
+            options,
+          );
+          expect(rejected.status).toBe(400);
+          expect((await paymentState(paymentId)).refunds ?? []).toHaveLength(0);
+          gatewayRefund = original;
+        }
+        const responses = await Promise.all([
+          api.post(`/admin/orders/${orderId}/paystack-refunds`, body, options),
+          api.post(`/admin/orders/${orderId}/paystack-refunds`, body, options),
+        ]);
+        expect(responses.map((response) => response.status).sort()).toEqual([
+          200, 409,
+        ]);
+        const payment = await paymentState(paymentId);
+        expect(payment.refunds).toHaveLength(1);
+        expect(payment.data?.refund).toMatchObject({
+          id: 123,
+          status: "processed",
+        });
+        expect(submissions).toEqual([]);
       });
 
       it("refuses too much, other gateways, and leaves no authorization behind", async () => {

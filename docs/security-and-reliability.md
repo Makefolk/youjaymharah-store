@@ -1,5 +1,9 @@
 # Security and reliability
 
+The [October 22 remediation report](security-remediation-2026-10-22.md)
+records the current authentication/refund changes, dependency findings and
+validation. The September results below are historical.
+
 ## Changes in the September 2026 pass
 
 - Redirect payment authorization and capture compare the verified amount, currency, and merchant reference to the stored session. Credo reads `transAmount`, `currencyCode`, and `businessRef`; refunded transactions cannot authorize a new order. Payment HTTP requests have a 15-second deadline and are not automatically retried by the client.

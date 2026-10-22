@@ -4,7 +4,8 @@ import {
   completeSignIn,
   extraStepRequired,
 } from "@/lib/medusa/auth"
-import { sdk } from "@/lib/medusa/server"
+import { requestSdk } from "@/lib/medusa/server"
+import { readJsonBody } from "@/lib/http/request-body"
 
 /** Email and password sign-in. The token goes into an httpOnly cookie only. */
 export async function POST(request: Request): Promise<Response> {
@@ -12,10 +13,12 @@ export async function POST(request: Request): Promise<Response> {
     return crossOriginRefused()
   }
 
-  const body = (await request.json().catch(() => null)) as {
+  const body = await readJsonBody<{
     email?: unknown
     password?: unknown
-  } | null
+  }>(request)
+  if (body instanceof Response) return body
+  const sdk = requestSdk(request)
 
   if (typeof body?.email !== "string" || typeof body.password !== "string") {
     return Response.json(

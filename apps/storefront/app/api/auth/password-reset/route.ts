@@ -1,5 +1,6 @@
 import { crossOriginRefused, isSameOrigin } from "@/lib/http/same-origin"
-import { sdk } from "@/lib/medusa/server"
+import { requestSdk } from "@/lib/medusa/server"
+import { readJsonBody } from "@/lib/http/request-body"
 
 /**
  * Emails a password reset link. Always answers the same way, whether or not
@@ -11,9 +12,11 @@ export async function POST(request: Request): Promise<Response> {
     return crossOriginRefused()
   }
 
-  const body = (await request.json().catch(() => null)) as {
+  const body = await readJsonBody<{
     email?: unknown
-  } | null
+  }>(request)
+  if (body instanceof Response) return body
+  const sdk = requestSdk(request)
 
   if (typeof body?.email !== "string" || !body.email.trim()) {
     return Response.json({ message: "Email is required." }, { status: 400 })

@@ -23,6 +23,7 @@ import {
   AdminUpdateContentPages,
   AdminResolveEmailDelivery,
   AdminRecordCredoRefund,
+  AdminRecordPaystackRefund,
   StoreOrderHelp,
   StoreSupportReply,
   AdminSupportReply,
@@ -1508,7 +1509,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Customers",
     summary: "Whether the customer's email is verified",
     description:
-      "True once the customer opened a verification link for the account's current email, or always for accounts that sign in with Google, which only accepts verified emails.",
+      "True once the customer opened a verification link for the account's current email, or when Google verified the same email address currently on the account.",
     auth: "customer",
     response: {
       description: "The account's email and whether it is verified.",
@@ -1807,7 +1808,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Accounts",
     summary: "Finish a social sign-in",
     description:
-      "Call this with the token from GET /auth/customer/{provider}/callback instead of POST /store/customers. If the provider-verified email already has an account, the sign-in method is attached to it and that customer is returned (`linked: true`); otherwise a new customer is created. Only providers that verify email ownership (currently Google) may link; an emailpass identity is rejected.",
+      "Call this with the token from GET /auth/customer/{provider}/callback instead of POST /store/customers. Existing password accounts must have verified their email before Google can link to them. Otherwise a new customer is created. Only providers that verify email ownership (currently Google) may link; an emailpass identity is rejected.",
     auth: "customer",
     body: StoreCreateSocialCustomer,
     response: {
@@ -1815,7 +1816,11 @@ export const ROUTES: RouteDoc[] = [
       schema: z.object({ customer: Customer, linked: z.boolean() }),
     },
     errors: [
-      { status: 400, description: "The sign-in returned no email address." },
+      {
+        status: 400,
+        description:
+          "The sign-in returned no email address, or the existing password account has not verified it.",
+      },
       { status: 401, description: "No auth token was provided." },
       {
         status: 403,
@@ -2481,7 +2486,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Support",
     summary: "Record a refund made in the Credo dashboard",
     description:
-      "Credo has no refund API, so staff refund in its dashboard and record it here. Runs Medusa's refund for exactly that amount on the order's Credo payment, without calling Credo: the refund is attributed to the caller with the Credo reference in its note, the order's balance updates, and the customer gets the refund email. Medusa's checks apply, so it can't exceed what was captured. The ordinary refund route keeps refusing Credo payments.",
+      "Credo has no refund API, so staff refund in its dashboard and record it here. Runs Medusa's refund for exactly that amount on the order's Credo payment, without calling Credo: the refund is attributed to the caller with the Credo reference in its note, the order's balance updates, and the customer gets the refund email. Medusa's checks apply, so it can't exceed what was captured. The ordinary refund route keeps refusing Credo payments. A gateway reference can be recorded only once; duplicate or uncertain attempts require reconciliation.",
     auth: "admin",
     policies: ["refund:create"],
     body: AdminRecordCredoRefund,
@@ -2491,9 +2496,45 @@ export const ROUTES: RouteDoc[] = [
     },
     errors: [
       {
+        status: 409,
+        description:
+          "This gateway refund is already recorded or awaiting reconciliation.",
+      },
+      {
         status: 400,
         description:
           "Not a Credo payment, or more than what is left to refund.",
+      },
+      {
+        status: 404,
+        description: "No such order, or the payment isn't on it.",
+      },
+    ],
+  },
+  {
+    method: "POST",
+    path: "/admin/orders/{id}/paystack-refunds",
+    tag: "Support",
+    summary: "Record a completed Paystack refund",
+    description:
+      "Enter the numeric refund ID from Paystack after it reaches processed status. Verifies its transaction, amount and currency against Paystack before recording it and notifying the customer. Gateway references can be recorded only once, including concurrent requests. This endpoint never sends money. Initiate refunds in the Paystack dashboard.",
+    auth: "admin",
+    policies: ["refund:create"],
+    body: AdminRecordPaystackRefund,
+    response: {
+      description: "Recorded.",
+      schema: z.object({ recorded: z.literal(true) }),
+    },
+    errors: [
+      {
+        status: 409,
+        description:
+          "This gateway refund is already recorded or awaiting reconciliation.",
+      },
+      {
+        status: 400,
+        description:
+          "The refund is incomplete, belongs to another transaction, or its amount or currency does not match.",
       },
       {
         status: 404,

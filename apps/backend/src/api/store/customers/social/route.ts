@@ -2,7 +2,10 @@ import type {
   AuthenticatedMedusaRequest,
   MedusaResponse,
 } from "@medusajs/framework/http";
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
+import {
+  ContainerRegistrationKeys,
+  MedusaError,
+} from "@medusajs/framework/utils";
 
 import type { StoreCreateSocialCustomerType } from "../../../middlewares";
 import { linkOrCreateCustomerAccountWorkflow } from "../../../../workflows/link-or-create-customer-account";
@@ -28,15 +31,22 @@ export const POST = async (
   let linked = !!alreadyLinkedId;
 
   if (!customerId) {
-    const { result } = await linkOrCreateCustomerAccountWorkflow(req.scope).run(
-      {
-        input: {
-          auth_identity_id: req.auth_context.auth_identity_id,
-          first_name: req.validatedBody?.first_name ?? null,
-          last_name: req.validatedBody?.last_name ?? null,
-        },
+    const { result, errors } = await linkOrCreateCustomerAccountWorkflow(
+      req.scope,
+    ).run({
+      input: {
+        auth_identity_id: req.auth_context.auth_identity_id,
+        first_name: req.validatedBody?.first_name ?? null,
+        last_name: req.validatedBody?.last_name ?? null,
       },
-    );
+    });
+
+    if (errors?.length) throw errors[0].error;
+    if (!result?.customer_id)
+      throw new MedusaError(
+        MedusaError.Types.UNEXPECTED_STATE,
+        "Sign-in could not complete. Please try again.",
+      );
 
     customerId = result.customer_id;
     linked = result.linked;

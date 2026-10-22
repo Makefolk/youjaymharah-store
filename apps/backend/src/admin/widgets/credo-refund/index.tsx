@@ -18,7 +18,7 @@ import { useState } from "react";
 import { sdk } from "../../lib/sdk";
 import { usePermissions, withPermission } from "../../lib/permissions";
 
-const CREDO_PROVIDER_ID = "pp_credo_credo";
+const GATEWAY_PROVIDERS = ["pp_credo_credo", "pp_paystack_paystack"];
 
 type Payment = {
   id: string;
@@ -44,16 +44,14 @@ const money = (amount: number, currency: string) => {
 };
 
 /**
- * Credo has no refund API: staff refund in the Credo dashboard, then record
- * it here so the order, its balance and the customer's refund email match.
- * Shown only for orders paid with Credo.
+ * Gateway refunds must complete before the order balance and email change.
  */
 const CredoRefundWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
   const { can } = usePermissions();
   const [open, setOpen] = useState(false);
 
   const payments = useQuery({
-    queryKey: ["credo-payments", order.id],
+    queryKey: ["gateway-refund-payments", order.id],
     queryFn: async () => {
       const { order: withPayments } = await sdk.admin.order.retrieve(order.id, {
         fields:
@@ -61,27 +59,29 @@ const CredoRefundWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
       });
       return (withPayments.payment_collections ?? [])
         .flatMap((collection) => collection.payments ?? [])
-        .filter(
-          (payment) => payment.provider_id === CREDO_PROVIDER_ID,
+        .filter((payment) =>
+          GATEWAY_PROVIDERS.includes(payment.provider_id),
         ) as unknown as Payment[];
     },
   });
 
-  const credo = (payments.data ?? []).map((payment) => ({
+  const eligiblePayments = (payments.data ?? []).map((payment) => ({
     ...payment,
     refundable: sum(payment.captures) - sum(payment.refunds),
   }));
-  if (!credo.length) return null;
+  if (!eligiblePayments.length) return null;
 
   return (
     <Container className="divide-y p-0">
       <div className="flex items-center justify-between gap-x-4 px-6 py-4">
-        <Heading level="h2">Credo refund</Heading>
+        <Heading level="h2">Gateway refunds</Heading>
         {can("refund", "create") && (
           <Button
             size="small"
             variant="secondary"
-            disabled={!credo.some((payment) => payment.refundable > 0)}
+            disabled={
+              !eligiblePayments.some((payment) => payment.refundable > 0)
+            }
             onClick={() => setOpen(true)}
           >
             Record refund
@@ -90,21 +90,24 @@ const CredoRefundWidget = ({ data: order }: DetailWidgetProps<AdminOrder>) => {
       </div>
       <div className="flex flex-col gap-y-2 px-6 py-4">
         <Text size="small" leading="compact" className="text-ui-fg-subtle">
-          Credo refunds are made in the Credo dashboard. After refunding there,
-          record it here with Credo's reference: the order and its balance
-          update, and the customer gets the refund email.
+          Issue the refund in the gateway dashboard first. Record it here after
+          it completes to update the order balance and email the customer.
+          Paystack refunds are checked against the gateway before recording.
         </Text>
-        {credo.map((payment) => (
+        {eligiblePayments.map((payment) => (
           <Text key={payment.id} size="small" leading="compact">
-            {money(payment.refundable, payment.currency_code)} left to refund of{" "}
-            {money(Number(payment.amount), payment.currency_code)}
+            {payment.provider_id === "pp_paystack_paystack"
+              ? "Paystack"
+              : "Credo"}
+            : {money(payment.refundable, payment.currency_code)} left to refund
+            of {money(Number(payment.amount), payment.currency_code)}
           </Text>
         ))}
       </div>
       {open && (
         <RecordDrawer
           orderId={order.id}
-          payments={credo}
+          payments={eligiblePayments}
           onClose={() => setOpen(false)}
         />
       )}
@@ -125,6 +128,8 @@ const RecordDrawer = ({
   const refundable = payments.filter((payment) => payment.refundable > 0);
   const [paymentId, setPaymentId] = useState(refundable[0]?.id ?? "");
   const payment = refundable.find((entry) => entry.id === paymentId);
+  const gateway =
+    payment?.provider_id === "pp_paystack_paystack" ? "Paystack" : "Credo";
   const [amount, setAmount] = useState(
     payment ? String(payment.refundable) : "",
   );
@@ -142,23 +147,30 @@ const RecordDrawer = ({
     Boolean(payment) &&
     parsed > 0 &&
     parsed <= (payment?.refundable ?? 0) &&
-    reference.trim().length >= 3;
+    (gateway === "Paystack"
+      ? /^[1-9]\d{0,19}$/.test(reference.trim())
+      : reference.trim().length >= 3);
 
   const save = useMutation({
     mutationFn: () =>
-      sdk.client.fetch(`/admin/orders/${orderId}/credo-refunds`, {
-        method: "POST",
-        body: {
-          payment_id: paymentId,
-          amount: parsed,
-          reference: reference.trim(),
-          refund_reason_id: reasonId || null,
-          note: note.trim() || null,
+      sdk.client.fetch(
+        `/admin/orders/${orderId}/${gateway.toLowerCase()}-refunds`,
+        {
+          method: "POST",
+          body: {
+            payment_id: paymentId,
+            amount: parsed,
+            reference: reference.trim(),
+            refund_reason_id: reasonId || null,
+            note: note.trim() || null,
+          },
         },
-      }),
+      ),
     onSuccess: () => {
-      toast.success("Refund recorded. The customer has been emailed.");
-      void queryClient.invalidateQueries({ queryKey: ["credo-payments"] });
+      toast.success("Refund recorded. The customer notification is queued.");
+      void queryClient.invalidateQueries({
+        queryKey: ["gateway-refund-payments"],
+      });
       // Medusa's own order queries, so its Payments section shows the refund.
       void queryClient.invalidateQueries({ queryKey: ["orders"] });
       onClose();
@@ -170,12 +182,12 @@ const RecordDrawer = ({
     <Drawer open onOpenChange={(open) => !open && onClose()}>
       <Drawer.Content>
         <Drawer.Header>
-          <Drawer.Title>Record a Credo refund</Drawer.Title>
+          <Drawer.Title>Record a {gateway} refund</Drawer.Title>
         </Drawer.Header>
         <Drawer.Body className="flex flex-col gap-5 overflow-y-auto">
           <Text size="small" className="text-ui-fg-subtle">
-            Only after the refund shows as done in the Credo dashboard. This
-            records it; it doesn't send any money.
+            Only after the refund shows as completed in the {gateway} dashboard.
+            This records it; it doesn't send any money.
           </Text>
           {refundable.length > 1 && (
             <div className="flex flex-col gap-y-2">
@@ -198,11 +210,11 @@ const RecordDrawer = ({
             </div>
           )}
           <div className="flex flex-col gap-y-2">
-            <Label htmlFor="credo-amount" size="small" weight="plus">
+            <Label htmlFor="gateway-refund-amount" size="small" weight="plus">
               Amount refunded
             </Label>
             <Input
-              id="credo-amount"
+              id="gateway-refund-amount"
               type="number"
               min={0}
               step="0.01"
@@ -220,11 +232,17 @@ const RecordDrawer = ({
             )}
           </div>
           <div className="flex flex-col gap-y-2">
-            <Label htmlFor="credo-reference" size="small" weight="plus">
-              Credo refund reference
+            <Label
+              htmlFor="gateway-refund-reference"
+              size="small"
+              weight="plus"
+            >
+              {gateway === "Paystack"
+                ? "Paystack refund ID"
+                : "Credo refund reference"}
             </Label>
             <Input
-              id="credo-reference"
+              id="gateway-refund-reference"
               value={reference}
               onChange={(event) => setReference(event.target.value)}
             />

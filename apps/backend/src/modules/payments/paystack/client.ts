@@ -64,14 +64,11 @@ export class PaystackClient {
     };
   }
 
-  async refund(
-    reference: string,
-    amountInMinor: number,
-  ): Promise<Record<string, unknown>> {
-    return await this.request<Record<string, unknown>>("POST", "/refund", {
-      transaction: reference,
-      amount: amountInMinor,
-    });
+  async retrieveRefund(id: string): Promise<Record<string, unknown>> {
+    return this.request<Record<string, unknown>>(
+      "GET",
+      `/refund/${encodeURIComponent(id)}`,
+    );
   }
 
   private async request<T>(

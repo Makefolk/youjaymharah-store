@@ -3,6 +3,7 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import type { IPaymentModuleService } from "@medusajs/framework/types";
 import { requireIsolatedDatabase } from "../helpers/isolated-database";
 import { sendRefundIssuedEmailWorkflow } from "../../src/workflows/send-refund-issued-email";
+import { recordCredoRefundWorkflow } from "../../src/workflows/record-credo-refund";
 import {
   completeCartWorkflow,
   createPaymentCollectionForCartWorkflow,
@@ -21,11 +22,18 @@ medusaIntegrationTestRunner({
       let verification: Record<string, unknown>;
       let refundFails: boolean;
       let fetchMock: jest.SpyInstance;
+      let refunds: Map<string, number>;
 
       beforeEach(() => {
         service = getContainer().resolve(Modules.PAYMENT);
-        verification = { status: "success", amount: 10_000, currency: "NGN" };
+        verification = {
+          id: 777,
+          status: "success",
+          amount: 10_000,
+          currency: "NGN",
+        };
         refundFails = false;
+        refunds = new Map();
         fetchMock = jest
           .spyOn(global, "fetch")
           .mockImplementation(async (url, options) => {
@@ -56,7 +64,7 @@ medusaIntegrationTestRunner({
                 ),
                 ...verification,
               };
-            } else if (target.pathname === "/refund") {
+            } else if (target.pathname.startsWith("/refund/")) {
               if (refundFails)
                 return new Response(
                   JSON.stringify({
@@ -65,7 +73,15 @@ medusaIntegrationTestRunner({
                   }),
                   { status: 503 },
                 );
-              data = { id: "gateway-refund", status: "processed" };
+              const id = target.pathname.split("/").at(-1)!;
+              if (!refunds.has(id)) throw new Error("Unknown test refund");
+              data = {
+                id: Number(id),
+                transaction: 777,
+                status: "processed",
+                amount: refunds.get(id),
+                currency: "NGN",
+              };
             } else throw new Error("Unexpected Paystack endpoint in test");
             return new Response(JSON.stringify({ status: true, data }));
           });
@@ -94,6 +110,24 @@ medusaIntegrationTestRunner({
         const payment = await service.authorizePaymentSession(pending.id, {});
         if (!payment) throw new Error("Expected an authorized payment");
         return payment;
+      }
+
+      async function authorizeRecordedRefund(
+        paymentId: string,
+        amount: number,
+        reference: string,
+      ) {
+        refunds.set(reference, amount * 100);
+        await service.updatePayment({
+          id: paymentId,
+          data: {
+            dashboard_refund: {
+              reference,
+              amount_in_minor: amount * 100,
+              recorded_by: "test-admin",
+            },
+          },
+        } as Parameters<IPaymentModuleService["updatePayment"]>[0]);
       }
 
       async function checkoutCart() {
@@ -228,7 +262,9 @@ medusaIntegrationTestRunner({
           getContainer().resolve(Modules.EVENT_BUS),
           "emit",
         );
+        await authorizeRecordedRefund(payment.id, 20, "101");
         await service.refundPayment({ payment_id: payment.id, amount: 20 });
+        await authorizeRecordedRefund(payment.id, 30, "102");
         const result = await service.refundPayment({
           payment_id: payment.id,
           amount: 30,
@@ -257,6 +293,7 @@ medusaIntegrationTestRunner({
           "emit",
         );
         refundFails = true;
+        await authorizeRecordedRefund(payment.id, 20, "101");
         await expect(
           service.refundPayment({ payment_id: payment.id, amount: 20 }),
         ).rejects.toThrow();
@@ -283,11 +320,34 @@ medusaIntegrationTestRunner({
       });
 
       it("serializes competing refunds so their sum cannot exceed the capture", async () => {
-        const payment = await capturedPayment();
-        const outcomes = await Promise.allSettled([
-          service.refundPayment({ payment_id: payment.id, amount: 60 }),
-          service.refundPayment({ payment_id: payment.id, amount: 60 }),
-        ]);
+        const { cart, collection } = await checkoutCart();
+        const container = getContainer();
+        const { result: order } = await completeCartWorkflow(container).run({
+          input: { id: cart.id },
+        });
+        const captured = await service.retrievePaymentCollection(
+          collection.id,
+          {
+            relations: ["payments"],
+          },
+        );
+        const payment = captured.payments![0];
+        refunds.set("101", 6000);
+        refunds.set("102", 6000);
+        const outcomes = await Promise.allSettled(
+          ["101", "102"].map((reference) =>
+            recordCredoRefundWorkflow(container).run({
+              input: {
+                order_id: order.id,
+                payment_id: payment.id,
+                provider: "paystack",
+                reference,
+                amount: 60,
+                user_id: "test-admin",
+              },
+            }),
+          ),
+        );
         expect(
           outcomes.filter((outcome) => outcome.status === "fulfilled"),
         ).toHaveLength(1);
@@ -298,7 +358,7 @@ medusaIntegrationTestRunner({
         expect(Number(stored.refunds?.[0]?.amount)).toBe(60);
         expect(
           fetchMock.mock.calls.filter(([url]) =>
-            String(url).endsWith("/refund"),
+            String(url).includes("/refund/"),
           ),
         ).toHaveLength(1);
       });

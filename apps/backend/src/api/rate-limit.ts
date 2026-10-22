@@ -10,14 +10,24 @@ import type {
 } from "@medusajs/framework/types";
 import { Modules } from "@medusajs/framework/utils";
 
-export function rateLimit(bucket: string, limit: number) {
+export function rateLimit(
+  bucket: string,
+  limit: number,
+  by: "ip" | "account" = "ip",
+) {
   return async (
     req: MedusaRequest,
     res: MedusaResponse,
     next: MedusaNextFunction,
   ) => {
     const window = Math.floor(Date.now() / 60_000);
-    const address = req.ip ?? req.socket.remoteAddress ?? "unknown";
+    const body = req.body as
+      { email?: unknown; identifier?: unknown } | undefined;
+    const identifier = body?.email ?? body?.identifier;
+    const address =
+      by === "account" && typeof identifier === "string"
+        ? identifier.trim().toLowerCase()
+        : (req.ip ?? req.socket.remoteAddress ?? "unknown");
     const key = `rate-limit:${bucket}:${window}:${createHash("sha256").update(address).digest("hex")}`;
     try {
       const cache: ICachingModuleService = req.scope.resolve(Modules.CACHING);

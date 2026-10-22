@@ -128,7 +128,12 @@ try {
   }
   if (generateModule)
     run("pnpm", ["exec", "medusa", "db:generate", generateModule]);
-  else run("pnpm", ["run", "test:integration:http", ...args]);
+  else
+    run("pnpm", [
+      "run",
+      args.length ? "test:integration:http" : "test:integration:http:batches",
+      ...args,
+    ]);
 } finally {
   if (started)
     run(join(bin, "pg_ctl"), ["-D", data, "-m", "fast", "-w", "stop"]);

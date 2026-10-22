@@ -91,7 +91,44 @@ class PaystackPaymentProvider extends RedirectPaymentProvider<PaystackOptions> {
     session: RedirectSessionData;
     amountInMinor: number;
   }): Promise<Record<string, unknown>> {
-    return await this.client.refund(args.session.reference, args.amountInMinor);
+    const recorded = args.session.dashboard_refund;
+    if (
+      !recorded ||
+      !/^[1-9]\d*$/.test(recorded.reference) ||
+      recorded.amount_in_minor !== args.amountInMinor
+    ) {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        'Refund in the Paystack dashboard, then use "Record refund" on the order page with the completed refund ID.',
+      );
+    }
+    const refund = await this.client.retrieveRefund(recorded.reference);
+    const transaction = await this.client.verify(args.session.reference);
+    const refundTransaction =
+      typeof refund.transaction === "object" && refund.transaction !== null
+        ? (refund.transaction as Record<string, unknown>).id
+        : refund.transaction;
+    if (
+      refund.status !== "processed" ||
+      String(refund.id) !== recorded.reference ||
+      refund.amount !== args.amountInMinor ||
+      refund.currency !== args.session.currency_code.toUpperCase() ||
+      !transaction.raw.id ||
+      String(refundTransaction) !== String(transaction.raw.id)
+    ) {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "Paystack has not confirmed a completed refund for this payment, amount and currency.",
+      );
+    }
+    return {
+      source: "paystack_dashboard",
+      id: refund.id,
+      reference: recorded.reference,
+      status: "processed",
+      amount_in_minor: args.amountInMinor,
+      recorded_by: recorded.recorded_by,
+    };
   }
 
   protected async parseWebhook(

@@ -4,7 +4,8 @@ import {
   completeSignIn,
   extraStepRequired,
 } from "@/lib/medusa/auth"
-import { sdk } from "@/lib/medusa/server"
+import { requestSdk } from "@/lib/medusa/server"
+import { readJsonBody } from "@/lib/http/request-body"
 
 const optionalString = (value: unknown) =>
   typeof value === "string" && value.trim() ? value.trim() : undefined
@@ -15,10 +16,9 @@ export async function POST(request: Request): Promise<Response> {
     return crossOriginRefused()
   }
 
-  const body = (await request.json().catch(() => null)) as Record<
-    string,
-    unknown
-  > | null
+  const body = await readJsonBody<Record<string, unknown>>(request)
+  if (body instanceof Response) return body
+  const sdk = requestSdk(request)
 
   if (typeof body?.email !== "string" || typeof body.password !== "string") {
     return Response.json(

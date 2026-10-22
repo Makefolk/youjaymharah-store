@@ -6425,7 +6425,7 @@
           "Customers"
         ],
         "summary": "Whether the customer's email is verified",
-        "description": "True once the customer opened a verification link for the account's current email, or always for accounts that sign in with Google, which only accepts verified emails.",
+        "description": "True once the customer opened a verification link for the account's current email, or when Google verified the same email address currently on the account.",
         "security": [
           {
             "publishableKey": [],
@@ -8437,7 +8437,7 @@
           "Accounts"
         ],
         "summary": "Finish a social sign-in",
-        "description": "Call this with the token from GET /auth/customer/{provider}/callback instead of POST /store/customers. If the provider-verified email already has an account, the sign-in method is attached to it and that customer is returned (`linked: true`); otherwise a new customer is created. Only providers that verify email ownership (currently Google) may link; an emailpass identity is rejected.",
+        "description": "Call this with the token from GET /auth/customer/{provider}/callback instead of POST /store/customers. Existing password accounts must have verified their email before Google can link to them. Otherwise a new customer is created. Only providers that verify email ownership (currently Google) may link; an emailpass identity is rejected.",
         "security": [
           {
             "publishableKey": [],
@@ -8557,7 +8557,7 @@
             }
           },
           "400": {
-            "description": "The sign-in returned no email address.",
+            "description": "The sign-in returned no email address, or the existing password account has not verified it.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8661,7 +8661,8 @@
                 "properties": {
                   "password": {
                     "type": "string",
-                    "minLength": 8
+                    "minLength": 8,
+                    "maxLength": 128
                   }
                 },
                 "required": [
@@ -12285,7 +12286,7 @@
           "Support"
         ],
         "summary": "Record a refund made in the Credo dashboard",
-        "description": "Credo has no refund API, so staff refund in its dashboard and record it here. Runs Medusa's refund for exactly that amount on the order's Credo payment, without calling Credo: the refund is attributed to the caller with the Credo reference in its note, the order's balance updates, and the customer gets the refund email. Medusa's checks apply, so it can't exceed what was captured. The ordinary refund route keeps refusing Credo payments.",
+        "description": "Credo has no refund API, so staff refund in its dashboard and record it here. Runs Medusa's refund for exactly that amount on the order's Credo payment, without calling Credo: the refund is attributed to the caller with the Credo reference in its note, the order's balance updates, and the customer gets the refund email. Medusa's checks apply, so it can't exceed what was captured. The ordinary refund route keeps refusing Credo payments. A gateway reference can be recorded only once; duplicate or uncertain attempts require reconciliation.",
         "x-required-policies": [
           "refund:create"
         ],
@@ -12403,6 +12404,161 @@
           },
           "404": {
             "description": "No such order, or the payment isn't on it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "This gateway refund is already recorded or awaiting reconciliation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{id}/paystack-refunds": {
+      "post": {
+        "operationId": "postAdminOrdersIdPaystackRefunds",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Record a completed Paystack refund",
+        "description": "Enter the numeric refund ID from Paystack after it reaches processed status. Verifies its transaction, amount and currency against Paystack before recording it and notifying the customer. Gateway references can be recorded only once, including concurrent requests. This endpoint never sends money. Initiate refunds in the Paystack dashboard.",
+        "x-required-policies": [
+          "refund:create"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payment_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "amount": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "reference": {
+                    "type": "string",
+                    "pattern": "^[1-9]\\d{0,19}$"
+                  },
+                  "refund_reason_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "note": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "payment_id",
+                  "amount",
+                  "reference"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "recorded": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "recorded"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The refund is incomplete, belongs to another transaction, or its amount or currency does not match.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such order, or the payment isn't on it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "This gateway refund is already recorded or awaiting reconciliation.",
             "content": {
               "application/json": {
                 "schema": {

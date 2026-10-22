@@ -44,8 +44,11 @@ async function verificationState(req: AuthenticatedMedusaRequest) {
   ]);
 
   const verified =
-    (identity.provider_identities ?? []).some((provider) =>
-      VERIFYING_PROVIDERS.has(provider.provider),
+    (identity.provider_identities ?? []).some(
+      (provider) =>
+        VERIFYING_PROVIDERS.has(provider.provider) &&
+        typeof provider.user_metadata?.email === "string" &&
+        provider.user_metadata.email.trim().toLowerCase() === email,
     ) || verifications.some((verification) => verification.verified_at);
 
   return { email, verified, authIdentityId };

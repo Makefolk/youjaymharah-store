@@ -1,6 +1,7 @@
 import { crossOriginRefused, isSameOrigin } from "@/lib/http/same-origin"
 import { authFailure } from "@/lib/medusa/auth"
-import { sdk } from "@/lib/medusa/server"
+import { requestSdk } from "@/lib/medusa/server"
+import { readJsonBody } from "@/lib/http/request-body"
 
 /**
  * Sets a new password with the token from the reset email. The customer
@@ -11,11 +12,13 @@ export async function POST(request: Request): Promise<Response> {
     return crossOriginRefused()
   }
 
-  const body = (await request.json().catch(() => null)) as {
+  const body = await readJsonBody<{
     token?: unknown
     email?: unknown
     password?: unknown
-  } | null
+  }>(request)
+  if (body instanceof Response) return body
+  const sdk = requestSdk(request)
 
   if (
     typeof body?.token !== "string" ||

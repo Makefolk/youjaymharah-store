@@ -8,8 +8,8 @@ import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk";
 
 import { toMinorUnit } from "../../modules/payments/shared/amount";
 import type { DashboardRefund } from "../../modules/payments/shared/types";
-
-const CREDO_PROVIDER_ID = "pp_credo_credo";
+import { REFUND_LEDGER_MODULE } from "../../modules/refund-ledger";
+import type RefundLedgerModuleService from "../../modules/refund-ledger/service";
 
 export type AuthorizeDashboardRefundInput = {
   order_id: string;
@@ -17,13 +17,12 @@ export type AuthorizeDashboardRefundInput = {
   amount: number;
   reference: string;
   user_id: string;
+  provider?: "credo" | "paystack";
 };
 
 /**
- * Lets the Credo provider accept exactly this refund, which staff already
- * made in the Credo dashboard (it has no refund API). Only for a Credo
- * payment of this order; the provider removes the authorization as it
- * accepts the refund, and undoing the step removes it if the refund fails.
+ * Dashboard refunds need a one-use authorization on this order's payment.
+ * The provider consumes it; compensation clears it if recording fails.
  */
 export const authorizeDashboardRefundStep = createStep(
   "authorize-dashboard-refund",
@@ -41,6 +40,8 @@ export const authorizeDashboardRefundStep = createStep(
         "payment_collections.payments.provider_id",
         "payment_collections.payments.currency_code",
         "payment_collections.payments.data",
+        "payment_collections.payments.refunds.id",
+        "payment_collections.payments.refunds.note",
       ],
       filters: { id: input.order_id },
     });
@@ -57,14 +58,41 @@ export const authorizeDashboardRefundStep = createStep(
         "That payment isn't part of this order.",
       );
     }
-    if (payment.provider_id !== CREDO_PROVIDER_ID) {
+    const provider = input.provider ?? "credo";
+    if (payment.provider_id !== `pp_${provider}_${provider}`) {
       throw new MedusaError(
         MedusaError.Types.NOT_ALLOWED,
-        "Only Credo payments are refunded from a dashboard; use the payment's Refund button.",
+        `This is not a ${provider} payment.`,
       );
     }
 
     const previous = (payment.data ?? {}) as Record<string, unknown>;
+    const prefix =
+      `Refunded in the ${provider} dashboard, reference ${input.reference.trim()}.`.toLowerCase();
+    if (
+      payment.refunds?.some((refund) =>
+        refund?.note?.toLowerCase().startsWith(prefix),
+      )
+    ) {
+      throw new MedusaError(
+        MedusaError.Types.CONFLICT,
+        "This gateway refund is already recorded.",
+      );
+    }
+    if (provider === "paystack" && payment.refunds?.length) {
+      const ledger: RefundLedgerModuleService =
+        container.resolve(REFUND_LEDGER_MODULE);
+      const recorded = await ledger.listRefundRecords({
+        transaction_reference: String(previous.reference),
+      });
+      const known = new Set(recorded.map((entry) => entry.refund_id));
+      if (payment.refunds.some((refund) => refund && !known.has(refund.id))) {
+        throw new MedusaError(
+          MedusaError.Types.CONFLICT,
+          "Reconcile this payment's earlier Paystack refunds before recording another refund.",
+        );
+      }
+    }
     const authorization: DashboardRefund = {
       reference: input.reference,
       amount_in_minor: toMinorUnit(input.amount, payment.currency_code),
@@ -88,7 +116,7 @@ export const authorizeDashboardRefundStep = createStep(
     // Null, not left out: stored data is merged, so a missing key stays.
     await payments.updatePayment({
       id: previous.payment_id,
-      data: { ...previous.data, dashboard_refund: null },
+      data: { dashboard_refund: null },
     } as Parameters<IPaymentModuleService["updatePayment"]>[0]);
   },
 );

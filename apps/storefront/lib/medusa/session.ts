@@ -1,10 +1,13 @@
 import "server-only"
 
+import { timingSafeEqual } from "node:crypto"
+
 import { cookies } from "next/headers"
 
 import {
   AUTH_COOKIE,
   CART_COOKIE,
+  GOOGLE_STATE_COOKIE,
   SIGN_IN_NEXT_COOKIE,
   WISHLIST_COOKIE,
 } from "./constants"
@@ -98,4 +101,23 @@ export async function takeSignInNext(): Promise<string | undefined> {
   const value = store.get(SIGN_IN_NEXT_COOKIE)?.value
   store.delete(SIGN_IN_NEXT_COOKIE)
   return value
+}
+
+export async function setGoogleState(state: string): Promise<void> {
+  ;(await cookies()).set(GOOGLE_STATE_COOKIE, state, {
+    ...baseCookie,
+    maxAge: SIGN_IN_NEXT_MAX_AGE_SECONDS,
+  })
+}
+
+export async function consumeGoogleState(
+  state: string | null,
+): Promise<boolean> {
+  const store = await cookies()
+  const expected = store.get(GOOGLE_STATE_COOKIE)?.value
+  store.delete(GOOGLE_STATE_COOKIE)
+  if (!expected || !state || state.length > 256) return false
+  const a = Buffer.from(expected)
+  const b = Buffer.from(state)
+  return a.length === b.length && timingSafeEqual(a, b)
 }

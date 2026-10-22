@@ -47,8 +47,11 @@ export const resolveSocialCustomerStep = createStep(
       );
     }
 
-    const email = (providerIdentity.user_metadata as { email?: string } | null)
-      ?.email;
+    const email = (
+      providerIdentity.user_metadata as { email?: string } | null
+    )?.email
+      ?.trim()
+      .toLowerCase();
 
     if (!email) {
       throw new MedusaError(
@@ -79,10 +82,36 @@ export const resolveSocialCustomerStep = createStep(
       filters: { email, has_account: true },
     });
 
+    const customerId = customers[0]?.id;
+    if (customerId) {
+      const identities = await authService.listAuthIdentities(
+        { provider_identities: { provider: "emailpass", entity_id: email } },
+        { relations: ["provider_identities"] },
+      );
+      const owners = identities.filter(
+        (existing) => existing.app_metadata?.customer_id === customerId,
+      );
+      const message =
+        "Verify your existing password account before linking Google. If you did not create it, reset its password first.";
+      if (!owners.length) {
+        throw new MedusaError(MedusaError.Types.NOT_ALLOWED, message);
+      }
+      for (const existing of owners) {
+        const verifications = await authService.listAuthVerifications({
+          auth_identity_id: existing.id,
+          entity_type: "email",
+          entity_id: email,
+        });
+        if (!verifications.some((verification) => verification.verified_at)) {
+          throw new MedusaError(MedusaError.Types.NOT_ALLOWED, message);
+        }
+      }
+    }
+
     return new StepResponse<ResolveSocialCustomerOutput>({
       email,
       provider: providerIdentity.provider,
-      existing_customer_id: customers[0]?.id ?? null,
+      existing_customer_id: customerId ?? null,
     });
   },
 );

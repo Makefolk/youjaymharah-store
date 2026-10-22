@@ -11,8 +11,9 @@ on:
 
 jobs:
   health:
-    name: Probe the API
+    name: Probe the API and storefront
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     permissions:
       issues: write
@@ -22,30 +23,37 @@ jobs:
         id: probe
         env:
           HEALTH_URL: ${{ vars.HEALTH_URL }}
+          STOREFRONT_HEALTH_URL: ${{ vars.STOREFRONT_HEALTH_URL }}
         run: |
-          if [ -z "$HEALTH_URL" ]; then
-            echo "HEALTH_URL is not set; nothing to probe."
-            exit 0
-          fi
-
-          code=$(curl -sS -o /tmp/body -w "%{http_code}" --max-time 20 --retry 2 --retry-delay 5 "$HEALTH_URL" || echo 000)
-          echo "status=$code" >> "$GITHUB_OUTPUT"
-
-          if [ "$code" != "200" ]; then
-            echo "Health check returned $code"
-            head -c 500 /tmp/body || true
-            exit 1
-          fi
-
-          echo "Healthy."
+          failed=0
+          status=""
+          for variable in HEALTH_URL STOREFRONT_HEALTH_URL; do
+            url="${!variable}"
+            if [ -z "$url" ]; then
+              echo "::error::$variable is not configured."
+              code="not-configured"
+              failed=1
+            else
+              code=$(curl -sS -o /dev/null -w "%{http_code}" --proto '=https' --connect-timeout 5 --max-time 20 --retry 2 --retry-delay 5 "$url") || code="unreachable"
+              if [ "$code" != "200" ]; then
+                echo "::error::$variable returned $code."
+                failed=1
+              fi
+            fi
+            status="$status $variable=$code"
+          done
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit "$failed"
 
       - name: Raise an issue
         if: failure()
         uses: actions/github-script@v7
+        env:
+          PROBE_STATUS: ${{ steps.probe.outputs.status || 'no response' }}
         with:
           script: |
-            const title = "Uptime: the API health check is failing"
-            const body = `\`${{ vars.HEALTH_URL }}\` returned \`${{ steps.probe.outputs.status || 'no response' }}\`.\n\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            const title = "Uptime: an application health check is failing"
+            const body = `${process.env.PROBE_STATUS}\n\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
 
             const { data: open } = await github.rest.issues.listForRepo({
               ...context.repo,

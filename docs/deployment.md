@@ -420,10 +420,11 @@ VPS through OVH if you want faster rebuilds.
   is the commit SHA. For the storefront, set `NEXT_PUBLIC_SENTRY_DSN` and,
   for readable stack traces, `SENTRY_ORG`, `SENTRY_PROJECT` (variables) and
   `SENTRY_AUTH_TOKEN` (secret) on the Environment.
-- `.github/workflows/uptime.yml` probes the repository variable `HEALTH_URL`
-  (`https://api.<domain>/health`) every 15 minutes and opens an issue when it
-  fails. It is a backstop: pair it with an external monitor on
-  `https://<domain>/api/health` and `https://api.<domain>/health`.
+- `.github/workflows/uptime.yml` probes both repository variables `HEALTH_URL`
+  (`https://api.<domain>/health`) and `STOREFRONT_HEALTH_URL`
+  (`https://<domain>/api/health`) every 15 minutes and opens an issue when either
+  fails. Both must return HTTP 200 over HTTPS. Missing configuration fails the
+  check. It is a backstop: pair it with an external monitor on both endpoints.
 
 ## Before going live
 

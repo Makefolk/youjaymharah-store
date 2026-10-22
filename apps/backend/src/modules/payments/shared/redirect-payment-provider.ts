@@ -29,6 +29,7 @@ import type {
 } from "@medusajs/framework/types";
 
 import { fromMinorUnit, toGatewayReference, toMinorUnit } from "./amount";
+import type RefundLedgerModuleService from "../../refund-ledger/service";
 import type {
   InitializedTransaction,
   InitializeTransactionInput,
@@ -41,6 +42,7 @@ import type {
 
 export type RedirectProviderDependencies = {
   logger: Logger;
+  refundLedger?: RefundLedgerModuleService;
 };
 
 /**
@@ -60,9 +62,11 @@ export abstract class RedirectPaymentProvider<
 > extends AbstractPaymentProvider<TOptions> {
   protected readonly logger_: Logger;
   protected readonly options_: TOptions;
+  private readonly refundLedger?: RefundLedgerModuleService;
 
   constructor(container: RedirectProviderDependencies, options: TOptions) {
     super(container, options);
+    this.refundLedger = container.refundLedger;
 
     this.logger_ = container.logger;
     this.options_ = options;
@@ -179,12 +183,32 @@ export abstract class RedirectPaymentProvider<
 
   async refundPayment(input: RefundPaymentInput): Promise<RefundPaymentOutput> {
     const session = this.getSessionData(input.data);
+    const amountInMinor = toMinorUnit(input.amount, session.currency_code);
     const raw = await this.refundTransaction({
       session,
-      amountInMinor: toMinorUnit(input.amount, session.currency_code),
+      amountInMinor,
     });
 
-    return { data: { ...session, refund: raw } };
+    if (
+      !this.refundLedger ||
+      !input.context?.idempotency_key ||
+      !session.dashboard_refund
+    ) {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "Refund recording requires a gateway reference and a durable ledger.",
+      );
+    }
+    await this.refundLedger.claim({
+      provider: this.getIdentifier(),
+      reference: session.dashboard_refund.reference,
+      transaction_reference: session.reference,
+      refund_id: input.context.idempotency_key,
+      amount_in_minor: amountInMinor,
+      currency_code: session.currency_code,
+    });
+
+    return { data: { ...session, refund: raw, dashboard_refund: null } };
   }
 
   async retrievePayment(

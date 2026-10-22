@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server"
 
 import { crossOriginRefused, isSameOrigin } from "@/lib/http/same-origin"
+import { readBoundedBody, RequestBodyError } from "@/lib/http/request-body"
 import {
   CURRENT_CART_ID,
   CURRENT_WISHLIST_ID,
@@ -174,6 +175,11 @@ async function proxy(
   }
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD"
+  const acceptsPhotos =
+    request.method === "POST" &&
+    segments.length === 4 &&
+    ((segments[1] === "orders" && segments[3] === "help") ||
+      (segments[1] === "support-requests" && segments[3] === "messages"))
 
   let upstream: Response
 
@@ -181,11 +187,20 @@ async function proxy(
     upstream = await fetch(target, {
       method: request.method,
       headers,
-      body: hasBody ? await request.arrayBuffer() : undefined,
+      body: hasBody
+        ? await readBoundedBody(
+            request,
+            acceptsPhotos ? 15 * 1024 * 1024 : 64 * 1024,
+          )
+        : undefined,
+      signal: AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]),
       cache: "no-store",
       redirect: "manual",
     })
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return Response.json({ message: error.message }, { status: error.status })
+    }
     // Medusa is unreachable: down, restarting, or MEDUSA_BACKEND_URL is wrong.
     // Answer like an API, so the SDK throws a normal FetchError, instead of
     // letting Next.js turn the exception into a bare 500.
@@ -210,6 +225,8 @@ async function proxy(
   if (contentType) {
     responseHeaders.set("content-type", contentType)
   }
+  const retryAfter = upstream.headers.get("retry-after")
+  if (retryAfter) responseHeaders.set("retry-after", retryAfter)
 
   if (wishlist?.kind === "create" && upstream.ok) {
     const body = (await upstream.json()) as { wishlist?: { id: string } }

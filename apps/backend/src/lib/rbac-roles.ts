@@ -83,7 +83,7 @@ const SHIPPING = [
 ];
 const TAX = ["tax_provider", "tax_rate", "tax_region"];
 const REGIONS = ["region", "sales_channel"];
-const FILES = ["file", "notification", "workflow_execution"];
+const FILES = ["file", "notification"];
 
 type PolicyGrant = { resources: string[]; operations: readonly string[] };
 

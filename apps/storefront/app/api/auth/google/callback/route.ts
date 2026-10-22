@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation"
+import { FetchError } from "@medusajs/js-sdk"
 import type { NextRequest } from "next/server"
 
 import { completeSignIn } from "@/lib/medusa/auth"
-import { sdk } from "@/lib/medusa/server"
-import { takeSignInNext } from "@/lib/medusa/session"
+import { requestSdk } from "@/lib/medusa/server"
+import { consumeGoogleState, takeSignInNext } from "@/lib/medusa/session"
 import { safeNextPath, SIGN_IN_PATH } from "@/lib/seo/routes"
 
 /**
@@ -16,8 +17,10 @@ import { safeNextPath, SIGN_IN_PATH } from "@/lib/seo/routes"
  *    refreshed token carries it.
  */
 export async function GET(request: NextRequest): Promise<never> {
+  const sdk = requestSdk(request)
   const code = request.nextUrl.searchParams.get("code")
   const state = request.nextUrl.searchParams.get("state")
+  const validState = await consumeGoogleState(state)
 
   // Where the customer started, e.g. checkout; the account page otherwise.
   const next = safeNextPath(await takeSignInNext())
@@ -25,7 +28,9 @@ export async function GET(request: NextRequest): Promise<never> {
     `${SIGN_IN_PATH}?error=${error}&next=${encodeURIComponent(next)}`
   let destination = next
 
-  if (!code || !state) {
+  if (!validState) {
+    destination = failed("google_failed")
+  } else if (!code || !state) {
     destination = failed("google_cancelled")
   } else {
     try {
@@ -51,7 +56,12 @@ export async function GET(request: NextRequest): Promise<never> {
       await completeSignIn(token)
     } catch (error) {
       console.error("Google sign-in could not complete", error)
-      destination = failed("google_failed")
+      destination = failed(
+        error instanceof FetchError &&
+          error.message.includes("Verify your existing password account")
+          ? "google_verify_account"
+          : "google_failed",
+      )
     }
   }
 

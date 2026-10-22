@@ -312,6 +312,9 @@ module.exports = defineConfig({
       resolve: "./src/modules/email-delivery",
     },
     {
+      resolve: "./src/modules/refund-ledger",
+    },
+    {
       resolve: "@medusajs/medusa/notification",
       dependencies: ["emailDelivery", "locking"],
       options: {
@@ -340,6 +343,7 @@ module.exports = defineConfig({
     },
     {
       resolve: "@medusajs/medusa/payment",
+      dependencies: ["refundLedger"],
       options: {
         providers: [
           {

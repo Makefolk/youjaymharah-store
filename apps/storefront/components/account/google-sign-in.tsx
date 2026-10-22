@@ -4,6 +4,8 @@ const ERRORS: Record<string, string> = {
   google_cancelled:
     "Google sign-in was cancelled. Try again, or use your email.",
   google_failed: "Google sign-in didn't work this time. Please try again.",
+  google_verify_account:
+    "Sign in with your password and verify your email before linking Google. If you did not create this account, use Forgot password first.",
   google_unavailable:
     "Google sign-in isn't available right now. Use your email instead.",
 }

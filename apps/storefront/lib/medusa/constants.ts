@@ -45,3 +45,4 @@ export const EMPTY_WISHLIST: Wishlist = { id: null, items: [] }
 
 /** Where to return after a Google sign-in; Google's round trip can't carry it. */
 export const SIGN_IN_NEXT_COOKIE = "_signin_next"
+export const GOOGLE_STATE_COOKIE = "_google_state"

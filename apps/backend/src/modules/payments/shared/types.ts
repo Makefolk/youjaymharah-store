@@ -39,9 +39,8 @@ export type RedirectSessionData = {
    */
   payer?: Payer;
   /**
-   * Set just before staff record a refund they already made in the gateway's
-   * own dashboard (Credo has no refund API): lets exactly that refund through
-   * without calling the gateway. Removed again by the same refund.
+   * Staff must authorize recording separately from the gateway transfer.
+   * Paystack verifies this receipt remotely; Credo relies on staff attestation.
    */
   dashboard_refund?: DashboardRefund | null;
 };

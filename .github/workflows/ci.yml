@@ -111,7 +111,7 @@ jobs:
           DB_PORT: "5432"
           DB_USERNAME: medusa_test
           DB_PASSWORD: migration_test_only
-        run: pnpm run test:integration:http
+        run: pnpm run test:integration:http:batches
 
   storefront:
     name: Storefront lint, type-check and tests

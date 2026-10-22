@@ -1,3 +1,4 @@
+import type RefundLedgerModuleService from "../../refund-ledger/service";
 import type { Logger } from "@medusajs/framework/types";
 import PaystackPaymentProvider from "../paystack/service";
 import CredoPaymentProvider from "../credo/service";
@@ -12,11 +13,14 @@ const session = {
   redirect_url: "https://example.com/pay",
 };
 const logger = { error: jest.fn() } as unknown as Logger;
+const refundLedger = {
+  claim: jest.fn().mockResolvedValue(undefined),
+} as unknown as RefundLedgerModuleService;
 const paystack = () =>
-  new PaystackPaymentProvider({ logger }, { secretKey: "test" });
+  new PaystackPaymentProvider({ logger, refundLedger }, { secretKey: "test" });
 const credo = () =>
   new CredoPaymentProvider(
-    { logger },
+    { logger, refundLedger },
     { secretKey: "test", publicKey: "test", mode: "test" },
   );
 const originalFetch = global.fetch;
@@ -236,6 +240,7 @@ describe("Credo dashboard refunds", () => {
   it("records an authorized one without calling Credo, once", async () => {
     global.fetch = jest.fn();
     const { data } = await credo().refundPayment({
+      context: { idempotency_key: "refund_test" },
       data: {
         ...session,
         dashboard_refund: {

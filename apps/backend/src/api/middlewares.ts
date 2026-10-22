@@ -11,6 +11,11 @@ import { z } from "@medusajs/framework/zod";
 import { errorHandler as defaultErrorHandler } from "@medusajs/framework/http";
 
 import { rateLimit } from "./rate-limit";
+import { enforcePasswordPolicy } from "./password-policy";
+import {
+  restrictNotifications,
+  requireWorkflowAdministrator,
+} from "./private-admin-data";
 import { reportRequestError } from "./report-error";
 import {
   NEWSLETTER_DESCRIPTION_MAX,
@@ -101,7 +106,7 @@ export type AdminUpdateCartReminderSettingsType = z.infer<
 >;
 
 export const StoreSetCustomerPassword = z.object({
-  password: z.string().min(8),
+  password: z.string().min(8).max(128),
 });
 
 export type StoreSetCustomerPasswordType = z.infer<
@@ -591,6 +596,14 @@ export const AdminRecordCredoRefund = z.object({
 });
 
 export type AdminRecordCredoRefundType = z.infer<typeof AdminRecordCredoRefund>;
+export const AdminRecordPaystackRefund = AdminRecordCredoRefund.extend({
+  reference: z
+    .string()
+    .regex(/^[1-9]\d{0,19}$/, "Use the numeric Paystack refund ID."),
+});
+export type AdminRecordPaystackRefundType = z.infer<
+  typeof AdminRecordPaystackRefund
+>;
 
 export const AdminResolveEmailDelivery = z.discriminatedUnion("resolution", [
   z.object({
@@ -690,6 +703,63 @@ export default defineMiddlewares({
     return defaultErrorHandler()(error, req, res, next);
   },
   routes: [
+    {
+      matcher: "/admin/orders/:id/paystack-refunds",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(AdminRecordPaystackRefund)],
+      policies: [{ resource: "refund", operation: "create" }],
+    },
+    {
+      matcher: "/auth/*",
+      bodyParser: { sizeLimit: "16kb" },
+      middlewares: [rateLimit("auth-ip", 60)],
+    },
+    {
+      matcher: "/auth/:actor_type/emailpass",
+      method: ["POST"],
+      middlewares: [rateLimit("password-login", 10, "account")],
+    },
+    {
+      matcher: "/auth/:actor_type/emailpass/register",
+      method: ["POST"],
+      middlewares: [rateLimit("registration", 10), enforcePasswordPolicy],
+    },
+    {
+      matcher: "/auth/:actor_type/emailpass/update",
+      method: ["POST"],
+      middlewares: [rateLimit("password-update", 10), enforcePasswordPolicy],
+    },
+    {
+      matcher: "/auth/:actor_type/:auth_provider/reset-password",
+      method: ["POST"],
+      middlewares: [
+        rateLimit("password-reset-ip", 10),
+        rateLimit("password-reset-account", 3, "account"),
+      ],
+    },
+    {
+      matcher: "/store/wishlists*",
+      method: ["POST", "DELETE"],
+      middlewares: [rateLimit("guest-wishlist", 30)],
+    },
+    {
+      matcher: "/admin/notifications",
+      method: ["GET"],
+      middlewares: [restrictNotifications],
+    },
+    {
+      matcher: "/admin/notifications/:id",
+      method: ["GET"],
+      middlewares: [restrictNotifications],
+    },
+    {
+      matcher: "/admin/workflows-executions",
+      middlewares: [requireWorkflowAdministrator],
+    },
+    {
+      matcher: "/admin/workflows-executions/*",
+      middlewares: [requireWorkflowAdministrator],
+    },
     {
       matcher: "/admin/search-vocabulary",
       method: ["GET"],
