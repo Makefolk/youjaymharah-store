@@ -211,14 +211,20 @@ Guide: <https://docs.medusajs.com/user-guide/orders/fulfillments>
 
 Check the order's **Payments** section for the provider.
 
-- **Paystack:** payment `⋯ › Refund`, amount, reason, note, **Save**. Paystack
-  returns the money to the card; settlement can take several working days.
-- **Credo:** Credo has no refund API, so refund in the Credo dashboard first.
-  Then, on the order, use **Credo refund › Record refund** with the amount and
-  Credo's refund reference. The order's balance and Payments section update,
-  the refund is recorded under your name with the reference in its note, and
-  the customer gets the refund email. The ordinary Refund button refuses Credo
-  payments, so nothing is marked refunded that wasn't.
+- **Paystack and Credo:** refund in the gateway's dashboard first. Once it
+  shows as completed there (Paystack: _Processed_), open the order's **Gateway
+  refunds** box › **Record refund** and enter the exact amount and the
+  gateway's refund ID (Paystack's is a number). The order's balance and
+  Payments section update, the refund is recorded under your name with the
+  reference in its note, and the customer gets the refund email.
+  - Paystack refunds are checked with Paystack before recording: one that is
+    still pending, failed, for a different amount or for another payment is
+    refused. Wait until it's processed and try again.
+  - Each refund ID can be recorded once. If recording fails after the gateway
+    refunded, don't refund again; ask the owner to reconcile it.
+  - The ordinary Refund button refuses gateway payments, so nothing is marked
+    refunded that wasn't. Card refunds can take several working days to reach
+    the customer.
 - **Manual Payment / transfer:** send the money back, then record it with the
   refund form.
 
@@ -260,7 +266,8 @@ Before shipping you can edit an order (swap a size, add or remove items). With
 order and any balance left to pay or refund. To
 cancel, choose **Cancel** from the order's menu: reserved stock is released
 and the customer is emailed that the order was cancelled and will be refunded.
-Then refund the payment (manually for Credo).
+Then refund the payment in the gateway's dashboard and record it (see
+"Refunds").
 Guides: [Edit](https://docs.medusajs.com/user-guide/orders/edit) ·
 [Manage](https://docs.medusajs.com/user-guide/orders/manage)
 
@@ -483,15 +490,14 @@ failed, ask the developer to review it before repeatedly resending. See
 
 ## 6. Known gaps
 
-| Area                                     | Status        | Meanwhile                                                                                            |
-| ---------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------- |
-| Credo refunds                            | Two steps     | Refund in the Credo dashboard, then **Record refund** on the order                                   |
-| Customer exchanges and claims            | Not built     | Customers email you; you create the exchange or claim                                                |
-| POS app                                  | Workaround    | Draft orders with a separate shop location                                                           |
-| Gift cards, store credit, loyalty points | Not available | One-off promo codes as a substitute                                                                  |
-| Abandoned-cart reminders                 | Built         | Settings › Bag reminders (see "Bag reminders")                                                       |
-| Newsletter checkbox at checkout          | Not built     | The "Show opt-in at checkout" setting has no effect yet; the site's signup form and "Notify me" work |
-| Newsletter success message               | Not shown     | The footer shows its own "Check your inbox" message after sign-up                                    |
+| Area                                     | Status        | Meanwhile                                                            |
+| ---------------------------------------- | ------------- | -------------------------------------------------------------------- |
+| Paystack and Credo refunds               | Two steps     | Refund in the gateway dashboard, then **Record refund** on the order |
+| Customer exchanges and claims            | Not built     | Customers email you; you create the exchange or claim                |
+| POS app                                  | Workaround    | Draft orders with a separate shop location                           |
+| Gift cards, store credit, loyalty points | Not available | One-off promo codes as a substitute                                  |
+| Abandoned-cart reminders                 | Built         | Settings › Bag reminders (see "Bag reminders")                       |
+| Newsletter success message               | Not shown     | The footer shows its own "Check your inbox" message after sign-up    |
 
 ## 7. Medusa guides
 
