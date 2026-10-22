@@ -1,7 +1,7 @@
 import "server-only"
 
 import { isNotFound } from "@/lib/medusa/errors"
-import { getAuthHeaders, sdk } from "@/lib/medusa/server"
+import { getAuthHeaders, visitorSdk } from "@/lib/medusa/server"
 
 import type { SupportMessage, SupportRequestSummary } from "./hooks"
 
@@ -18,6 +18,7 @@ export async function fetchSupportRequestOnServer(
   access: string | null,
 ): Promise<SupportRequestDetail | null> {
   try {
+    const sdk = await visitorSdk()
     const { request } = await sdk.client.fetch<{
       request: SupportRequestDetail
     }>(`/store/support-requests/${encodeURIComponent(id)}`, {

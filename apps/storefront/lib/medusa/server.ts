@@ -1,6 +1,7 @@
 import "server-only"
 
 import Medusa from "@medusajs/js-sdk"
+import { headers } from "next/headers"
 
 import { PUBLISHABLE_KEY } from "./constants"
 import { getAuthToken } from "./session"
@@ -53,6 +54,17 @@ export function requestSdk(request: Request) {
     address ? { "x-forwarded-for": address } : {},
     request.signal,
   )
+}
+
+/**
+ * `requestSdk` for Server Components, which have no Request. Use it for
+ * per-visitor calls to rate-limited routes, so the backend counts each
+ * shopper rather than the storefront as one. Reading headers makes the page
+ * dynamic, so keep it out of cached fetches.
+ */
+export async function visitorSdk() {
+  const address = (await headers()).get("x-forwarded-for")
+  return createSdk(address ? { "x-forwarded-for": address } : {})
 }
 
 /** The signed-in customer's Authorization header, or none for a guest. */

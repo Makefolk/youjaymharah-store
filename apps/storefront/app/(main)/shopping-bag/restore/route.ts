@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import type { NextRequest } from "next/server"
 
 import { errorStatus, isNotFound } from "@/lib/medusa/errors"
-import { sdk } from "@/lib/medusa/server"
+import { requestSdk } from "@/lib/medusa/server"
 import { setCartId } from "@/lib/medusa/session"
 
 /**
@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
     destination = "/shopping-bag?restore=invalid"
   } else {
     try {
-      const { cart_id } = await sdk.client.fetch<StoreRestoreCartResponse>(
+      const { cart_id } = await requestSdk(
+        request,
+      ).client.fetch<StoreRestoreCartResponse>(
         "/store/cart-reminders/restore",
         { method: "POST", body: { token } },
       )
