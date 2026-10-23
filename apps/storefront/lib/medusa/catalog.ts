@@ -247,20 +247,25 @@ export const getCategoryByHandle = cache(
  */
 export const listCollections = cache(
   async (locale?: string): Promise<HttpTypes.StoreCollection[]> => {
-    const { collections } =
-      await sdk.client.fetch<HttpTypes.StoreCollectionListResponse>(
-        "/store/collections",
-        {
-          query: { fields: COLLECTION_FIELDS, limit: 100 },
-          headers: localeHeaders(locale),
-          next: {
-            revalidate: TAXONOMY_REVALIDATE_SECONDS,
-            tags: [CATALOG_TAGS.collections],
+    const result: HttpTypes.StoreCollection[] = []
+    const pageSize = 100
+    for (let offset = 0; ; offset += pageSize) {
+      const { collections, count } =
+        await sdk.client.fetch<HttpTypes.StoreCollectionListResponse>(
+          "/store/collections",
+          {
+            query: { fields: COLLECTION_FIELDS, limit: pageSize, offset },
+            headers: localeHeaders(locale),
+            next: {
+              revalidate: TAXONOMY_REVALIDATE_SECONDS,
+              tags: [CATALOG_TAGS.collections],
+            },
           },
-        },
-      )
+        )
 
-    return collections
+      result.push(...collections)
+      if (collections.length < pageSize || result.length >= count) return result
+    }
   },
 )
 

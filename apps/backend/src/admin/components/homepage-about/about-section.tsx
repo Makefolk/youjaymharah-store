@@ -51,7 +51,7 @@ export function AboutSection() {
             </Badge>
           </div>
           <Text size="small" className="text-ui-fg-subtle">
-            A short introduction below the homepage collections. The full About
+            A short introduction near the bottom of the homepage. The full About
             page is managed in Settings → Pages.
           </Text>
         </div>

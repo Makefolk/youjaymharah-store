@@ -3,12 +3,24 @@ import Image from "next/image"
 import Link from "next/link"
 
 import { getStorefrontSettings } from "@/lib/medusa/storefront-settings"
+import { listCollections } from "@/lib/medusa/catalog"
+import { isCollectionLinkAvailable } from "@/lib/medusa/collection"
+import { getBaseURL } from "@/lib/util/env"
 
 export async function About() {
   const { brand, homepage } = await getStorefrontSettings()
   const about = homepage.about
 
   if (!about?.enabled || !about.title || !about.description) return null
+
+  const showLink =
+    about.cta_label &&
+    about.cta_url &&
+    isCollectionLinkAvailable(
+      about.cta_url,
+      await listCollections(),
+      getBaseURL(),
+    )
 
   return (
     <section
@@ -72,7 +84,7 @@ export async function About() {
               </p>
             ))}
           </div>
-          {about.cta_label && about.cta_url && (
+          {showLink && about.cta_url && (
             <Link
               href={about.cta_url}
               className="group mt-8 inline-flex min-h-11 items-center gap-6 border-b border-gold py-2 text-xs font-medium tracking-[0.08em] uppercase transition-colors hover:border-foreground focus-visible:outline-2 focus-visible:outline-offset-4 sm:mt-10"

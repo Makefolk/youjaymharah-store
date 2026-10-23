@@ -1,5 +1,8 @@
 import { getImageProps } from "next/image"
 import Link from "next/link"
+import { listCollections } from "@/lib/medusa/catalog"
+import { isCollectionLinkAvailable } from "@/lib/medusa/collection"
+import { getBaseURL } from "@/lib/util/env"
 
 import {
   getHeroContent,
@@ -43,6 +46,16 @@ export async function Hero() {
   if (!content) {
     return null
   }
+
+  if (
+    content.cta &&
+    !isCollectionLinkAvailable(
+      content.cta.href,
+      await listCollections(),
+      getBaseURL(),
+    )
+  )
+    content.cta = null
 
   if (!content.hasMedia) {
     return (

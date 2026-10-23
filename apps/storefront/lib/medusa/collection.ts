@@ -6,6 +6,30 @@ export function hasCollectionPage(collection: { handle?: string | null }) {
   return Boolean(collection.handle?.trim())
 }
 
+export function isCollectionLinkAvailable(
+  href: string,
+  collections: readonly { handle?: string | null }[],
+  storefrontUrl: string,
+) {
+  try {
+    const origin = new URL(storefrontUrl)
+    const destination = new URL(href, origin)
+    const path = destination.pathname.replace(/\/+$/, "")
+    if (
+      destination.origin !== origin.origin ||
+      (path !== "/collections" && !path.startsWith("/collections/"))
+    )
+      return true
+
+    const available = collections.filter(hasCollectionPage)
+    if (path === "/collections") return available.length > 0
+    const handle = decodeURIComponent(path.slice("/collections/".length))
+    return available.some((collection) => collection.handle === handle)
+  } catch {
+    return false
+  }
+}
+
 export type CollectionContent = {
   id: string
   title: string
