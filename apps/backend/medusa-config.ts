@@ -315,6 +315,9 @@ module.exports = defineConfig({
       resolve: "./src/modules/refund-ledger",
     },
     {
+      resolve: "./src/modules/session-revocation",
+    },
+    {
       resolve: "@medusajs/medusa/notification",
       dependencies: ["emailDelivery", "locking"],
       options: {

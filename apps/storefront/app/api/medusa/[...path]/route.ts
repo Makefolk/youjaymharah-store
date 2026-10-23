@@ -9,6 +9,7 @@ import {
 } from "@/lib/medusa/constants"
 import { MEDUSA_BACKEND_URL } from "@/lib/medusa/server"
 import {
+  clearAuthToken,
   clearCartId,
   clearWishlistId,
   getAuthToken,
@@ -122,6 +123,16 @@ async function proxy(
 
   if (request.method !== "GET" && !isSameOrigin(request)) {
     return crossOriginRefused()
+  }
+
+  // These change the sign-in itself, so they go through /api/auth, which
+  // keeps the token they hand out in the httpOnly cookie.
+  const signInPath = path.join("/")
+  if (
+    signInPath === "store/customers/me/password/change" ||
+    signInPath === "store/customers/me/sessions"
+  ) {
+    return Response.json({ message: "Not found." }, { status: 404 })
   }
 
   let segments = [...path]
@@ -290,6 +301,12 @@ async function proxy(
       status: upstream.status,
       headers: responseHeaders,
     })
+  }
+
+  // The token expired, or the account was signed out everywhere (a password
+  // reset or change). Drop it, so the next page renders signed out.
+  if (token && upstream.status === 401) {
+    await clearAuthToken()
   }
 
   // The cookie points at a cart that was completed or deleted elsewhere.

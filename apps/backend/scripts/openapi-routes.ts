@@ -1849,12 +1849,12 @@ export const ROUTES: RouteDoc[] = [
     tag: "Accounts",
     summary: "Change the password",
     description:
-      "Checks the current password, then sets the new one (8 to 128 characters). Accounts without a password set one with POST /store/customers/me/password instead. Rate limited to 5 a minute.",
+      "Checks the current password, then sets the new one (8 to 128 characters). Every earlier sign-in to the account ends, this one included, so the response carries a fresh token to use from now on. Accounts without a password set one with POST /store/customers/me/password instead. Rate limited to 5 a minute.",
     auth: "customer",
     body: StoreChangePassword,
     response: {
-      description: "Changed.",
-      schema: z.object({ changed: z.literal(true) }),
+      description: "Changed, with a fresh token.",
+      schema: z.object({ changed: z.literal(true), token: z.string() }),
     },
     errors: [
       {
@@ -1865,6 +1865,20 @@ export const ROUTES: RouteDoc[] = [
       { status: 401, description: "No customer is logged in." },
       { status: 429, description: "Too many requests." },
     ],
+  },
+  {
+    method: "DELETE",
+    path: "/store/customers/me/sessions",
+    tag: "Accounts",
+    summary: "Sign out of all devices",
+    description:
+      "Ends every sign-in to the account, this one included: tokens issued until now are refused. Resetting or changing the password does the same.",
+    auth: "customer",
+    response: {
+      description: "Signed out everywhere.",
+      schema: z.object({ signed_out: z.literal(true) }),
+    },
+    errors: [{ status: 401, description: "No customer is logged in." }],
   },
   {
     method: "POST",
@@ -2988,6 +3002,31 @@ export const ROUTES: RouteDoc[] = [
         description:
           "A dependency failed or timed out; the body has the same shape with `status: unavailable`.",
       },
+    ],
+  },
+  {
+    method: "POST",
+    path: "/auth/{actor_type}/{auth_provider}/update",
+    tag: "Accounts",
+    summary: "Finish a password reset",
+    description:
+      "Replaces Medusa's route of the same name. Send the reset token from the emailed link as `Authorization: Bearer <token>`; the token, not the body, says which account. Sets the new password (8 to 128 characters), then ends every earlier sign-in to the customer and admin accounts that use it, so tokens and admin sessions issued before now are refused. Rate limited to 10 a minute.",
+    auth: "public",
+    body: z.object({ password: z.string() }),
+    response: {
+      description: "Changed.",
+      schema: z.object({ success: z.literal(true) }),
+    },
+    errors: [
+      {
+        status: 400,
+        description: "The new password is shorter than 8 or longer than 128.",
+      },
+      {
+        status: 401,
+        description: "The reset token is missing, expired or already used.",
+      },
+      { status: 429, description: "Too many requests." },
     ],
   },
   {

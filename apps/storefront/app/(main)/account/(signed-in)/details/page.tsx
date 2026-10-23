@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import { PasswordSection } from "./password-section"
 import { ProfileForm } from "./profile-form"
+import { SignOutEverywhere } from "./sign-out-everywhere"
 
 export const metadata: Metadata = {
   title: "Your details",
@@ -31,6 +32,17 @@ export default function AccountDetailsPage() {
         </h2>
         <div className="mt-6">
           <PasswordSection />
+        </div>
+      </section>
+      <section aria-labelledby="details-devices">
+        <h2
+          id="details-devices"
+          className="border-b border-border/70 pb-3 text-[15px] font-medium"
+        >
+          Devices
+        </h2>
+        <div className="mt-6">
+          <SignOutEverywhere />
         </div>
       </section>
     </div>

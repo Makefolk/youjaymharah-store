@@ -53,7 +53,9 @@ function ChangePasswordForm() {
           new_password: value.password,
         })
         formApi.reset()
-        toast.success("Your password is changed")
+        toast.success("Your password is changed", {
+          description: "Any other devices are now signed out.",
+        })
       } catch {
         // Shown below the form.
       }

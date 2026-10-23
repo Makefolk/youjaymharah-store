@@ -1,6 +1,8 @@
 import { MedusaError, Modules } from "@medusajs/framework/utils";
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk";
 
+import { actorsOf } from "./sign-out-everywhere";
+
 export type ChangeCustomerPasswordInput = {
   auth_identity_id: string;
   current_password: string;
@@ -54,6 +56,6 @@ export const changeCustomerPasswordStep = createStep(
       );
     }
 
-    return new StepResponse({ changed: true });
+    return new StepResponse({ actors: actorsOf(identity.app_metadata) });
   },
 );

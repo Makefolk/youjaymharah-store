@@ -209,14 +209,31 @@ export function useSignInMethods() {
   })
 }
 
-/** Changes an existing password; refused when the current one is wrong. */
+/**
+ * Changes an existing password; refused when the current one is wrong. Every
+ * other device is signed out; this one stays signed in.
+ */
 export function useChangePassword() {
   return useMutation({
     mutationFn: (input: { current_password: string; new_password: string }) =>
-      getBrowserSdk().client.fetch<{ changed: true }>(
-        "/store/customers/me/password/change",
-        { method: "POST", body: input },
-      ),
+      postJson<Success>("/api/auth/password/change", input),
+  })
+}
+
+/** Ends every sign-in to the account, this browser's included. */
+export function useSignOutEverywhere() {
+  const queryClient = useQueryClient()
+  const router = useRouter()
+
+  return useMutation({
+    mutationFn: () => postJson<Success>("/api/auth/sign-out-everywhere"),
+    onSuccess: () => {
+      for (const queryKey of privateQueryRoots) {
+        queryClient.removeQueries({ queryKey })
+      }
+      queryClient.setQueryData(queryKeys.customer.me(), null)
+      router.refresh()
+    },
   })
 }
 

@@ -12,6 +12,7 @@ import { errorHandler as defaultErrorHandler } from "@medusajs/framework/http";
 
 import { rateLimit } from "./rate-limit";
 import { enforcePasswordPolicy } from "./password-policy";
+import { refuseEndedSessions } from "./session-revocation";
 import {
   restrictNotifications,
   requireWorkflowAdministrator,
@@ -714,6 +715,11 @@ export default defineMiddlewares({
       bodyParser: { sizeLimit: "16kb" },
       middlewares: [rateLimit("auth-ip", 60)],
     },
+    // No method, so these run before every route's own middlewares.
+    { matcher: "/store/*", middlewares: [refuseEndedSessions] },
+    { matcher: "/admin/*", middlewares: [refuseEndedSessions] },
+    { matcher: "/auth/token/refresh", middlewares: [refuseEndedSessions] },
+    { matcher: "/auth/session", middlewares: [refuseEndedSessions] },
     {
       matcher: "/auth/:actor_type/emailpass",
       method: ["POST"],

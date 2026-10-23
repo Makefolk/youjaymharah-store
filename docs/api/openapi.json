@@ -8732,7 +8732,7 @@
           "Accounts"
         ],
         "summary": "Change the password",
-        "description": "Checks the current password, then sets the new one (8 to 128 characters). Accounts without a password set one with POST /store/customers/me/password instead. Rate limited to 5 a minute.",
+        "description": "Checks the current password, then sets the new one (8 to 128 characters). Every earlier sign-in to the account ends, this one included, so the response carries a fresh token to use from now on. Accounts without a password set one with POST /store/customers/me/password instead. Rate limited to 5 a minute.",
         "security": [
           {
             "publishableKey": [],
@@ -8767,7 +8767,7 @@
         },
         "responses": {
           "200": {
-            "description": "Changed.",
+            "description": "Changed, with a fresh token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8776,10 +8776,14 @@
                     "changed": {
                       "type": "boolean",
                       "const": true
+                    },
+                    "token": {
+                      "type": "string"
                     }
                   },
                   "required": [
-                    "changed"
+                    "changed",
+                    "token"
                   ],
                   "additionalProperties": false
                 }
@@ -8808,6 +8812,54 @@
           },
           "429": {
             "description": "Too many requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/store/customers/me/sessions": {
+      "delete": {
+        "operationId": "deleteStoreCustomersMeSessions",
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Sign out of all devices",
+        "description": "Ends every sign-in to the account, this one included: tokens issued until now are refused. Resetting or changing the password does the same.",
+        "security": [
+          {
+            "publishableKey": [],
+            "customerJwt": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed out everywhere.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "signed_out": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "signed_out"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No customer is logged in.",
             "content": {
               "application/json": {
                 "schema": {
@@ -15593,6 +15645,111 @@
           },
           "503": {
             "description": "A dependency failed or timed out; the body has the same shape with `status: unavailable`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/{actor_type}/{auth_provider}/update": {
+      "post": {
+        "operationId": "postAuthActorTypeAuthProviderUpdate",
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Finish a password reset",
+        "description": "Replaces Medusa's route of the same name. Send the reset token from the emailed link as `Authorization: Bearer <token>`; the token, not the body, says which account. Sets the new password (8 to 128 characters), then ends every earlier sign-in to the customer and admin accounts that use it, so tokens and admin sessions issued before now are refused. Rate limited to 10 a minute.",
+        "security": [
+          {
+            "publishableKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "actor_type",
+            "in": "path",
+            "required": true,
+            "description": "The actor_type of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "auth_provider",
+            "in": "path",
+            "required": true,
+            "description": "The auth_provider of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The new password is shorter than 8 or longer than 128.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The reset token is missing, expired or already used.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests.",
             "content": {
               "application/json": {
                 "schema": {
