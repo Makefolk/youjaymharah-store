@@ -1,7 +1,10 @@
+import { FetchError } from "@medusajs/js-sdk"
 import { describe, expect, it } from "vitest"
 
 import {
   describeCompletionError,
+  isUncertainCompletion,
+  PaymentNotCompletedError,
   getCheckoutStep,
   getLineTotal,
   getPaymentOptions,
@@ -100,4 +103,22 @@ it("falls back to price × quantity when a line has no total", () => {
   expect(getLineTotal({ total: 2800, unit_price: 1500, quantity: 2 })).toBe(
     2800,
   )
+})
+
+describe("isUncertainCompletion", () => {
+  it("is certain when Medusa answered that no order was made", () => {
+    expect(isUncertainCompletion(new PaymentNotCompletedError("failed"))).toBe(
+      false,
+    )
+    expect(
+      isUncertainCompletion(new FetchError("Not found", "Not Found", 404)),
+    ).toBe(false)
+  })
+
+  it("is unknown on timeouts, server errors and lost connections", () => {
+    for (const status of [500, 502, 503, 408, 409, 429]) {
+      expect(isUncertainCompletion(new FetchError("x", "x", status))).toBe(true)
+    }
+    expect(isUncertainCompletion(new TypeError("Failed to fetch"))).toBe(true)
+  })
 })

@@ -1,3 +1,4 @@
+import { FetchError } from "@medusajs/js-sdk"
 import type { HttpTypes } from "@medusajs/types"
 
 /**
@@ -133,6 +134,35 @@ export const NIGERIAN_STATES = [
  * messages are kept when they help (an item went out of stock); payment
  * failures, whose messages name internal session ids, are replaced.
  */
+/**
+ * Medusa answered, and no order was made: the gateway says the payment
+ * failed or was canceled, or the cart can't become an order.
+ */
+export class PaymentNotCompletedError extends Error {}
+
+/**
+ * Whether a failed completion leaves the outcome unknown: the request timed
+ * out, the network dropped, or the store or gateway didn't answer. The
+ * money may have moved, so the shopper must not be told no order was
+ * placed, nor invited to pay again. Completing again is safe: a completed
+ * cart answers with its order.
+ */
+export function isUncertainCompletion(error: unknown): boolean {
+  if (error instanceof PaymentNotCompletedError) return false
+  if (error instanceof FetchError) {
+    const status = error.status
+    return (
+      status === undefined ||
+      status >= 500 ||
+      status === 408 ||
+      status === 409 ||
+      status === 429
+    )
+  }
+  // A network failure, before any answer.
+  return true
+}
+
 export function describeCompletionError(
   message: string | null | undefined,
 ): string {

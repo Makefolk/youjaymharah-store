@@ -2,12 +2,15 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { useCompleteCart } from "@/features/checkout/hooks"
 import { useStorefrontSettings } from "@/features/site-settings/provider"
-import { describeCompletionError } from "@/lib/medusa/checkout"
+import {
+  describeCompletionError,
+  isUncertainCompletion,
+} from "@/lib/medusa/checkout"
 import { isNotFound } from "@/lib/medusa/errors"
 import {
   CHECKOUT_PATH,
@@ -15,22 +18,86 @@ import {
   TRACK_ORDER_PATH,
 } from "@/lib/seo/routes"
 
+/** Waits before asking again when the outcome was unknown, in ms. */
+const RETRY_DELAYS = [3000, 6000, 12000]
+
 export function CompletePayment() {
   const router = useRouter()
   const complete = useCompleteCart()
   const supportEmail = useStorefrontSettings().brand.support_email
   const started = useRef(false)
+  const [retries, setRetries] = useState(0)
+
+  const attempt = useCallback(
+    () =>
+      complete.mutate(undefined, {
+        onSuccess: (order) =>
+          router.replace(orderConfirmationPath(order.id, order.access_key)),
+      }),
+    [complete, router],
+  )
 
   useEffect(() => {
     // Once only: completing twice is harmless, but development mode mounts
     // effects twice and the second request would be wasted.
     if (started.current) return
     started.current = true
-    complete.mutate(undefined, {
-      onSuccess: (order) =>
-        router.replace(orderConfirmationPath(order.id, order.access_key)),
-    })
-  }, [complete, router])
+    attempt()
+  }, [attempt])
+
+  // An unknown outcome is asked again a few times before saying so.
+  const uncertain = complete.isError && isUncertainCompletion(complete.error)
+  useEffect(() => {
+    if (!uncertain || retries >= RETRY_DELAYS.length) return
+    const timer = setTimeout(() => {
+      setRetries((count) => count + 1)
+      attempt()
+    }, RETRY_DELAYS[retries])
+    return () => clearTimeout(timer)
+  }, [uncertain, retries, attempt])
+
+  if (uncertain && retries < RETRY_DELAYS.length) {
+    return <Confirming />
+  }
+
+  if (uncertain) {
+    return (
+      <div className="flex flex-col gap-4">
+        <h1 className="text-2xl font-medium tracking-[-0.01em]">
+          We couldn&apos;t confirm your payment yet
+        </h1>
+        <p className="text-[15px] text-muted-foreground">
+          We couldn&apos;t reach the payment service just now, so we don&apos;t
+          know yet whether your payment went through. Please don&apos;t pay
+          again. If it did, your order confirmation email arrives within a few
+          minutes.
+        </p>
+        <p className="text-[15px] text-muted-foreground">
+          If money left your account and no confirmation arrives within an hour,
+          email{" "}
+          {supportEmail ? (
+            <a
+              href={`mailto:${supportEmail}`}
+              className="text-foreground underline underline-offset-4"
+            >
+              {supportEmail}
+            </a>
+          ) : (
+            "us"
+          )}{" "}
+          with your bank alert and we&apos;ll sort it out.
+        </p>
+        <Button
+          size="lg"
+          disabled={complete.isPending}
+          onClick={attempt}
+          className="h-10 self-start px-5 tracking-[0.06em] uppercase"
+        >
+          {complete.isPending ? "Checking…" : "Check again"}
+        </Button>
+      </div>
+    )
+  }
 
   if (complete.isError) {
     // No bag in this browser: the shopper paid on another device, or this
@@ -109,6 +176,10 @@ export function CompletePayment() {
     )
   }
 
+  return <Confirming />
+}
+
+function Confirming() {
   return (
     <div role="status" className="flex flex-col gap-3">
       <h1 className="text-2xl font-medium tracking-[-0.01em]">

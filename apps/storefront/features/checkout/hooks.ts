@@ -11,6 +11,7 @@ import {
 import { getBrowserSdk } from "@/lib/medusa/browser"
 import {
   getPaymentRedirectUrl,
+  PaymentNotCompletedError,
   TEST_PAYMENT_PROVIDER,
 } from "@/lib/medusa/checkout"
 import { CURRENT_CART_ID } from "@/lib/medusa/constants"
@@ -177,7 +178,7 @@ export function useCompleteCart() {
         // Added by the storefront's proxy: opens the order page here.
         return { ...result.order, access_key: result.order_key ?? null }
       }
-      throw new Error(
+      throw new PaymentNotCompletedError(
         result.error?.message ||
           "Your payment wasn't completed, so no order was placed.",
       )
