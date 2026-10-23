@@ -62,6 +62,11 @@ incident.
 | S19 | Edit, hide or replace the image in the homepage About section   | [Homepage About](/staff/content#homepage-about-section)                       |
 | S20 | Change or disable the newsletter section above the footer       | [Newsletter settings](/staff/content#newsletter-reminders-and-product-alerts) |
 | S21 | Launch without collections or remove the last collection        | [Optional collections](/staff/catalog#selling-without-collections)            |
+| S22 | Create a collection or set a category's homepage picture        | [Create a collection](/staff/catalog#create-a-collection)                     |
+| S23 | Mark a flagged payment handled after a gateway refund           | [Payment recovery](/customers/payments#staff-recovery)                        |
+| S24 | Cancel a forwarded support link or reissue one                  | [Support inbox](/staff/support#photos-links-and-private-data)                 |
+| S25 | Enrol staff in two-factor sign-in and enforce it                | [Two-factor sign-in](/staff/roles#two-factor-sign-in)                         |
+| S26 | Edit Store menu cards, support details or policy pages          | [Navigation and support](/staff/content#navigation-and-support-details)       |
 
 ## Production and development
 

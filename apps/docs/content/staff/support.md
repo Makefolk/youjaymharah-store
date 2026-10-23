@@ -52,10 +52,21 @@ Request only evidence needed for the issue. Photos can include addresses or
 receipts; keep them within the protected support flow. Do not upload them to a
 public image service or paste signed access links into general chat.
 
+Customer photos are stored in a private bucket and are shown only in the
+inbox, to the signed-in customer and to the holder of the request's link.
+Location and camera data is removed when they are uploaded. Staff emails say
+how many photos arrived instead of including them; open the request to see
+them. In production, photos are refused until the private bucket
+(`SUPPORT_FILES_BUCKET`) is configured.
+
+Emailed request links work for 90 days, and every email carries a fresh one.
+If a link was forwarded or leaked, use **Cancel guest links** on the request.
+Earlier links stop working; the signed-in owner keeps access, your next reply
+sends a new link, and the customer can request one from the expired page. That
+request emails only the request's own address.
+
 If an attachment fails, check file type/size, access expiry and storage
 availability. If a customer loses access, use a verified reissue/recovery flow.
-Existing public files require explicit migration or deletion under the
-approved retention policy; making new uploads private does not change old URLs.
 
 ## Close and verify
 

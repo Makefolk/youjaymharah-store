@@ -43,6 +43,15 @@ fulfillment. A screenshot or bank alert alone is not gateway verification.
 4. If amounts/currency differ, payment is ambiguous, or fulfillment cannot be
    completed, escalate to the owner. A refund is a separate controlled action.
 5. Record the resolution and contact the customer through the support thread.
+6. In **Attention**, a payment that became an order clears itself on the next
+   check. For one resolved outside the store, such as a gateway refund for a
+   different amount, use **Mark handled** and write what was done. The note is
+   kept with the staff member's name. Marketing cannot do this; staff with
+   order access can.
+
+Attention labels each payment **Paid, no order**, **Paid a different amount**,
+**Not finished** (still being rechecked) or **Unfinished for a week** (pending
+or uncheckable for seven days). Treat the last as a manual gateway check.
 
 The reconciliation job keeps payment checks in the database and runs every five
 minutes. It begins checking attempts after a 20-minute grace period, retries

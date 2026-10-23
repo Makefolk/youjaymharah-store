@@ -51,6 +51,39 @@ appropriate. Category/collection assignments drive navigation and filters.
 New-arrival badges depend on their configured age window. Approved search terms
 and synonyms should represent the catalog without publishing customer searches.
 
+### Create a collection
+
+1. In **Products → Collections**, choose **Create** and enter the title. The
+   handle becomes the storefront address `/collections/<handle>`; use a short
+   lowercase handle such as `autumn-edit`.
+2. Add products from the collection's **Products** section, or set
+   **Collection** under **Organize** on each product. A product belongs to one
+   collection at most.
+3. In the collection's **Website content** box, add the description (shown on
+   its page and the homepage), a landscape banner of at least 2400 × 1200px and
+   optionally a portrait mobile banner of at least 1080 × 1350px. Without the
+   mobile banner, phones crop the main banner.
+4. Optionally feature it in **Settings → Storefront → Homepage**, or link it from
+   a Store menu card in **Settings → Storefront → Navigation**.
+
+**Result:** the collection appears in the Collections menu (a direct link when
+it is the only one), on its own page and, if featured, on the homepage. A shared
+link to it shows a preview card with its banner or first products.
+
+**Recovery:** a collection with no published products shows an empty page; add
+products or remove it from promotion. Deleting a collection keeps its products.
+
+### Category boxes
+
+Each category has three side boxes in the admin:
+
+- **Home page picture:** the tile image in the homepage's "Shop by wardrobe"
+  section, which shows the subcategories of each top-level category. Without
+  one, the tile uses its newest product's photo.
+- **Search & sharing:** the category's own search title and description.
+- **Size guide:** the guide its products and subcategories inherit, unless a
+  product sets its own.
+
 ### Selling without collections
 
 Collections are optional. Products, categories, New arrivals, search, filters and

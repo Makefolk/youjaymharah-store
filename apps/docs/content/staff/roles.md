@@ -38,6 +38,21 @@ handbook. Expired invitations need a supported reissue. Staff unable to inspect
 workflow diagnostics should escalate to the owner rather than receive a broad
 role simply for troubleshooting.
 
+## Two-factor sign-in
+
+Each staff member opens **Profile → Two-factor authentication**, scans the code
+with an authenticator app and stores the recovery codes privately. Each code
+works once. From then on, admin sign-in asks for the app's six-digit code.
+
+Once everyone is enrolled, engineering sets `ADMIN_MFA_REQUIRED=true`. Staff
+without an authenticator can then view the admin but cannot change anything
+until they enrol. Secret API keys used by integrations are exempt. Verify by
+signing in as an enrolled and an unenrolled test account.
+
+A password reset ends every earlier session for that account, admin sessions
+included. Use it, then remove or re-enrol the authenticator, when a staff
+account may be compromised.
+
 ## Escalation and verification
 
 Payment mismatches, duplicate refunds, suspected account access and irreversible

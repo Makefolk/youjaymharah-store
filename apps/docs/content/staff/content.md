@@ -26,6 +26,22 @@ Hero history supports reviewing/restoring prior versions. Verify the restored
 image/video, mobile layout, text and call-to-action destination. Removing a
 media asset can break both current and historical versions that refer to it.
 
+## Navigation and support details
+
+**Store menu cards** (**Settings → Storefront → Navigation**, Marketing or
+Store Manager): up to two picture cards in the Store menu on large screens.
+Each links to a collection, category or product chosen from a list, with a
+desktop image and an optional mobile image. Choosing a destination instead of
+typing a URL keeps the card working when handles change.
+
+**Customer support** (**Settings → Customer support**, Store Manager or owner):
+support hours, typical reply time, phone and WhatsApp numbers in international
+form, and delivery information. These appear on the Contact and Delivery pages.
+Checkout prices still come from shipping options.
+
+**Pages** (**Settings → Pages**): About, Privacy policy and Terms of sale. A page
+without text is not linked from the storefront.
+
 ## Homepage About section
 
 Go to **Settings → Storefront → Homepage About → Edit**. The owner, Marketing
@@ -88,6 +104,13 @@ on marketing flows simply because their settings screen is present.
 Maintain approved search vocabulary, synonyms and fallback/trending terms.
 Do not publish raw customer search phrases. Check page titles, descriptions,
 sharing images, robots and sitemap output on the intended environment.
+
+Shared product, collection and search links show generated 1200 × 630 preview
+cards (`/og/product/<handle>`, `/og/collection/<handle>`, `/og/search?q=`): the
+photos, name, price, a flag that is currently true (on sale, only a few left,
+new in, coming soon) and a call to action. The store-wide **Share image** is
+used for other pages. Messaging apps cache a link's card; Facebook's Sharing
+Debugger refreshes it. Verify by opening a card URL directly.
 Staging and internal docs must remain protected/non-indexable independently of
 the storefront's live SEO setting.
 
