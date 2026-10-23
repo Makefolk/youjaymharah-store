@@ -11,7 +11,10 @@ import { useRouter } from "next/navigation"
 
 import { getBrowserSdk } from "@/lib/medusa/browser"
 
-/** Finds a guest's order from its number and email. 404 when either is wrong. */
+/**
+ * Emails a guest a fresh link to their order when its number and email
+ * match. Succeeds either way.
+ */
 export function useOrderLookup() {
   return useMutation({
     mutationFn: (body: StoreOrderLookupBody) =>

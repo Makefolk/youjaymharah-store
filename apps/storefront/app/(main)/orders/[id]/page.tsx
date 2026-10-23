@@ -4,9 +4,8 @@ import type { Metadata } from "next"
 import type { ReactNode } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { notFound } from "next/navigation"
-
 import { formatDate } from "@/components/orders/format"
+import { OrderLinkNeeded } from "@/components/orders/order-link-needed"
 import { Button } from "@/components/ui/button"
 import {
   fetchOrderOnServer,
@@ -37,22 +36,25 @@ type Order = HttpTypes.StoreOrder & {
 }
 
 /**
- * An order's status, open to anyone with its link, as in the confirmation
- * email. Requesting a return asks for more proof than the link.
+ * An order's status, for its signed-in customer or anyone with the order
+ * link from its emails (`?key=`). Requesting a return asks for more proof
+ * than the link.
  */
 export default async function OrderPage({
   params,
   searchParams,
 }: PageProps<"/orders/[id]">) {
   const { id } = await params
-  const justPlaced = (await searchParams).placed === "1"
+  const { placed, key } = await searchParams
+  const justPlaced = placed === "1"
+  const orderKey = typeof key === "string" && key ? key : null
   const [order, returns] = await Promise.all([
-    fetchOrderOnServer(id) as Promise<Order | null>,
-    fetchReturnOptionsOnServer(id),
+    fetchOrderOnServer(id, orderKey) as Promise<Order | null>,
+    fetchReturnOptionsOnServer(id, orderKey),
   ])
 
   if (!order) {
-    notFound()
+    return <OrderLinkNeeded hadKey={Boolean(orderKey)} />
   }
 
   const progress = getOrderProgress(order)
@@ -201,6 +203,7 @@ export default async function OrderPage({
       {progress.stage !== "canceled" && returns && (
         <ReturnsSection
           orderId={order.id}
+          orderKey={orderKey}
           returns={returns}
           items={order.items ?? []}
           displayId={order.display_id}
@@ -215,7 +218,7 @@ export default async function OrderPage({
           order.
         </p>
         <Link
-          href={orderHelpPath(order.id)}
+          href={orderHelpPath(order.id, orderKey)}
           className="mt-3 inline-block text-[13px] text-foreground underline underline-offset-4"
         >
           Get help with this order
@@ -361,11 +364,13 @@ function ShipmentRow({
 
 function ReturnsSection({
   orderId,
+  orderKey,
   returns,
   items,
   displayId,
 }: {
   orderId: string
+  orderKey: string | null
   returns: StoreReturnOptionsResponse
   items: HttpTypes.StoreOrderLineItem[]
   displayId: number | undefined
@@ -445,7 +450,7 @@ function ReturnsSection({
             variant="outline"
             size="lg"
             nativeButton={false}
-            render={<Link href={orderReturnPath(orderId)} />}
+            render={<Link href={orderReturnPath(orderId, orderKey)} />}
             className="px-4 tracking-[0.06em] uppercase"
           >
             Request a return

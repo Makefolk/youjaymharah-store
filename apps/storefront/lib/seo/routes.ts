@@ -28,10 +28,19 @@ export const WISHLIST_PATH = "/wishlist"
 /** Full search results. The query travels as `?q=`. */
 export const SEARCH_PATH = "/search"
 
-/** An order's status page; the id is the key, as in the confirmation email. */
-export const orderPath = (id: string) => `/orders/${encodeURIComponent(id)}`
+/**
+ * An order's status page. Its signed-in customer needs nothing more; anyone
+ * else needs the order link's `key`, as in the order emails, so pages pass
+ * it along to the order's other pages.
+ */
+export const orderPath = (id: string, key?: string | null) =>
+  `/orders/${encodeURIComponent(id)}${withKey(key)}`
 
-export const orderReturnPath = (id: string) => `${orderPath(id)}/return`
+export const orderReturnPath = (id: string, key?: string | null) =>
+  `/orders/${encodeURIComponent(id)}/return${withKey(key)}`
+
+const withKey = (key?: string | null) =>
+  key ? `?key=${encodeURIComponent(key)}` : ""
 
 export const CHECKOUT_PATH = "/checkout"
 
@@ -42,7 +51,8 @@ export const CHECKOUT_PATH = "/checkout"
 export const CHECKOUT_CALLBACK_PATH = "/checkout/callback"
 
 /** An order's page straight after checkout, with the thank-you message. */
-export const orderConfirmationPath = (id: string) => `${orderPath(id)}?placed=1`
+export const orderConfirmationPath = (id: string, key?: string | null) =>
+  `/orders/${encodeURIComponent(id)}?placed=1${key ? `&key=${encodeURIComponent(key)}` : ""}`
 
 /** Finding a guest order from its number and email. */
 export const TRACK_ORDER_PATH = "/track-order"
@@ -77,7 +87,17 @@ export const ACCOUNT_SUPPORT_PATH = "/account/support"
 export const supportRequestPath = (id: string, access?: string | null) =>
   `/support/${encodeURIComponent(id)}${access ? `?access=${encodeURIComponent(access)}` : ""}`
 
-export const orderHelpPath = (id: string) => `${orderPath(id)}/help`
+export const orderHelpPath = (
+  id: string,
+  key?: string | null,
+  kind?: string,
+) => {
+  const query = new URLSearchParams()
+  if (kind) query.set("kind", kind)
+  if (key) query.set("key", key)
+  const search = query.toString()
+  return `/orders/${encodeURIComponent(id)}/help${search ? `?${search}` : ""}`
+}
 export const SIGN_IN_PATH = "/account/sign-in"
 export const REGISTER_PATH = "/account/register"
 export const FORGOT_PASSWORD_PATH = "/account/forgot-password"

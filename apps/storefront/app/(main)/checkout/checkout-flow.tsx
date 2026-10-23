@@ -504,7 +504,9 @@ function Payment({ cart }: { cart: Cart }) {
       if (result.kind === "redirect") {
         window.location.assign(result.url)
       } else {
-        router.push(orderConfirmationPath(result.order.id))
+        router.push(
+          orderConfirmationPath(result.order.id, result.order.access_key),
+        )
       }
     } catch {
       // Shown below the button.

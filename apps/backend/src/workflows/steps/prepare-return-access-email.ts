@@ -8,6 +8,7 @@ import { createReturnAccessToken } from "../../lib/return-access";
 import { BRANDING_MODULE } from "../../modules/branding";
 import type BrandingModuleService from "../../modules/branding/service";
 import { EmailTemplates } from "../../modules/resend/emails";
+import { createOrderAccessKey } from "../../lib/order-access";
 import { STOREFRONT_URL } from "../../modules/resend/emails/constants";
 import { emailIdempotency } from "../../modules/resend/idempotency";
 import type { PreparedEmail } from "./send-prepared-email";
@@ -49,7 +50,8 @@ export const prepareReturnAccessEmailStep = createStep(
     }
 
     const token = createReturnAccessToken(order.id, order.email);
-    const url = `${STOREFRONT_URL.replace(/\/$/, "")}/orders/${encodeURIComponent(order.id)}/return?access=${encodeURIComponent(token)}`;
+    // The return page shows the order too, so the link opens that as well.
+    const url = `${STOREFRONT_URL.replace(/\/$/, "")}/orders/${encodeURIComponent(order.id)}/return?access=${encodeURIComponent(token)}&key=${encodeURIComponent(createOrderAccessKey(order.id))}`;
     const brand = await brandingService.retrieveSettings();
 
     return new StepResponse<PreparedEmail<SendReturnAccessEmailOutput>>({

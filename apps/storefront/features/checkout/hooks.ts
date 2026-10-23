@@ -106,8 +106,7 @@ export function useSetShippingMethod() {
 }
 
 export type PaymentStart =
-  | { kind: "redirect"; url: string }
-  | { kind: "order"; order: HttpTypes.StoreOrder }
+  { kind: "redirect"; url: string } | { kind: "order"; order: PlacedOrder }
 
 /**
  * Starts paying. A fresh payment session is created every time, immediately
@@ -156,6 +155,9 @@ export function useStartPayment() {
   })
 }
 
+/** A just-placed order, with the key that opens its page without signing in. */
+export type PlacedOrder = HttpTypes.StoreOrder & { access_key: string | null }
+
 /**
  * Completes the cart, which makes Medusa verify the payment with the gateway
  * and create the order. Completing an already-completed cart returns the same
@@ -166,11 +168,14 @@ export function useCompleteCart() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (): Promise<HttpTypes.StoreOrder> => {
-      const result = await getBrowserSdk().store.cart.complete(CURRENT_CART_ID)
+    mutationFn: async (): Promise<PlacedOrder> => {
+      const result = (await getBrowserSdk().store.cart.complete(
+        CURRENT_CART_ID,
+      )) as HttpTypes.StoreCompleteCartResponse & { order_key?: string | null }
 
       if (result.type === "order") {
-        return result.order
+        // Added by the storefront's proxy: opens the order page here.
+        return { ...result.order, access_key: result.order_key ?? null }
       }
       throw new Error(
         result.error?.message ||

@@ -46,3 +46,9 @@ export const EMPTY_WISHLIST: Wishlist = { id: null, items: [] }
 /** Where to return after a Google sign-in; Google's round trip can't carry it. */
 export const SIGN_IN_NEXT_COOKIE = "_signin_next"
 export const GOOGLE_STATE_COOKIE = "_google_state"
+
+/**
+ * Carries an order link's key (`/orders/:id?key=`) to the backend, which
+ * opens an order only for its signed-in customer or with that key.
+ */
+export const ORDER_ACCESS_HEADER = "x-order-access"

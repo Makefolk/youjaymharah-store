@@ -1,3 +1,5 @@
+import { createOrderAccessKey } from "../../../lib/order-access";
+
 /**
  * Fallbacks only. The live values come from the `branding` module and are
  * passed into each template as a `brand` prop by the subscriber that sends it.
@@ -13,11 +15,11 @@ export const STOREFRONT_URL =
 /**
  * An order's status page on the storefront, where the customer can track it
  * and request a return. Must match `orderPath` in the storefront's
- * lib/seo/routes.ts. The order id is the page's key, as in Medusa's own
- * order confirmation links.
+ * lib/seo/routes.ts. Carries a fresh order access key, so the link opens the
+ * order without signing in for a while (lib/order-access.ts).
  */
 export const orderPageUrl = (orderId: string) =>
-  `${STOREFRONT_URL.replace(/\/$/, "")}/orders/${encodeURIComponent(orderId)}`;
+  `${STOREFRONT_URL.replace(/\/$/, "")}/orders/${encodeURIComponent(orderId)}?key=${encodeURIComponent(createOrderAccessKey(orderId))}`;
 /**
  * Base URL of the admin dashboard, used for invite and staff reset links.
  * Includes the path when the backend serves it (`https://api.example.com/app`);

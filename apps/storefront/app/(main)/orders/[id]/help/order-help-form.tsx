@@ -54,13 +54,15 @@ const PHOTO_KINDS: OrderHelpKind[] = ["damaged", "missing", "exchange"]
  */
 export function OrderHelpForm({
   orderId,
+  orderKey,
   initialKind,
 }: {
   orderId: string
+  orderKey: string | null
   initialKind: string | null
 }) {
   const id = useId()
-  const help = useOrderHelp(orderId)
+  const help = useOrderHelp(orderId, orderKey)
   const [kind, setKind] = useState<OrderHelpKind | null>(
     KINDS.find((option) => option.kind === initialKind)?.kind ?? null,
   )

@@ -4,6 +4,7 @@ import type { HttpTypes } from "@medusajs/types"
 import type { StoreReturnOptionsResponse } from "@youjaymharah/api-types"
 
 import { isNotFound, isUnauthorized } from "@/lib/medusa/errors"
+import { ORDER_ACCESS_HEADER } from "@/lib/medusa/constants"
 import { ORDER_LIST_FIELDS, ORDER_PAGE_FIELDS } from "@/lib/medusa/order"
 import { getAuthHeaders, sdk } from "@/lib/medusa/server"
 
@@ -12,14 +13,30 @@ import { getAuthHeaders, sdk } from "@/lib/medusa/server"
  * they ship, so none of these are cached.
  */
 
-/** An order by id, or null. Needs no sign-in: the id is the key. */
+/**
+ * What opens an order: the signed-in customer's token, and the order link's
+ * key when there is one. The backend answers 404 without either.
+ */
+async function orderAccessHeaders(
+  key: string | null | undefined,
+): Promise<Record<string, string>> {
+  return {
+    ...(await getAuthHeaders()),
+    ...(key ? { [ORDER_ACCESS_HEADER]: key } : {}),
+  }
+}
+
+/** An order by id, or null when it doesn't exist or this visitor can't open it. */
 export async function fetchOrderOnServer(
   id: string,
+  key?: string | null,
 ): Promise<HttpTypes.StoreOrder | null> {
   try {
-    const { order } = await sdk.store.order.retrieve(id, {
-      fields: ORDER_PAGE_FIELDS,
-    })
+    const { order } = await sdk.store.order.retrieve(
+      id,
+      { fields: ORDER_PAGE_FIELDS },
+      await orderAccessHeaders(key),
+    )
 
     return order
   } catch (error) {
@@ -60,11 +77,12 @@ export async function listCustomerOrdersOnServer(
 
 export async function fetchReturnOptionsOnServer(
   id: string,
+  key?: string | null,
 ): Promise<StoreReturnOptionsResponse | null> {
   try {
     return await sdk.client.fetch<StoreReturnOptionsResponse>(
       `/store/orders/${encodeURIComponent(id)}/return-options`,
-      { cache: "no-store" },
+      { cache: "no-store", headers: await orderAccessHeaders(key) },
     )
   } catch (error) {
     if (isNotFound(error)) return null

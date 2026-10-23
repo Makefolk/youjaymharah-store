@@ -1,16 +1,16 @@
+import { randomUUID } from "node:crypto";
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
-import {
-  ContainerRegistrationKeys,
-  MedusaError,
-} from "@medusajs/framework/utils";
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
 
 import type { StoreOrderLookupType } from "../../middlewares";
+import { resendOrderConfirmationWorkflow } from "../../../workflows/resend-order-confirmation";
 
 /**
- * Finds a guest's order from the order number and email on their
- * confirmation. Both must match, and a miss says nothing about which one was
- * wrong, so the endpoint can't be used to find out whether an email has
- * ordered here.
+ * "Find my order" for guests without their confirmation email: when the
+ * order number and email match, the confirmation is sent again, with a
+ * fresh link. Nothing is opened here, since an order number and an email
+ * are easy to learn; reading the inbox is the proof. The answer is the same
+ * either way, so this can't reveal whether an email has ordered here.
  */
 export const POST = async (
   req: MedusaRequest<StoreOrderLookupType>,
@@ -31,12 +31,11 @@ export const POST = async (
       candidate.email?.trim().toLowerCase() === email.trim().toLowerCase(),
   );
 
-  if (!order) {
-    throw new MedusaError(
-      MedusaError.Types.NOT_FOUND,
-      "We couldn't find an order with that number and email.",
-    );
+  if (order) {
+    await resendOrderConfirmationWorkflow(req.scope).run({
+      input: { id: order.id, resend_key: `lookup-${randomUUID()}` },
+    });
   }
 
-  res.json({ order: { id: order.id } });
+  res.json({ sent: true });
 };

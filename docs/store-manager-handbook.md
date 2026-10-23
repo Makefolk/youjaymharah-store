@@ -207,6 +207,14 @@ confirmation. The customer's account page shows "Shipped" but not the link, so
 point them to the email.
 Guide: <https://docs.medusajs.com/user-guide/orders/fulfillments>
 
+**Order links.** Each order email links to the order's page, and each link
+works for 60 days. Customers with an account can always see their orders
+signed in. A guest whose link has expired or who lost the email can use
+**Track your order** on the site: the order number and email bring a fresh
+link by email, never the order itself. Resending the confirmation from the
+order page also sends a fresh link. Don't paste order page addresses to
+customers; send the email instead.
+
 ### Refunds
 
 Check the order's **Payments** section for the provider.

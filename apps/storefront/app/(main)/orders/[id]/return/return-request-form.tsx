@@ -30,11 +30,14 @@ const selectClass =
 
 export function ReturnRequestForm({
   orderId,
+  orderKey,
   items,
   reasons,
   access,
 }: {
   orderId: string
+  /** The order link's key, for the way back to the order. */
+  orderKey: string | null
   items: ReturnableItem[]
   reasons: { id: string; label: string }[]
   /** A guest's token from the emailed return link; null when signed in. */
@@ -60,7 +63,7 @@ export function ReturnRequestForm({
           items reach us.
         </p>
         <Link
-          href={orderPath(orderId)}
+          href={orderPath(orderId, orderKey)}
           className="self-start underline underline-offset-4"
         >
           Back to your order

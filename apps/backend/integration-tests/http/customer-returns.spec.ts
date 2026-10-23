@@ -11,6 +11,7 @@ import {
 } from "@medusajs/medusa/core-flows";
 import { requireIsolatedDatabase } from "../helpers/isolated-database";
 import { physicalCheckoutFixture } from "../helpers/physical-checkout";
+import { createOrderAccessKey } from "../../src/lib/order-access";
 
 requireIsolatedDatabase();
 jest.setTimeout(120_000);
@@ -23,6 +24,7 @@ medusaIntegrationTestRunner({
       let headers: Record<string, string>;
       const sentEmails: string[] = [];
       const returnLinks: string[] = [];
+      const orderKeys: string[] = [];
 
       beforeEach(async () => {
         sentEmails.length = 0;
@@ -36,6 +38,10 @@ medusaIntegrationTestRunner({
               /return\?access=([^"&<\s]+)/,
             );
             if (access) returnLinks.push(decodeURIComponent(access[1]));
+            const key = String(email.html ?? "").match(
+              /\/orders\/[^"?]+\?key=([^"&<\s]+)/,
+            );
+            if (key) orderKeys.push(decodeURIComponent(key[1]));
             return new Response(JSON.stringify({ id: "returns-test-email" }));
           }
           if (target.origin !== "https://api.paystack.co")
@@ -96,8 +102,23 @@ medusaIntegrationTestRunner({
         return order;
       }
 
-      it("finds an order only from its number and the matching email", async () => {
+      it("emails a fresh order link for a matching number and email, and opens nothing itself", async () => {
         const order = await deliveredOrder();
+        await utils.waitWorkflowExecutions();
+        sentEmails.length = 0;
+        orderKeys.length = 0;
+
+        const miss = await api.post(
+          "/store/order-lookup",
+          { email: "someone-else@example.com", display_id: order.display_id },
+          { headers },
+        );
+        expect(miss.data).toEqual({ sent: true });
+        await utils.waitWorkflowExecutions();
+        expect(
+          sentEmails.filter((subject) => subject.endsWith("is confirmed")),
+        ).toEqual([]);
+
         const found = await api.post(
           "/store/order-lookup",
           {
@@ -106,14 +127,84 @@ medusaIntegrationTestRunner({
           },
           { headers },
         );
-        expect(found.data).toEqual({ order: { id: order.id } });
-        await expect(
-          api.post(
-            "/store/order-lookup",
-            { email: "someone-else@example.com", display_id: order.display_id },
-            { headers },
-          ),
-        ).rejects.toMatchObject({ response: { status: 404 } });
+        expect(found.data).toEqual({ sent: true });
+        for (let attempt = 0; attempt < 40 && !orderKeys.length; attempt++) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+        expect(orderKeys.length).toBeGreaterThan(0);
+
+        const withoutKey = await api.get(`/store/orders/${order.id}`, {
+          headers,
+          validateStatus: () => true,
+        });
+        expect(withoutKey.status).toBe(404);
+        const withKey = await api.get(`/store/orders/${order.id}`, {
+          headers: { ...headers, "x-order-access": orderKeys[0] },
+        });
+        expect(withKey.data.order.id).toBe(order.id);
+        const otherOrder = await api.get(`/store/orders/order_01NOTTHISONE`, {
+          headers: { ...headers, "x-order-access": orderKeys[0] },
+          validateStatus: () => true,
+        });
+        expect(otherOrder.status).toBe(404);
+      });
+
+      it("opens an order for the browser that placed it and for its signed-in customer", async () => {
+        const container = getContainer();
+        const fixture = await physicalCheckoutFixture(container);
+        const cart = await fixture.cart();
+        const notYet = await api.get(`/store/carts/${cart.id}/order-access`, {
+          headers,
+          validateStatus: () => true,
+        });
+        expect(notYet.status).toBe(404);
+
+        const { result: order } = await completeCartWorkflow(container).run({
+          input: { id: cart.id },
+        });
+        const { data } = await api.get(`/store/carts/${cart.id}/order-access`, {
+          headers,
+        });
+        expect(data.order_id).toBe(order.id);
+        const opened = await api.get(`/store/orders/${order.id}`, {
+          headers: { ...headers, "x-order-access": data.key },
+        });
+        expect(opened.data.order.id).toBe(order.id);
+
+        const email = "order-owner@example.com";
+        const registration = await api.post(
+          "/auth/customer/emailpass/register",
+          { email, password: "owner-password-123" },
+        );
+        const {
+          data: { customer },
+        } = await api.post(
+          "/store/customers",
+          { email },
+          {
+            headers: {
+              ...headers,
+              authorization: `Bearer ${registration.data.token}`,
+            },
+          },
+        );
+        const login = await api.post("/auth/customer/emailpass", {
+          email,
+          password: "owner-password-123",
+        });
+        const signedIn = {
+          headers: { ...headers, authorization: `Bearer ${login.data.token}` },
+          validateStatus: () => true,
+        };
+        expect(
+          (await api.get(`/store/orders/${order.id}`, signedIn)).status,
+        ).toBe(404);
+        await container
+          .resolve<IOrderModuleService>(Modules.ORDER)
+          .updateOrders([{ id: order.id, customer_id: customer.id }]);
+        expect(
+          (await api.get(`/store/orders/${order.id}`, signedIn)).status,
+        ).toBe(200);
       });
 
       it("lets a guest request a return within the window, once", async () => {
@@ -128,7 +219,12 @@ medusaIntegrationTestRunner({
 
         const options = await api.get(
           `/store/orders/${order.id}/return-options`,
-          { headers },
+          {
+            headers: {
+              ...headers,
+              "x-order-access": createOrderAccessKey(order.id),
+            },
+          },
         );
         expect(options.data.return_policy).toEqual({
           enabled: true,
@@ -183,7 +279,12 @@ medusaIntegrationTestRunner({
 
         const after = await api.get(
           `/store/orders/${order.id}/return-options`,
-          { headers },
+          {
+            headers: {
+              ...headers,
+              "x-order-access": createOrderAccessKey(order.id),
+            },
+          },
         );
         expect(after.data.eligibility).toMatchObject({
           open: false,
@@ -257,7 +358,12 @@ medusaIntegrationTestRunner({
 
         const options = await api.get(
           `/store/orders/${order.id}/return-options`,
-          { headers },
+          {
+            headers: {
+              ...headers,
+              "x-order-access": createOrderAccessKey(order.id),
+            },
+          },
         );
         expect(options.data.eligibility).toMatchObject({
           open: false,

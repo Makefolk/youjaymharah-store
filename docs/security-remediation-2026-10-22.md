@@ -91,13 +91,15 @@ deployment validation.
   versions suggested by its audit response. No public path accepting attacker
   supplied glob patterns or format strings was established in this review.
   These findings are not suppressed and should be revisited when fixes ship.
-- Password recovery does not yet revoke every previously issued session/token.
-  Existing suspicious accounts need explicit recovery; verifying an address is
-  not a substitute for removing an unauthorized password or active session.
-  Admin MFA enforcement remains separate work.
-- Guest order links still use long-lived bearer IDs. Expiring guest access and
-  owner-only access to sensitive order details need an end-to-end change across
-  backend, storefront and emailed links.
+- **Done October 23:** finishing a password reset, changing a password, or
+  "Sign out of all devices" now ends every earlier customer and admin sign-in
+  (tokens, token refresh and admin sessions), through a per-account cutoff in
+  the `sessionRevocation` module. Admin MFA enforcement remains separate work.
+- **Done October 23:** an order ID alone no longer opens an order. Order pages
+  and their return options and help form need the signed-in customer or a
+  signed key from an order link, valid 60 days; every order email carries a
+  fresh one, and "Track your order" emails a link instead of opening the
+  order.
 - The payment attention panel is still a bounded recent-session view. Durable
   reconciliation with pagination, next-check times and escalation is needed so
   older paid attempts cannot remain behind newer abandoned attempts.

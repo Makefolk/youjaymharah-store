@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCustomer } from "@/features/customer/hooks"
 import { getBrowserSdk } from "@/lib/medusa/browser"
 import type { PhotoUpload } from "@/lib/help/photos"
+import { ORDER_ACCESS_HEADER } from "@/lib/medusa/constants"
 
 export type SupportStatus = "open" | "awaiting_customer" | "resolved"
 
@@ -48,7 +49,8 @@ export function useSupportRequests() {
 export type OrderHelpKind =
   "order" | "cancel" | "change_address" | "exchange" | "damaged" | "missing"
 
-export function useOrderHelp(orderId: string) {
+/** `orderKey` is the order link's key; the signed-in owner needs none. */
+export function useOrderHelp(orderId: string, orderKey: string | null) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (body: {
@@ -58,7 +60,11 @@ export function useOrderHelp(orderId: string) {
     }) =>
       getBrowserSdk().client.fetch<{ reference: string; sent_to: string }>(
         `/store/orders/${encodeURIComponent(orderId)}/help`,
-        { method: "POST", body },
+        {
+          method: "POST",
+          body,
+          headers: orderKey ? { [ORDER_ACCESS_HEADER]: orderKey } : {},
+        },
       ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: requestsKey }),
   })

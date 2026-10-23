@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { notFound } from "next/navigation"
-
 import { AccountShell } from "@/components/account/account-shell"
+import { OrderLinkNeeded } from "@/components/orders/order-link-needed"
 import { fetchOrderOnServer } from "@/features/orders/server"
 import { formatOrderNumber } from "@/lib/medusa/order"
 import { orderPath } from "@/lib/seo/routes"
@@ -19,9 +18,10 @@ export default async function OrderHelpPage({
   searchParams,
 }: PageProps<"/orders/[id]/help">) {
   const { id } = await params
-  const { kind } = await searchParams
-  const order = await fetchOrderOnServer(id)
-  if (!order) notFound()
+  const { kind, key } = await searchParams
+  const orderKey = typeof key === "string" && key ? key : null
+  const order = await fetchOrderOnServer(id, orderKey)
+  if (!order) return <OrderLinkNeeded hadKey={Boolean(orderKey)} />
 
   return (
     <AccountShell
@@ -30,11 +30,12 @@ export default async function OrderHelpPage({
     >
       <OrderHelpForm
         orderId={order.id}
+        orderKey={orderKey}
         initialKind={typeof kind === "string" ? kind : null}
       />
       <div className="mt-10 border-t border-border/70 pt-6">
         <Link
-          href={orderPath(order.id)}
+          href={orderPath(order.id, orderKey)}
           className="text-[13px] text-muted-foreground underline underline-offset-4 hover:text-foreground"
         >
           Back to order {formatOrderNumber(order.display_id)}

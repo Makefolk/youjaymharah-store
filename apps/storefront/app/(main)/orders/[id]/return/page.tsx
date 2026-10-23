@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { notFound } from "next/navigation"
-
 import { AccountShell } from "@/components/account/account-shell"
+import { OrderLinkNeeded } from "@/components/orders/order-link-needed"
 import { formatDate } from "@/components/orders/format"
 import { fetchCustomerOnServer } from "@/features/customer/server"
 import {
@@ -26,21 +25,22 @@ export default async function ReturnRequestPage({
   searchParams,
 }: PageProps<"/orders/[id]/return">) {
   const { id } = await params
-  const { access } = await searchParams
+  const { access, key } = await searchParams
+  const orderKey = typeof key === "string" && key ? key : null
   const [order, options, reasons, customer] = await Promise.all([
-    fetchOrderOnServer(id),
-    fetchReturnOptionsOnServer(id),
+    fetchOrderOnServer(id, orderKey),
+    fetchReturnOptionsOnServer(id, orderKey),
     listReturnReasonsOnServer(),
     fetchCustomerOnServer(),
   ])
 
   if (!order || !options) {
-    notFound()
+    return <OrderLinkNeeded hadKey={Boolean(orderKey)} />
   }
 
   const back = (
     <Link
-      href={orderPath(order.id)}
+      href={orderPath(order.id, orderKey)}
       className="text-[13px] text-muted-foreground underline underline-offset-4 hover:text-foreground"
     >
       Back to order {formatOrderNumber(order.display_id)}
@@ -94,6 +94,7 @@ export default async function ReturnRequestPage({
       {ownsOrder || accessToken ? (
         <ReturnRequestForm
           orderId={order.id}
+          orderKey={orderKey}
           items={items}
           reasons={reasons.map((reason) => ({
             id: reason.id,

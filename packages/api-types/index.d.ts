@@ -506,9 +506,7 @@ export type StoreOrderLookupBody = {
 };
 
 export type StoreOrderLookupResponse = {
-  order: {
-    id: string;
-  };
+  sent: boolean;
 };
 
 export type StoreReturnOptionsResponse = {

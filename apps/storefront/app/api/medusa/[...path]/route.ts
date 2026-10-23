@@ -6,6 +6,7 @@ import {
   CURRENT_CART_ID,
   CURRENT_WISHLIST_ID,
   EMPTY_WISHLIST,
+  ORDER_ACCESS_HEADER,
 } from "@/lib/medusa/constants"
 import { MEDUSA_BACKEND_URL } from "@/lib/medusa/server"
 import {
@@ -41,6 +42,7 @@ const FORWARDED_REQUEST_HEADERS = [
   "x-publishable-api-key",
   "x-medusa-locale",
   "x-forwarded-for",
+  ORDER_ACCESS_HEADER,
 ]
 
 type WishlistTarget =
@@ -97,6 +99,29 @@ async function resolveCurrentWishlist(
   }
 
   return Response.json({ message: "No active wishlist." }, { status: 404 })
+}
+
+/**
+ * The key that opens the order a cart became. Null when it can't be had:
+ * the order exists either way, and its confirmation email carries a link.
+ */
+async function fetchOrderKey(
+  cartId: string,
+  headers: Headers,
+): Promise<string | null> {
+  try {
+    const response = await fetch(
+      new URL(
+        `/store/carts/${encodeURIComponent(cartId)}/order-access`,
+        MEDUSA_BACKEND_URL,
+      ),
+      { headers, cache: "no-store", signal: AbortSignal.timeout(10_000) },
+    )
+    if (!response.ok) return null
+    return ((await response.json()) as { key?: string }).key ?? null
+  } catch {
+    return null
+  }
 }
 
 async function proxy(
@@ -293,8 +318,13 @@ async function proxy(
     }
 
     // A completed cart became an order; the next add-to-cart starts afresh.
+    // The order link's key comes along, so its page opens in this browser.
     if (isCartComplete && body.type === "order") {
       await clearCartId()
+      ;(body as { order_key?: string | null }).order_key = await fetchOrderKey(
+        segments[2],
+        headers,
+      )
     }
 
     return Response.json(body, {

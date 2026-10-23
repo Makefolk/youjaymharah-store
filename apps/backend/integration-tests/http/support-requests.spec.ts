@@ -10,6 +10,7 @@ import {
 } from "@medusajs/medusa/core-flows";
 import { provisionRbacRoles } from "../../src/lib/rbac-roles";
 import { requireIsolatedDatabase } from "../helpers/isolated-database";
+import { createOrderAccessKey } from "../../src/lib/order-access";
 import { physicalCheckoutFixture } from "../helpers/physical-checkout";
 
 requireIsolatedDatabase();
@@ -235,6 +236,21 @@ medusaIntegrationTestRunner({
           input: { id: cart.id },
         });
         sent.length = 0;
+        const withKey = {
+          headers: {
+            ...headers,
+            "x-order-access": createOrderAccessKey(order.id),
+          },
+        };
+
+        // The order ID alone opens nothing.
+        await expect(
+          api.post(
+            `/store/orders/${order.id}/help`,
+            { kind: "order", message: "Where is it?" },
+            { headers },
+          ),
+        ).rejects.toMatchObject({ response: { status: 404 } });
 
         await expect(
           api.post(
@@ -249,7 +265,7 @@ medusaIntegrationTestRunner({
                 },
               ],
             },
-            { headers },
+            withKey,
           ),
         ).rejects.toMatchObject({ response: { status: 400 } });
 
@@ -260,7 +276,7 @@ medusaIntegrationTestRunner({
             message: "The strap came off on the first day.",
             photos: [{ name: "strap.jpg", data: JPEG }],
           },
-          { headers },
+          withKey,
         );
         expect(data).toEqual({
           reference: expect.stringMatching(/^SR-/),

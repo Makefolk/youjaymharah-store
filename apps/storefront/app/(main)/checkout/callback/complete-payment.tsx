@@ -27,7 +27,8 @@ export function CompletePayment() {
     if (started.current) return
     started.current = true
     complete.mutate(undefined, {
-      onSuccess: (order) => router.replace(orderConfirmationPath(order.id)),
+      onSuccess: (order) =>
+        router.replace(orderConfirmationPath(order.id, order.access_key)),
     })
   }, [complete, router])
 

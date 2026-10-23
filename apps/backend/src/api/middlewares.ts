@@ -11,6 +11,7 @@ import { z } from "@medusajs/framework/zod";
 import { errorHandler as defaultErrorHandler } from "@medusajs/framework/http";
 
 import { rateLimit } from "./rate-limit";
+import { requireOrderAccess } from "./order-access";
 import { enforcePasswordPolicy } from "./password-policy";
 import { refuseEndedSessions } from "./session-revocation";
 import {
@@ -990,8 +991,27 @@ export default defineMiddlewares({
       method: ["POST"],
       middlewares: [
         rateLimit("order-lookup", 10),
+        // Each match emails the customer, so cap it per address too.
+        rateLimit("order-lookup-email", 3, "account"),
         validateAndTransformBody(StoreOrderLookup),
       ],
+    },
+    // An order ID alone opens nothing: the signed-in owner, or a key from
+    // an order link (src/api/order-access.ts).
+    {
+      matcher: "/store/orders/:id",
+      method: ["GET"],
+      middlewares: [requireOrderAccess],
+    },
+    {
+      matcher: "/store/orders/:id/return-options",
+      method: ["GET"],
+      middlewares: [requireOrderAccess],
+    },
+    {
+      matcher: "/store/carts/:id/order-access",
+      method: ["GET"],
+      middlewares: [rateLimit("order-access", 30)],
     },
     {
       // Medusa's own return route takes any order ID without checking who is
@@ -1129,6 +1149,7 @@ export default defineMiddlewares({
       bodyParser: { sizeLimit: "15mb" },
       middlewares: [
         rateLimit("order-help", 5),
+        requireOrderAccess,
         validateAndTransformBody(StoreOrderHelp),
       ],
     },

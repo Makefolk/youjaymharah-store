@@ -11816,7 +11816,7 @@
           "Returns"
         ],
         "summary": "Find an order from its number and email",
-        "description": "For guests without the link from their confirmation email. Both must match; a miss doesn't say which was wrong. Rate limited to 10 attempts a minute. Load the order itself with GET /store/orders/{id}.",
+        "description": "For guests without their confirmation email. When the number and email match, the confirmation is emailed again with a fresh order link; nothing is opened here. The answer is the same whether or not they match. Rate limited to 10 attempts a minute, and 3 a minute per email.",
         "security": [
           {
             "publishableKey": []
@@ -11850,27 +11850,19 @@
         },
         "responses": {
           "200": {
-            "description": "The order's ID.",
+            "description": "Accepted; an email follows if the order exists.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "order": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "id"
-                      ],
-                      "additionalProperties": false
+                    "sent": {
+                      "type": "boolean",
+                      "const": true
                     }
                   },
                   "required": [
-                    "order"
+                    "sent"
                   ],
                   "additionalProperties": false
                 }
@@ -11879,16 +11871,6 @@
           },
           "400": {
             "description": "Missing or invalid publishable API key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No order matches that number and email.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11910,6 +11892,87 @@
         }
       }
     },
+    "/store/carts/{id}/order-access": {
+      "get": {
+        "operationId": "getStoreCartsIdOrderAccess",
+        "tags": [
+          "Returns"
+        ],
+        "summary": "The order link's key for a completed cart",
+        "description": "For the browser that checked out: the key that opens the order the cart became, sent as `x-order-access` to GET /store/orders/{id} and the order's other routes. Medusa's GET /store/orders/{id} needs that key or the order's signed-in customer; the order ID alone answers 404. Keys last 60 days; every order email carries a fresh one. Rate limited to 30 a minute.",
+        "security": [
+          {
+            "publishableKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The order and its key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "order_id": {
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "order_id",
+                    "key"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid publishable API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The cart hasn't become an order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/store/orders/{id}/return-options": {
       "get": {
         "operationId": "getStoreOrdersIdReturnOptions",
@@ -11917,7 +11980,7 @@
           "Returns"
         ],
         "summary": "What can still be returned from an order",
-        "description": "Public like GET /store/orders/{id}: the order ID is the key. Each item's `returnable_quantity` is what has been sent, minus what is already being returned, while its window is open.",
+        "description": "For the order's signed-in customer, or with the key from an order link in the `x-order-access` header, like GET /store/orders/{id}. Each item's `returnable_quantity` is what has been sent, minus what is already being returned, while its window is open.",
         "security": [
           {
             "publishableKey": []
@@ -12629,7 +12692,7 @@
           "Support"
         ],
         "summary": "Ask for help with an order",
-        "description": "`kind`: order (a question), cancel, change_address, exchange, damaged or missing. Creates a support request linked to the order; replies always go to the order's own email, and only the reference comes back here (the link to follow it is emailed), so someone who merely has the order's link can't read the answers. Up to 3 photos as base64 (JPEG, PNG or WebP, checked by their bytes, 3 MB each). Rate limited to 5 a minute.",
+        "description": "`kind`: order (a question), cancel, change_address, exchange, damaged or missing. Creates a support request linked to the order; replies always go to the order's own email, and only the reference comes back here (the link to follow it is emailed), so someone who merely has the order's link can't read the answers. Needs the order's signed-in customer or an order link's key in `x-order-access`. Up to 3 photos as base64 (JPEG, PNG or WebP, checked by their bytes, 3 MB each). Rate limited to 5 a minute.",
         "security": [
           {
             "publishableKey": []

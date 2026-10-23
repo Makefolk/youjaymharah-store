@@ -900,7 +900,7 @@ export const TYPES: {
   { name: "StoreOrderLookupBody", schema: StoreOrderLookup, io: "input" },
   {
     name: "StoreOrderLookupResponse",
-    schema: z.object({ order: z.object({ id: z.string() }) }),
+    schema: z.object({ sent: z.literal(true) }),
     io: "output",
   },
   { name: "StoreReturnOptionsResponse", schema: ReturnOptions, io: "output" },
@@ -2430,16 +2430,30 @@ export const ROUTES: RouteDoc[] = [
     tag: "Returns",
     summary: "Find an order from its number and email",
     description:
-      "For guests without the link from their confirmation email. Both must match; a miss doesn't say which was wrong. Rate limited to 10 attempts a minute. Load the order itself with GET /store/orders/{id}.",
+      "For guests without their confirmation email. When the number and email match, the confirmation is emailed again with a fresh order link; nothing is opened here. The answer is the same whether or not they match. Rate limited to 10 attempts a minute, and 3 a minute per email.",
     auth: "public",
     body: StoreOrderLookup,
     response: {
-      description: "The order's ID.",
-      schema: z.object({ order: z.object({ id: z.string() }) }),
+      description: "Accepted; an email follows if the order exists.",
+      schema: z.object({ sent: z.literal(true) }),
+    },
+    errors: [{ status: 429, description: "Too many attempts." }],
+  },
+  {
+    method: "GET",
+    path: "/store/carts/{id}/order-access",
+    tag: "Returns",
+    summary: "The order link's key for a completed cart",
+    description:
+      "For the browser that checked out: the key that opens the order the cart became, sent as `x-order-access` to GET /store/orders/{id} and the order's other routes. Medusa's GET /store/orders/{id} needs that key or the order's signed-in customer; the order ID alone answers 404. Keys last 60 days; every order email carries a fresh one. Rate limited to 30 a minute.",
+    auth: "public",
+    response: {
+      description: "The order and its key.",
+      schema: z.object({ order_id: z.string(), key: z.string() }),
     },
     errors: [
-      { status: 404, description: "No order matches that number and email." },
-      { status: 429, description: "Too many attempts." },
+      { status: 404, description: "The cart hasn't become an order." },
+      { status: 429, description: "Too many requests." },
     ],
   },
   {
@@ -2448,7 +2462,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Returns",
     summary: "What can still be returned from an order",
     description:
-      "Public like GET /store/orders/{id}: the order ID is the key. Each item's `returnable_quantity` is what has been sent, minus what is already being returned, while its window is open.",
+      "For the order's signed-in customer, or with the key from an order link in the `x-order-access` header, like GET /store/orders/{id}. Each item's `returnable_quantity` is what has been sent, minus what is already being returned, while its window is open.",
     auth: "public",
     response: { description: "The return options.", schema: ReturnOptions },
     errors: [{ status: 404, description: "No such order." }],
@@ -2562,7 +2576,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Support",
     summary: "Ask for help with an order",
     description:
-      "`kind`: order (a question), cancel, change_address, exchange, damaged or missing. Creates a support request linked to the order; replies always go to the order's own email, and only the reference comes back here (the link to follow it is emailed), so someone who merely has the order's link can't read the answers. Up to 3 photos as base64 (JPEG, PNG or WebP, checked by their bytes, 3 MB each). Rate limited to 5 a minute.",
+      "`kind`: order (a question), cancel, change_address, exchange, damaged or missing. Creates a support request linked to the order; replies always go to the order's own email, and only the reference comes back here (the link to follow it is emailed), so someone who merely has the order's link can't read the answers. Needs the order's signed-in customer or an order link's key in `x-order-access`. Up to 3 photos as base64 (JPEG, PNG or WebP, checked by their bytes, 3 MB each). Rate limited to 5 a minute.",
     auth: "public",
     body: StoreOrderHelp,
     response: {

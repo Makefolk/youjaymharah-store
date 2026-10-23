@@ -27,11 +27,11 @@ const previews = {
 
 describe("order emails", () => {
   it.each(Object.entries(previews))(
-    "%s links to the order's page on the storefront",
+    "%s links to the order's page on the storefront, with an access key",
     async (_name, Preview) => {
       const html = await render(createElement(Preview));
       expect(html).toMatch(
-        /href="https?:\/\/[^"]+\/orders\/order_[A-Za-z0-9]+"/,
+        /href="https?:\/\/[^"]+\/orders\/order_[A-Za-z0-9]+\?key=\d+\.[\w-]+"/,
       );
     },
   );
