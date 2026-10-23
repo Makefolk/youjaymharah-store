@@ -1,6 +1,5 @@
 "use client"
 
-import { ArrowRightIcon } from "@phosphor-icons/react"
 import { useId, useState } from "react"
 
 import {
@@ -96,15 +95,18 @@ export function NewsletterSignup({
     <section
       aria-labelledby={headingId}
       className={cn(
-        "flex flex-wrap items-end justify-between gap-x-16 gap-y-8",
+        "flex flex-col items-center gap-7 border-t border-gold-hairline bg-muted px-5 py-16 text-center text-foreground sm:px-6 sm:py-20 lg:py-24",
         className,
       )}
     >
-      <div className="flex max-w-md grow basis-72 flex-col gap-3">
-        <h2 id={headingId} className="font-display text-3xl">
+      <div className="flex w-full max-w-xl flex-col items-center gap-4">
+        <h2
+          id={headingId}
+          className="font-display text-3xl leading-tight text-pretty sm:text-4xl lg:text-5xl"
+        >
           {heading}
         </h2>
-        <p className="text-sm text-pretty text-muted-foreground">
+        <p className="max-w-md text-sm leading-relaxed text-pretty text-muted-foreground sm:text-base">
           {description}
         </p>
       </div>
@@ -116,7 +118,7 @@ export function NewsletterSignup({
           event.stopPropagation()
           void form.handleSubmit()
         }}
-        className="flex max-w-md grow basis-72 flex-col gap-3"
+        className="flex w-full max-w-lg flex-col gap-3"
       >
         <form.AppField
           name="email"
@@ -139,32 +141,24 @@ export function NewsletterSignup({
 
             return (
               <>
-                <label
-                  htmlFor={inputId}
-                  className="text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase"
-                >
+                <label htmlFor={inputId} className="sr-only">
                   Email address
                 </label>
 
-                {/*
-                  One rule under the input and the button together: at rest it
-                  recedes into the footer; focus draws it in full and thickens
-                  it, without shifting anything below.
-                */}
-                <div className="flex items-center gap-4 border-b border-foreground/25 transition-[border-color,box-shadow] duration-200 focus-within:border-foreground focus-within:shadow-[0_1px_0_0_var(--foreground)] has-aria-invalid:border-destructive has-aria-invalid:shadow-none">
+                <div className="flex flex-col gap-3 min-[400px]:flex-row">
                   <input
                     id={inputId}
                     name={field.name}
                     type="email"
                     inputMode="email"
                     autoComplete="email"
-                    placeholder="name@example.com"
+                    placeholder="you@example.com"
                     value={field.state.value}
                     onChange={(event) => field.handleChange(event.target.value)}
                     onBlur={field.handleBlur}
                     aria-invalid={invalid || undefined}
                     aria-describedby={describedBy || undefined}
-                    className="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+                    className="h-12 min-w-0 border border-foreground/25 bg-background/50 px-4 text-base outline-offset-2 placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-foreground aria-invalid:border-destructive min-[400px]:flex-1"
                   />
 
                   <form.Subscribe selector={(state) => state.isSubmitting}>
@@ -173,13 +167,9 @@ export function NewsletterSignup({
                         type="submit"
                         disabled={isSubmitting}
                         aria-busy={isSubmitting || undefined}
-                        className="group inline-flex h-11 shrink-0 items-center gap-2 text-[13px] font-medium tracking-[0.06em] uppercase underline-offset-4 outline-none focus-visible:underline disabled:opacity-50"
+                        className="inline-flex h-12 shrink-0 items-center justify-center border border-gold px-7 font-display text-base tracking-[0.02em] transition-colors hover:bg-gold hover:text-gold-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground disabled:cursor-wait disabled:opacity-50"
                       >
                         {isSubmitting ? "Subscribing…" : "Subscribe"}
-                        <ArrowRightIcon
-                          aria-hidden
-                          className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-                        />
                       </button>
                     )}
                   </form.Subscribe>
@@ -204,7 +194,7 @@ export function NewsletterSignup({
         {consent && (
           <p
             id={consentId}
-            className="text-xs text-pretty text-muted-foreground"
+            className="text-xs leading-relaxed text-pretty text-muted-foreground"
           >
             {consent}
           </p>

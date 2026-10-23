@@ -1,4 +1,5 @@
 import { model } from "@medusajs/framework/utils";
+import { DEFAULT_HOMEPAGE_ABOUT } from "../homepage-about";
 
 /**
  * Settings the storefront renders with. A singleton like branding: one row,
@@ -34,6 +35,7 @@ export const StorefrontSettings = model.define("storefront_settings", {
    * the layout; staff only fill it in or turn it off.
    */
   homepage_hero: model.json().default({ enabled: false }),
+  homepage_about: model.json().default(DEFAULT_HOMEPAGE_ABOUT),
   /**
    * The collection featured on the home page. Not a module link: a single
    * optional pointer on a singleton, and a deleted collection is simply

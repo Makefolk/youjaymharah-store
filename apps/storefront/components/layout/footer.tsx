@@ -12,7 +12,6 @@ import {
 import Image from "next/image"
 import Link from "next/link"
 
-import { NewsletterSignup } from "@/components/newsletter/newsletter-signup"
 import { Button } from "@/components/ui/button"
 import { useStorefrontSettings } from "@/features/site-settings/provider"
 import { StorefrontSettings } from "@/lib/medusa/storefront-settings"
@@ -51,11 +50,6 @@ export function Footer() {
   return (
     <footer className="dark bg-background py-6 text-foreground">
       <div className="container-wrapper flex flex-col gap-6 px-5 py-6 sm:px-6 lg:px-8">
-        {/* Hidden rather than left as a bare divider while signup is off. */}
-        <div className="border-b pb-10 empty:hidden">
-          <NewsletterSignup source="footer" />
-        </div>
-
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center font-display text-xl">
             {brand.logo_url && (

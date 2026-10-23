@@ -18,9 +18,13 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react"
 import { usePathname } from "next/navigation"
 
 export function Header() {
+  const pathname = usePathname()
+
   return (
     <OverlayProvider>
-      <HeaderBar />
+      <div className={cn("sticky top-0 z-40", pathname === "/" && "h-0")}>
+        <HeaderBar />
+      </div>
     </OverlayProvider>
   )
 }
@@ -31,7 +35,6 @@ function HeaderBar() {
   const headerRef = useRef<HTMLElement>(null)
   const { tone, setHeight } = useHeaderTone()
   const search = useOverlay("search")
-  const pathname = usePathname()
 
   // A panel hanging off the bar turns it into a surface whatever the page
   // asked for, and everything on it -- lettering, the logo -- has to follow
@@ -59,8 +62,7 @@ function HeaderBar() {
     <header
       ref={headerRef}
       className={cn(
-        "group top-0 z-40 w-full border-b px-5 transition-colors duration-300 sm:px-6",
-        pathname === "/" ? "fixed" : "sticky",
+        "group relative w-full border-b px-5 transition-colors duration-300 sm:px-6",
         {
           "border-transparent bg-transparent": overlaid,
           "bg-background text-foreground": !overlaid,

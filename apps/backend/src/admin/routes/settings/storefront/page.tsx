@@ -24,6 +24,7 @@ import { sdk } from "../../../lib/sdk";
 import { uploadImage } from "../../../lib/upload-image";
 import { RenderFromQuery } from "../../../components/render-from-query";
 import { AnnouncementsSection } from "../../../components/announcements/announcements-section";
+import { AboutSection } from "../../../components/homepage-about/about-section";
 
 type Branding = {
   id: string;
@@ -117,6 +118,7 @@ const StorefrontSettingsPage = () => (
   <div className="flex flex-col gap-y-3">
     <BrandSection />
     <HomepageSection />
+    <AboutSection />
     <AnnouncementsSection />
     <NavigationSection />
     <SharingSection />

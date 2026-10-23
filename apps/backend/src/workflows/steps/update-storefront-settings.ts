@@ -7,6 +7,10 @@ import type {
 } from "../../api/middlewares";
 import { STOREFRONT_SETTINGS_MODULE } from "../../modules/storefront-settings";
 import { completeHomepageHero } from "../../modules/storefront-settings/homepage-hero";
+import {
+  completeHomepageAbout,
+  type HomepageAboutInput,
+} from "../../modules/storefront-settings/homepage-about";
 import { completeSocialLinks } from "../../modules/storefront-settings/social-networks";
 import { completeStoreMenuPromos } from "../../modules/storefront-settings/store-menu-promos";
 import { validateAnnouncementBar } from "../../modules/storefront-settings/announcement-resolver";
@@ -27,6 +31,7 @@ export type UpdateStorefrontSettingsInput = {
   google_site_verification?: string | null;
   /** Replaces the stored hero as a whole: a field left out is cleared. */
   homepage_hero?: HomepageHeroType;
+  homepage_about?: HomepageAboutInput;
   featured_collection_id?: string | null;
   store_menu_cards?: StoreMenuPromoType[];
   announcement_bar?: AnnouncementBar;
@@ -47,7 +52,13 @@ export const updateStorefrontSettingsStep = createStep(
         ? await validateAnnouncementBar(container, input.announcement_bar)
         : undefined;
 
-    const { social_links, homepage_hero, store_menu_cards, ...rest } = input;
+    const {
+      social_links,
+      homepage_hero,
+      homepage_about,
+      store_menu_cards,
+      ...rest
+    } = input;
 
     const [updated] = await service.updateStorefrontSettings([
       {
@@ -59,6 +70,9 @@ export const updateStorefrontSettingsStep = createStep(
           : {}),
         ...(homepage_hero
           ? { homepage_hero: completeHomepageHero(homepage_hero) }
+          : {}),
+        ...(homepage_about
+          ? { homepage_about: completeHomepageAbout(homepage_about) }
           : {}),
         ...(store_menu_cards
           ? { store_menu_cards: { items: store_menu_cards } }
@@ -80,6 +94,7 @@ export const updateStorefrontSettingsStep = createStep(
       homepage_hero: completeHomepageHero(
         previous.homepage_hero as Record<string, unknown>,
       ),
+      homepage_about: completeHomepageAbout(previous.homepage_about),
       featured_collection_id: previous.featured_collection_id,
       store_menu_cards: completeStoreMenuPromos(previous.store_menu_cards),
       announcement_bar: previous.announcement_bar,

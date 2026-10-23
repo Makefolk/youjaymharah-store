@@ -6,6 +6,7 @@ import { BRANDING_MODULE } from "../../../modules/branding";
 import type BrandingModuleService from "../../../modules/branding/service";
 import { STOREFRONT_SETTINGS_MODULE } from "../../../modules/storefront-settings";
 import { completeHomepageHero } from "../../../modules/storefront-settings/homepage-hero";
+import { completeHomepageAbout } from "../../../modules/storefront-settings/homepage-about";
 import type StorefrontSettingsModuleService from "../../../modules/storefront-settings/service";
 import { completeSupportInfo } from "../../../modules/storefront-settings/support-info";
 import { completeContentPages } from "../../../modules/storefront-settings/content-pages";
@@ -54,6 +55,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
         google_site_verification: settings.google_site_verification,
       },
       homepage: {
+        about: completeHomepageAbout(settings.homepage_about),
         hero: completeHomepageHero(
           settings.homepage_hero as Record<string, unknown>,
         ),

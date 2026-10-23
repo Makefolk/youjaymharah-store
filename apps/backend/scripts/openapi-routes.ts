@@ -313,6 +313,7 @@ const StorefrontSettings = z.object({
   allow_indexing: z.boolean(),
   google_site_verification: z.string().nullable(),
   homepage_hero: StoredHomepageHero,
+  homepage_about: z.lazy(() => StoredHomepageAbout),
   featured_collection_id: z.string().nullable(),
   store_menu_cards: z.array(
     z.object({
@@ -323,6 +324,17 @@ const StorefrontSettings = z.object({
     }),
   ),
   announcement_bar: AnnouncementBar,
+});
+
+const StoredHomepageAbout = z.object({
+  enabled: z.boolean(),
+  eyebrow: z.string().nullable(),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+  image_url: z.string().nullable(),
+  image_alt: z.string().nullable(),
+  cta_label: z.string().nullable(),
+  cta_url: z.string().nullable(),
 });
 
 const CartReminderSettings = z.object({
@@ -560,6 +572,7 @@ const PublicStorefrontSettings = z.object({
     google_site_verification: z.string().nullable(),
   }),
   homepage: z.object({
+    about: StoredHomepageAbout,
     /** Render it only when `enabled` is true; text may be saved while off. */
     hero: StoredHomepageHero,
     /** Null when none is set or the collection has since been deleted. */
@@ -1126,7 +1139,8 @@ export const ROUTES: RouteDoc[] = [
     path: "/admin/storefront-settings",
     tag: "Storefront",
     summary: "Get storefront settings",
-    description: "Created with defaults (a 30-day New badge) on first read.",
+    description:
+      "Created with defaults, including starter homepage About content and a 30-day New badge, on first read.",
     auth: "admin",
     policies: ["storefront_settings:read"],
     response: {
@@ -1139,7 +1153,8 @@ export const ROUTES: RouteDoc[] = [
     path: "/admin/storefront-settings",
     tag: "Storefront",
     summary: "Update storefront settings",
-    description: "Only the fields sent change.",
+    description:
+      "Only the fields sent change. Sending homepage_about replaces that section in full; omitted optional fields are cleared. Marketing and Store Manager can edit it.",
     auth: "admin",
     policies: ["storefront_settings:update"],
     body: AdminUpdateStorefrontSettings,
@@ -1151,7 +1166,7 @@ export const ROUTES: RouteDoc[] = [
       {
         status: 400,
         description:
-          "Validation failed: `new_badge_days` must be a whole number from 1 to 365.",
+          "Validation failed. Enabled homepage sections require their content; an About image requires alt text, and a link requires a label and a safe destination. new_badge_days must be a whole number from 1 to 365.",
       },
     ],
   },
@@ -1199,7 +1214,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Storefront",
     summary: "Get the settings the storefront renders with",
     description:
-      "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days), `support` (contact details and delivery information; each null when not set), `pages` (whether the About, Privacy and Terms pages have text) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
+      "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `homepage` (hero, About section and featured collection), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days), `support` (contact details and delivery information; each null when not set), `pages` (whether the About, Privacy and Terms pages have text) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
     auth: "public",
     response: {
       description: "The public storefront settings.",

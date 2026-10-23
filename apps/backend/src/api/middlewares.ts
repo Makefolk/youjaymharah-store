@@ -33,6 +33,7 @@ import {
   AnnouncementBar,
   AnnouncementOptionsQuery,
 } from "../modules/storefront-settings/announcements";
+import { HomepageAbout } from "../modules/storefront-settings/homepage-about";
 
 export const AdminUpdateBranding = z.object({
   name: z.string().min(1).optional(),
@@ -361,6 +362,7 @@ export const AdminUpdateStorefrontSettings = z.object({
     .nullable()
     .optional(),
   homepage_hero: HomepageHero.optional(),
+  homepage_about: HomepageAbout.optional(),
   /** The collection featured on the home page; null features none. */
   featured_collection_id: z.string().trim().min(1).nullable().optional(),
   /** Up to two curated cards in the Store megamenu (not commerce discounts). */

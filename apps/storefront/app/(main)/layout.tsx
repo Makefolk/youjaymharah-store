@@ -9,6 +9,7 @@ import { AnnouncementBanner } from "@/components/layout/announcement-banner"
 import { HeaderOverlayProvider } from "@/features/layout/header-overlay"
 import { getBaseURL } from "@/lib/util/env"
 import { Footer } from "@/components/layout/footer"
+import { NewsletterSignup } from "@/components/newsletter/newsletter-signup"
 // import CartMismatchBanner from "@modules/layout/components/cart-mismatch-banner"
 // import Footer from "@modules/layout/templates/footer"
 // import Nav from "@modules/layout/templates/nav"
@@ -29,6 +30,7 @@ export default async function PageLayout(
       <main className="flex-1">{props.children}</main>
       {props.quickView}
 
+      <NewsletterSignup source="footer" />
       <Footer />
     </HeaderOverlayProvider>
   )

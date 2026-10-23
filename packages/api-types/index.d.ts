@@ -431,6 +431,16 @@ export type StorefrontSettings = {
     cta_label: string | null;
     cta_url: string | null;
   };
+  homepage_about: {
+    enabled: boolean;
+    eyebrow: string | null;
+    title: string | null;
+    description: string | null;
+    image_url: string | null;
+    image_alt: string | null;
+    cta_label: string | null;
+    cta_url: string | null;
+  };
   featured_collection_id: string | null;
   store_menu_cards: {
     target_type: "collection" | "category" | "product";
@@ -603,6 +613,16 @@ export type AdminUpdateStorefrontSettingsBody = {
     cta_label?: string | null;
     cta_url?: string | null;
   };
+  homepage_about?: {
+    enabled: boolean;
+    eyebrow?: string | null;
+    title?: string | null;
+    description?: string | null;
+    image_url?: string | null;
+    image_alt?: string | null;
+    cta_label?: string | null;
+    cta_url?: string | null;
+  };
   featured_collection_id?: string | null;
   store_menu_cards?: {
     target_type: "collection" | "category" | "product";
@@ -647,6 +667,16 @@ export type AdminStorefrontSettingsResponse = {
       mobile_image_url: string | null;
       desktop_video_url: string | null;
       mobile_video_url: string | null;
+      cta_label: string | null;
+      cta_url: string | null;
+    };
+    homepage_about: {
+      enabled: boolean;
+      eyebrow: string | null;
+      title: string | null;
+      description: string | null;
+      image_url: string | null;
+      image_alt: string | null;
       cta_label: string | null;
       cta_url: string | null;
     };
@@ -732,6 +762,16 @@ export type StoreStorefrontSettingsResponse = {
       google_site_verification: string | null;
     };
     homepage: {
+      about: {
+        enabled: boolean;
+        eyebrow: string | null;
+        title: string | null;
+        description: string | null;
+        image_url: string | null;
+        image_alt: string | null;
+        cta_label: string | null;
+        cta_url: string | null;
+      };
       hero: {
         enabled: boolean;
         eyebrow: string | null;

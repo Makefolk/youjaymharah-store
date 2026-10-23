@@ -744,7 +744,7 @@
           "Storefront"
         ],
         "summary": "Get storefront settings",
-        "description": "Created with defaults (a 30-day New badge) on first read.",
+        "description": "Created with defaults, including starter homepage About content and a 30-day New badge, on first read.",
         "x-required-policies": [
           "storefront_settings:read"
         ],
@@ -948,6 +948,95 @@
                             "mobile_image_url",
                             "desktop_video_url",
                             "mobile_video_url",
+                            "cta_label",
+                            "cta_url"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "homepage_about": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "eyebrow": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "title": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "description": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "image_url": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "image_alt": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "cta_label": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "cta_url": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "eyebrow",
+                            "title",
+                            "description",
+                            "image_url",
+                            "image_alt",
                             "cta_label",
                             "cta_url"
                           ],
@@ -1206,6 +1295,7 @@
                         "allow_indexing",
                         "google_site_verification",
                         "homepage_hero",
+                        "homepage_about",
                         "featured_collection_id",
                         "store_menu_cards",
                         "announcement_bar"
@@ -1239,7 +1329,7 @@
           "Storefront"
         ],
         "summary": "Update storefront settings",
-        "description": "Only the fields sent change.",
+        "description": "Only the fields sent change. Sending homepage_about replaces that section in full; omitted optional fields are cleared. Marketing and Store Manager can edit it.",
         "x-required-policies": [
           "storefront_settings:update"
         ],
@@ -1469,6 +1559,94 @@
                           {
                             "type": "string",
                             "format": "uri"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "cta_label": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 40
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "cta_url": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 2048
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ]
+                  },
+                  "homepage_about": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "eyebrow": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 60
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "title": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "description": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 1200
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "image_url": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 2048
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "image_alt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
                           },
                           {
                             "type": "null"
@@ -1942,6 +2120,95 @@
                           ],
                           "additionalProperties": false
                         },
+                        "homepage_about": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "eyebrow": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "title": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "description": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "image_url": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "image_alt": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "cta_label": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "cta_url": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "eyebrow",
+                            "title",
+                            "description",
+                            "image_url",
+                            "image_alt",
+                            "cta_label",
+                            "cta_url"
+                          ],
+                          "additionalProperties": false
+                        },
                         "featured_collection_id": {
                           "anyOf": [
                             {
@@ -2195,6 +2462,7 @@
                         "allow_indexing",
                         "google_site_verification",
                         "homepage_hero",
+                        "homepage_about",
                         "featured_collection_id",
                         "store_menu_cards",
                         "announcement_bar"
@@ -2211,7 +2479,7 @@
             }
           },
           "400": {
-            "description": "Validation failed: `new_badge_days` must be a whole number from 1 to 365.",
+            "description": "Validation failed. Enabled homepage sections require their content; an About image requires alt text, and a link requires a label and a safe destination. new_badge_days must be a whole number from 1 to 365.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2682,6 +2950,95 @@
                           ],
                           "additionalProperties": false
                         },
+                        "homepage_about": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "eyebrow": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "title": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "description": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "image_url": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "image_alt": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "cta_label": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "cta_url": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "eyebrow",
+                            "title",
+                            "description",
+                            "image_url",
+                            "image_alt",
+                            "cta_label",
+                            "cta_url"
+                          ],
+                          "additionalProperties": false
+                        },
                         "featured_collection_id": {
                           "anyOf": [
                             {
@@ -2935,6 +3292,7 @@
                         "allow_indexing",
                         "google_site_verification",
                         "homepage_hero",
+                        "homepage_about",
                         "featured_collection_id",
                         "store_menu_cards",
                         "announcement_bar"
@@ -2990,7 +3348,7 @@
           "Storefront"
         ],
         "summary": "Get the settings the storefront renders with",
-        "description": "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days), `support` (contact details and delivery information; each null when not set), `pages` (whether the About, Privacy and Terms pages have text) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
+        "description": "Everything the storefront renders its shell with: `brand` (name, logo, favicon, support email), `homepage` (hero, About section and featured collection), `seo` (defaults for search results and link previews, social profiles, whether search engines may index the store, Search Console code) `products` (New badge days) `returns` (whether customers can request returns online, and the window in days), `support` (contact details and delivery information; each null when not set), `pages` (whether the About, Privacy and Terms pages have text) and `sign_in` (whether the Google sign-in button should show). Public and identical for every shopper, so it is safe to read from cached pages.",
         "security": [
           {
             "publishableKey": []
@@ -3240,6 +3598,95 @@
                         "homepage": {
                           "type": "object",
                           "properties": {
+                            "about": {
+                              "type": "object",
+                              "properties": {
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "eyebrow": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "title": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "description": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "image_url": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "image_alt": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "cta_label": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "cta_url": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "enabled",
+                                "eyebrow",
+                                "title",
+                                "description",
+                                "image_url",
+                                "image_alt",
+                                "cta_label",
+                                "cta_url"
+                              ],
+                              "additionalProperties": false
+                            },
                             "hero": {
                               "type": "object",
                               "properties": {
@@ -3363,6 +3810,7 @@
                             }
                           },
                           "required": [
+                            "about",
                             "hero",
                             "featured_collection_id"
                           ],

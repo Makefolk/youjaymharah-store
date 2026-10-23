@@ -45,6 +45,16 @@ const FALLBACK: StorefrontSettings = {
     google_site_verification: null,
   },
   homepage: {
+    about: {
+      enabled: false,
+      eyebrow: null,
+      title: null,
+      description: null,
+      image_url: null,
+      image_alt: null,
+      cta_label: null,
+      cta_url: null,
+    },
     hero: {
       enabled: false,
       eyebrow: null,
