@@ -408,7 +408,27 @@ function DeliveryOptions({ cart }: { cart: Cart }) {
     )
   }
 
-  if (options.isError || !options.data?.length) {
+  // The store couldn't be asked: not the same as an address it can't reach.
+  if (options.isError) {
+    return (
+      <div className="flex flex-col gap-3">
+        <FormAlert>
+          We couldn&apos;t load delivery options just now. Please try again.
+        </FormAlert>
+        <Button
+          variant="outline"
+          size="lg"
+          disabled={options.isFetching}
+          onClick={() => void options.refetch()}
+          className="self-start px-4 tracking-[0.06em] uppercase"
+        >
+          {options.isFetching ? "Trying…" : "Try again"}
+        </Button>
+      </div>
+    )
+  }
+
+  if (!options.data?.length) {
     return (
       <FormAlert>
         We can&apos;t deliver to this address yet. Check the state, or{" "}
@@ -449,7 +469,11 @@ function DeliveryOptions({ cart }: { cart: Cart }) {
             {option.name}
           </span>
           <span className="tabular-nums">
-            {formatPrice(Number(option.amount ?? 0), cart.currency_code)}
+            {option.amount == null
+              ? // A calculated rate: Medusa prices it when it is chosen,
+                // and the summary shows it.
+                "Priced when chosen"
+              : formatPrice(Number(option.amount), cart.currency_code)}
           </span>
         </label>
       ))}
