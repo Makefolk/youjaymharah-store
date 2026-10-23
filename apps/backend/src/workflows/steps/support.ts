@@ -23,6 +23,7 @@ import {
   type StoredPhoto,
   supportFileStore,
 } from "../../lib/support-files";
+import { stripImageMetadata } from "../../lib/strip-image-metadata";
 import { BRANDING_MODULE } from "../../modules/branding";
 import type BrandingModuleService from "../../modules/branding/service";
 import { EmailTemplates } from "../../modules/resend/emails";
@@ -63,8 +64,20 @@ export const uploadSupportPhotosStep = createStep(
       const result = checkAttachment(photo.data);
       if (!result.ok)
         throw new MedusaError(MedusaError.Types.INVALID_DATA, result.error);
+      // No location, camera or owner details are kept.
+      const clean = stripImageMetadata(
+        Buffer.from(photo.data, "base64"),
+        result.type,
+      );
+      if (!clean) {
+        throw new MedusaError(
+          MedusaError.Types.INVALID_DATA,
+          "A photo couldn't be read. Try taking it again, or attach another.",
+        );
+      }
       return {
         ...photo,
+        data: clean.toString("base64"),
         type: result.type,
         filename: photo.name.replace(/[^\w.-]+/g, "-").slice(0, 80) || "photo",
       };

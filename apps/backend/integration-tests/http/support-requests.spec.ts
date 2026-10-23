@@ -18,9 +18,11 @@ jest.setTimeout(120_000);
 
 type Sent = { to: string; subject: string; html: string; reply_to?: string };
 
-const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70]).toString(
-  "base64",
-);
+/** A JPEG's structure (JFIF header, scan, end), enough to be read. */
+const JPEG = Buffer.from(
+  "ffd8ffe000104a46494600010100000100010000ffda000201020304ffd9",
+  "hex",
+).toString("base64");
 
 medusaIntegrationTestRunner({
   inApp: true,
