@@ -5,6 +5,9 @@ import { notFound } from "next/navigation"
 import { ListingPage } from "@/components/listing/listing-page"
 import { getCollectionByHandle } from "@/lib/medusa/catalog"
 import { getCollectionContent } from "@/lib/medusa/collection"
+import { getStorefrontSettings } from "@/lib/medusa/storefront-settings"
+import { shareMetadata } from "@/lib/seo/metadata"
+import { collectionPath } from "@/lib/seo/routes"
 
 export async function generateMetadata({
   params,
@@ -16,10 +19,20 @@ export async function generateMetadata({
   }
 
   const content = getCollectionContent(collection)
+  const url = collectionPath(collection.handle)
+  const description = content.description ?? undefined
 
   return {
     title: content.title,
-    description: content.description ?? undefined,
+    description,
+    ...shareMetadata({
+      settings: await getStorefrontSettings(),
+      url,
+      title: content.title,
+      description,
+      image: `/og/collection/${encodeURIComponent(collection.handle)}`,
+      alt: content.title,
+    }),
   }
 }
 

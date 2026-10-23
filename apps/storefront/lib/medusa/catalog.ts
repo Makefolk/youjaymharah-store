@@ -40,6 +40,8 @@ export const PRODUCT_PAGE_FIELDS = [
   "subtitle",
   "description",
   "material",
+  // Versions the link-preview image (lib/seo/metadata), so edits show.
+  "updated_at",
   "*categories",
   "*collection",
   "*tags",

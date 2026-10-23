@@ -70,6 +70,8 @@ const nextConfig: NextConfig = {
   ...(process.env.NEXT_OUTPUT_STANDALONE === "true" && {
     output: "standalone",
     outputFileTracingRoot: path.join(process.cwd(), "../.."),
+    // Read with fs by the link-preview images (lib/og), so not traced.
+    outputFileTracingIncludes: { "/og/**/*": ["./assets/fonts/*.ttf"] },
   }),
 }
 

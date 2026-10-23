@@ -4,6 +4,8 @@ import Form from "next/form"
 
 import { ListingPage } from "@/components/listing/listing-page"
 import { loadSearchParams } from "@/features/search/search-params"
+import { getStorefrontSettings } from "@/lib/medusa/storefront-settings"
+import { shareMetadata } from "@/lib/seo/metadata"
 import { SEARCH_PATH } from "@/lib/seo/routes"
 
 /** The longest term the catalogue accepts; longer ones are cut, not refused. */
@@ -18,11 +20,20 @@ export async function generateMetadata({
   searchParams,
 }: PageProps<"/search">): Promise<Metadata> {
   const term = await readTerm(searchParams)
+  const title = term ? `Search results for “${term}”` : "Search"
+  const query = term ? `?q=${encodeURIComponent(term)}` : ""
   return {
-    title: term ? `Search results for “${term}”` : "Search",
+    title,
     // Result pages are endless near-duplicates; let engines follow the
     // products instead.
     robots: { index: false, follow: true },
+    ...shareMetadata({
+      settings: await getStorefrontSettings(),
+      url: `${SEARCH_PATH}${query}`,
+      title,
+      image: `/og/search${query}`,
+      alt: title,
+    }),
   }
 }
 

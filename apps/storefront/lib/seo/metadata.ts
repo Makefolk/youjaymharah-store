@@ -95,7 +95,57 @@ export function buildRootMetadata(settings: StorefrontSettings): Metadata {
 type ProductForMetadata = Pick<
   HttpTypes.StoreProduct,
   "title" | "subtitle" | "description" | "handle" | "thumbnail" | "images"
-> & { metadata?: Record<string, unknown> | null }
+> & {
+  metadata?: Record<string, unknown> | null
+  updated_at?: string | Date | null
+}
+
+/**
+ * The link preview for a page: a generated 1200 × 630 card (app/og) for
+ * WhatsApp, Instagram, X, Facebook and iMessage. Next.js replaces the whole
+ * `openGraph` and `twitter` objects rather than merging them with the
+ * layout's, so the site name and card type are set here too.
+ */
+export function shareMetadata({
+  settings,
+  url,
+  title,
+  description,
+  image,
+  alt,
+}: {
+  settings: StorefrontSettings
+  url: string
+  title: string
+  description?: string
+  /** The card's address, e.g. `/og/product/wool-coat`. */
+  image: string
+  alt: string
+}): Pick<Metadata, "openGraph" | "twitter"> {
+  return {
+    openGraph: {
+      type: "website",
+      siteName: settings.brand.name,
+      url,
+      title,
+      description,
+      images: [{ url: image, width: 1200, height: 630, alt }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      site: xHandle(settings.seo.twitter_handle),
+      title,
+      description,
+      images: [{ url: image, alt }],
+    },
+  }
+}
+
+/** A version for an image URL, so platforms fetch a fresh card after edits. */
+function version(updatedAt: string | Date | null | undefined): string {
+  const time = updatedAt ? new Date(updatedAt).getTime() : NaN
+  return Number.isFinite(time) ? `?v=${time.toString(36)}` : ""
+}
 
 /**
  * A product page's `generateMetadata`. Staff can set `seo_title` and
@@ -118,31 +168,19 @@ export function buildProductMetadata(
     summarize(product.description) ??
     settings.seo.description ??
     undefined
-  const image =
-    product.thumbnail ??
-    product.images?.[0]?.url ??
-    settings.seo.og_image_url ??
-    undefined
   const url = productPath(product.handle)
 
   return {
     title,
     description,
     alternates: { canonical: url },
-    openGraph: {
-      type: "website",
-      siteName: settings.brand.name,
+    ...shareMetadata({
+      settings,
       url,
       title,
       description,
-      images: image ? [{ url: image, alt: product.title }] : undefined,
-    },
-    twitter: {
-      card: image ? "summary_large_image" : "summary",
-      site: xHandle(settings.seo.twitter_handle),
-      title,
-      description,
-      images: image ? [image] : undefined,
-    },
+      image: `/og/product/${encodeURIComponent(product.handle)}${version(product.updated_at)}`,
+      alt: product.title,
+    }),
   }
 }
