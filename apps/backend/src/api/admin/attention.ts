@@ -1,35 +1,23 @@
-import type {
-  ICachingModuleService,
-  MedusaContainer,
-} from "@medusajs/framework/types";
-import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
+import type { MedusaContainer } from "@medusajs/framework/types";
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
 
-import {
-  checkWithGateway,
-  getPaymentVerdict,
-  type PaymentVerdict,
-} from "../../modules/payments/lookup";
-import { toMinorUnit } from "../../modules/payments/shared/amount";
+import { PAYMENT_RECONCILIATION_MODULE } from "../../modules/payment-reconciliation";
+import type PaymentReconciliationModuleService from "../../modules/payment-reconciliation/service";
 import { SUPPORT_MODULE } from "../../modules/support";
 import type SupportModuleService from "../../modules/support/service";
 import { listEmailReviewQueue } from "./email-review";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const GATEWAYS = ["pp_paystack_paystack", "pp_credo_credo"];
-
-/** A paid bag normally becomes an order within minutes; give it this long. */
-const PAYMENT_GRACE_MS = 20 * 60 * 1000;
-/** Older payment attempts are left to the payment lookup. */
-const PAYMENT_LOOKBACK_MS = 3 * DAY_MS;
-/** How many attempts to ask the gateways about per refresh. */
-const PAYMENT_CHECK_LIMIT = 15;
-const PAYMENT_CACHE_SECONDS = 5 * 60;
+/** Flagged payments shown at most; the count says how many there are. */
+const PAYMENT_LIMIT = 100;
 /** A requested return nobody has received for this long. */
 export const RETURN_WAIT_DAYS = 3;
 /** A paid order with nothing shipped for this long. */
 export const SHIP_WAIT_DAYS = 3;
 
 export type AttentionPayment = {
+  /** The payment check, for marking it handled. */
+  id: string;
   session_id: string;
   reference: string | null;
   provider_id: string;
@@ -37,10 +25,11 @@ export type AttentionPayment = {
   currency_code: string;
   email: string | null;
   created_at: string;
-  verdict: Extract<
-    PaymentVerdict,
-    "paid_no_order" | "amount_mismatch" | "pending"
-  >;
+  /**
+   * paid_no_order and amount_mismatch need staff; pending is still being
+   * rechecked; stale has been unfinished (or uncheckable) for a week.
+   */
+  verdict: "paid_no_order" | "amount_mismatch" | "pending" | "stale";
 };
 
 export type AttentionReturn = {
@@ -62,6 +51,8 @@ export type Attention = {
   support_open: number;
   emails_to_review: number;
   payments: AttentionPayment[];
+  /** All flagged payments, when there are more than listed. */
+  payments_count: number;
   returns: AttentionReturn[];
   unshipped: AttentionOrder[];
 };
@@ -69,100 +60,47 @@ export type Attention = {
 const iso = (value: unknown) => new Date(value as string).toISOString();
 
 /**
- * Recent gateway payments whose bag never became an order, as the gateway
- * sees them now: paid (create the order), paid a different amount (refund),
- * or still unfinished. Bags never paid for are left out. Cached briefly, so
- * opening the page doesn't hit the gateways every time.
+ * Gateway payment attempts whose bag never became an order, as the payment
+ * reconciliation job last found them (jobs/reconcile-payments.ts): paid
+ * (create the order), paid a different amount (refund), still unfinished,
+ * or unfinished for a week. Attempts that failed or became orders are not
+ * listed.
  */
 async function paymentsNeedingAttention(
   container: MedusaContainer,
-): Promise<AttentionPayment[]> {
-  const cache: ICachingModuleService = container.resolve(Modules.CACHING);
-  const key = "attention:payments";
-  try {
-    const hit = (await cache.get({ key })) as AttentionPayment[] | null;
-    if (hit) return hit;
-  } catch {
-    // A cache outage only costs speed.
-  }
-
-  const query = container.resolve(ContainerRegistrationKeys.QUERY);
-  const now = Date.now();
-  const { data: sessions } = await query.graph({
-    entity: "payment_session",
-    fields: [
-      "id",
-      "provider_id",
-      "amount",
-      "currency_code",
-      "data",
-      "created_at",
-      "payment_collection.cart.id",
-      "payment_collection.cart.email",
-      "payment_collection.cart.completed_at",
-      "payment_collection.order.id",
-    ],
-    filters: {
-      provider_id: GATEWAYS,
-      created_at: {
-        $gte: new Date(now - PAYMENT_LOOKBACK_MS).toISOString(),
-        $lte: new Date(now - PAYMENT_GRACE_MS).toISOString(),
-      },
-    },
-    pagination: { take: 200, order: { created_at: "DESC" } },
-  });
-
-  // One attempt per bag: the newest, which is the one the shopper last paid.
-  const seen = new Set<string>();
-  const candidates = sessions.filter((session: any) => {
-    const cart = session.payment_collection?.cart;
-    if (!cart || cart.completed_at || session.payment_collection?.order)
-      return false;
-    if (!session.data?.reference || seen.has(cart.id)) return false;
-    seen.add(cart.id);
-    return true;
-  });
-
-  const checked = await Promise.all(
-    candidates.slice(0, PAYMENT_CHECK_LIMIT).map(async (session: any) => {
-      const gateway = await checkWithGateway(session.provider_id, session.data);
-      const verdict = getPaymentVerdict({
-        hasOrder: false,
-        gateway,
-        expectedMinor: toMinorUnit(session.amount, session.currency_code),
-        expectedCurrency: session.currency_code,
-      });
-      return { session, verdict };
-    }),
+): Promise<{ payments: AttentionPayment[]; count: number }> {
+  const checks: PaymentReconciliationModuleService = container.resolve(
+    PAYMENT_RECONCILIATION_MODULE,
   );
-
-  const result = checked
-    .filter(
-      (
-        entry,
-      ): entry is typeof entry & { verdict: AttentionPayment["verdict"] } =>
-        ["paid_no_order", "amount_mismatch", "pending"].includes(entry.verdict),
-    )
-    .map(({ session, verdict }) => ({
-      session_id: session.id,
-      reference:
-        typeof session.data?.reference === "string"
-          ? session.data.reference
-          : null,
-      provider_id: session.provider_id,
-      amount: Number(session.amount),
-      currency_code: session.currency_code,
-      email: session.payment_collection?.cart?.email ?? null,
-      created_at: iso(session.created_at),
-      verdict,
-    }));
-
-  try {
-    await cache.set({ key, data: result, ttl: PAYMENT_CACHE_SECONDS });
-  } catch {
-    // As above.
-  }
-  return result;
+  const [rows, count] = await checks.listAndCountPaymentChecks(
+    {
+      $or: [
+        { status: "needs_staff" },
+        { status: "checking", verdict: "pending" },
+      ],
+    },
+    { take: PAYMENT_LIMIT, order: { session_created_at: "DESC" } },
+  );
+  const verdictOf = (
+    check: (typeof rows)[number],
+  ): AttentionPayment["verdict"] =>
+    check.verdict === "paid_no_order" || check.verdict === "amount_mismatch"
+      ? check.verdict
+      : check.status === "needs_staff"
+        ? "stale"
+        : "pending";
+  const payments: AttentionPayment[] = rows.map((check) => ({
+    id: check.id,
+    session_id: check.session_id,
+    reference: check.reference,
+    provider_id: check.provider_id,
+    amount: Number(check.amount),
+    currency_code: check.currency_code,
+    email: check.email,
+    created_at: iso(check.session_created_at),
+    verdict: verdictOf(check),
+  }));
+  return { payments, count };
 }
 
 async function waitingReturns(
@@ -269,7 +207,8 @@ export async function listAttention(
   return {
     support_open: supportOpen,
     emails_to_review: emails.count,
-    payments,
+    payments: payments.payments,
+    payments_count: payments.count,
     returns,
     unshipped,
   };

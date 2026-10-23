@@ -283,6 +283,24 @@ in the side panel.
   leaked, use **Cancel guest links**. Your next reply sends a new one, and the
   customer can ask for one from the expired page.
 
+### Needs attention
+
+Check **Needs attention** daily. It lists what is waiting on a person:
+customers waiting for a reply, emails with an unknown outcome, return requests
+not yet received, paid orders not shipped, and **payments without an order**.
+
+The store checks every Paystack and Credo payment with the gateway until it
+either becomes an order or clearly failed. Unfinished payments, such as bank
+transfers still on their way, are rechecked less often as time goes on. One
+still unfinished after a week shows as **Unfinished for a week**.
+
+- **Paid, no order:** open it in **Payment lookup** and create the order. It
+  clears by itself.
+- **Paid a different amount:** refund it in the gateway's dashboard. Then use
+  **Mark handled** and say what you did.
+- **Unfinished for a week:** look it up in the gateway's dashboard. If nothing
+  came in, mark it handled with a note.
+
 ### Editing or cancelling an order
 
 Before shipping you can edit an order (swap a size, add or remove items). With

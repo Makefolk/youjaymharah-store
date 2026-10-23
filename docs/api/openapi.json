@@ -14006,7 +14006,7 @@
           "Support"
         ],
         "summary": "What is waiting on a person",
-        "description": "`payments`: Paystack and Credo payments from the last three days (at least 20 minutes old) whose bag never became an order, as the gateway sees them now (`paid_no_order`, `amount_mismatch` or `pending`; unpaid ones are left out). Up to 15 are checked per refresh and the result is cached for five minutes. `support_open`: support requests waiting on staff. `emails_to_review`: how many sends await review. `returns`: requested returns not received after three days. `unshipped`: paid, uncanceled orders from the last 60 days with nothing shipped after three days. Up to 50 of each, oldest first.",
+        "description": "`payments`: Paystack and Credo payment attempts whose bag never became an order, as the reconciliation job last found them. It runs every five minutes, tracks every attempt at least 20 minutes old (not only each bag's newest), and rechecks unfinished ones on a backoff: `paid_no_order`, `amount_mismatch`, `pending` (still being rechecked) or `stale` (unfinished or uncheckable for a week). Failed attempts and ones that became orders drop off. Up to 100, newest first; `payments_count` is the total. `support_open`: support requests waiting on staff. `emails_to_review`: how many sends await review. `returns`: requested returns not received after three days. `unshipped`: paid, uncanceled orders from the last 60 days with nothing shipped after three days. Up to 50 of each, oldest first.",
         "x-required-policies": [
           "order:read"
         ],
@@ -14037,6 +14037,9 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "id": {
+                            "type": "string"
+                          },
                           "session_id": {
                             "type": "string"
                           },
@@ -14077,11 +14080,13 @@
                             "enum": [
                               "paid_no_order",
                               "amount_mismatch",
-                              "pending"
+                              "pending",
+                              "stale"
                             ]
                           }
                         },
                         "required": [
+                          "id",
                           "session_id",
                           "reference",
                           "provider_id",
@@ -14093,6 +14098,9 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "payments_count": {
+                      "type": "number"
                     },
                     "returns": {
                       "type": "array",
@@ -14160,6 +14168,7 @@
                     "support_open",
                     "emails_to_review",
                     "payments",
+                    "payments_count",
                     "returns",
                     "unshipped"
                   ],
@@ -14170,6 +14179,103 @@
           },
           "401": {
             "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/payment-checks/{id}/resolve": {
+      "post": {
+        "operationId": "postAdminPaymentChecksIdResolve",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Mark a flagged payment handled",
+        "description": "For a payment in Needs attention that staff dealt with outside the store, such as a refund in the gateway's dashboard. The note says what was done and is kept with who did it. An attempt that becomes an order clears itself.",
+        "x-required-policies": [
+          "order:update"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "note"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The payment check.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payment_check": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "payment_check"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such payment check.",
             "content": {
               "application/json": {
                 "schema": {

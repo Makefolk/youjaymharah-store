@@ -318,6 +318,9 @@ module.exports = defineConfig({
       resolve: "./src/modules/session-revocation",
     },
     {
+      resolve: "./src/modules/payment-reconciliation",
+    },
+    {
       resolve: "@medusajs/medusa/notification",
       dependencies: ["emailDelivery", "locking"],
       options: {

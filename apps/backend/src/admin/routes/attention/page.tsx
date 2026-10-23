@@ -1,25 +1,28 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk";
 import { ExclamationCircle, Spinner } from "@medusajs/icons";
-import { Badge, Container, Heading, Text } from "@medusajs/ui";
-import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import {
+  Badge,
+  Button,
+  Container,
+  Drawer,
+  Heading,
+  Label,
+  Text,
+  Textarea,
+  toast,
+} from "@medusajs/ui";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+import { usePermissions } from "../../lib/permissions";
 import { sdk } from "../../lib/sdk";
 
 type Attention = {
   support_open: number;
   emails_to_review: number;
-  payments: {
-    session_id: string;
-    reference: string | null;
-    provider_id: string;
-    amount: number;
-    currency_code: string;
-    email: string | null;
-    created_at: string;
-    verdict: "paid_no_order" | "amount_mismatch" | "pending";
-  }[];
+  payments: Payment[];
+  payments_count: number;
   returns: {
     id: string;
     order_id: string;
@@ -34,10 +37,23 @@ type Attention = {
   }[];
 };
 
+type Payment = {
+  id: string;
+  session_id: string;
+  reference: string | null;
+  provider_id: string;
+  amount: number;
+  currency_code: string;
+  email: string | null;
+  created_at: string;
+  verdict: "paid_no_order" | "amount_mismatch" | "pending" | "stale";
+};
+
 const VERDICTS = {
   paid_no_order: { label: "Paid, no order", color: "red" },
   amount_mismatch: { label: "Paid a different amount", color: "orange" },
   pending: { label: "Not finished", color: "orange" },
+  stale: { label: "Unfinished for a week", color: "red" },
 } as const;
 
 const GATEWAY_NAMES: Record<string, string> = {
@@ -76,13 +92,15 @@ const linkClass = "text-ui-fg-interactive txt-compact-small-plus";
  * be collected and paid orders not yet shipped.
  */
 const AttentionPage = () => {
+  const { can } = usePermissions();
+  const [handling, setHandling] = useState<Payment | null>(null);
   const query = useQuery({
     queryKey: ["attention"],
     queryFn: () => sdk.client.fetch<Attention>("/admin/attention"),
   });
   const data = query.data;
   const total = data
-    ? data.payments.length +
+    ? data.payments_count +
       data.returns.length +
       data.unshipped.length +
       (data.emails_to_review ? 1 : 0) +
@@ -101,8 +119,9 @@ const AttentionPage = () => {
           )}
         </div>
         <Text size="small" className="text-ui-fg-subtle">
-          Payments without an order are rechecked with the gateway every few
-          minutes. Returns and orders appear after waiting three days.
+          Every gateway payment without an order is rechecked with the gateway
+          until it clears: unfinished ones less often as time goes on. Returns
+          and orders appear after waiting three days.
         </Text>
       </Container>
 
@@ -143,8 +162,12 @@ const AttentionPage = () => {
 
           <Section
             title="Payments without an order"
-            hint="The customer paid (or may have) but no order was made. Open each in Payment lookup to create the order or see what to do."
-            empty="None in the last three days."
+            hint={`The customer paid (or may have) but no order was made. Open each in Payment lookup to create the order or see what to do; one that becomes an order clears itself. Mark one handled once you've dealt with it another way.${
+              data.payments_count > data.payments.length
+                ? ` Showing the newest ${data.payments.length} of ${data.payments_count}.`
+                : ""
+            }`}
+            empty="None."
             rows={data.payments.map((payment) => (
               <Row
                 key={payment.session_id}
@@ -154,14 +177,25 @@ const AttentionPage = () => {
                 }`}
                 detail={`${payment.email ?? "No email"} · ${ago(payment.created_at)}`}
                 action={
-                  payment.reference && (
-                    <Link
-                      to={`/payment-lookup?reference=${encodeURIComponent(payment.reference)}`}
-                      className={linkClass}
-                    >
-                      Open in Payment lookup
-                    </Link>
-                  )
+                  <div className="flex items-center gap-x-4">
+                    {payment.reference && (
+                      <Link
+                        to={`/payment-lookup?reference=${encodeURIComponent(payment.reference)}`}
+                        className={linkClass}
+                      >
+                        Open in Payment lookup
+                      </Link>
+                    )}
+                    {can("order", "update") && (
+                      <Button
+                        size="small"
+                        variant="secondary"
+                        onClick={() => setHandling(payment)}
+                      >
+                        Mark handled
+                      </Button>
+                    )}
+                  </div>
                 }
               />
             ))}
@@ -227,7 +261,85 @@ const AttentionPage = () => {
           />
         </>
       )}
+      {handling && (
+        <MarkHandled payment={handling} onClose={() => setHandling(null)} />
+      )}
     </div>
+  );
+};
+
+/** Records how staff dealt with a flagged payment, then drops it. */
+const MarkHandled = ({
+  payment,
+  onClose,
+}: {
+  payment: Payment;
+  onClose: () => void;
+}) => {
+  const queryClient = useQueryClient();
+  const [note, setNote] = useState("");
+  const save = useMutation({
+    mutationFn: () =>
+      sdk.client.fetch(`/admin/payment-checks/${payment.id}/resolve`, {
+        method: "POST",
+        body: { note: note.trim() },
+      }),
+    onSuccess: () => {
+      toast.success("Marked handled.");
+      void queryClient.invalidateQueries({ queryKey: ["attention"] });
+      onClose();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  return (
+    <Drawer open onOpenChange={(open) => !open && onClose()}>
+      <Drawer.Content>
+        <Drawer.Header>
+          <Drawer.Title>Mark payment handled</Drawer.Title>
+        </Drawer.Header>
+        <Drawer.Body className="flex flex-col gap-4">
+          <Text size="small" className="text-ui-fg-subtle">
+            {money(payment.amount, payment.currency_code)} via{" "}
+            {GATEWAY_NAMES[payment.provider_id] ?? payment.provider_id}
+            {payment.email ? ` from ${payment.email}` : ""}. Only for one you
+            dealt with outside the store, such as a refund in the gateway's
+            dashboard: creating its order clears it by itself.
+          </Text>
+          <div className="flex flex-col gap-y-2">
+            <Label htmlFor="payment-handled-note" size="small" weight="plus">
+              What you did
+            </Label>
+            <Textarea
+              id="payment-handled-note"
+              rows={3}
+              maxLength={500}
+              placeholder="Refunded in Paystack and told the customer."
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+            />
+          </div>
+        </Drawer.Body>
+        <Drawer.Footer>
+          <Button
+            size="small"
+            variant="secondary"
+            disabled={save.isPending}
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+          <Button
+            size="small"
+            isLoading={save.isPending}
+            disabled={note.trim().length < 3}
+            onClick={() => save.mutate()}
+          >
+            Mark handled
+          </Button>
+        </Drawer.Footer>
+      </Drawer.Content>
+    </Drawer>
   );
 };
 

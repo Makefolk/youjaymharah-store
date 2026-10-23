@@ -24,6 +24,7 @@ import {
   AdminResolveEmailDelivery,
   AdminRecordCredoRefund,
   AdminRecordPaystackRefund,
+  AdminResolvePaymentCheck,
   StoreOrderHelp,
   StoreSupportReply,
   AdminSupportReply,
@@ -2809,7 +2810,7 @@ export const ROUTES: RouteDoc[] = [
     tag: "Support",
     summary: "What is waiting on a person",
     description:
-      "`payments`: Paystack and Credo payments from the last three days (at least 20 minutes old) whose bag never became an order, as the gateway sees them now (`paid_no_order`, `amount_mismatch` or `pending`; unpaid ones are left out). Up to 15 are checked per refresh and the result is cached for five minutes. `support_open`: support requests waiting on staff. `emails_to_review`: how many sends await review. `returns`: requested returns not received after three days. `unshipped`: paid, uncanceled orders from the last 60 days with nothing shipped after three days. Up to 50 of each, oldest first.",
+      "`payments`: Paystack and Credo payment attempts whose bag never became an order, as the reconciliation job last found them. It runs every five minutes, tracks every attempt at least 20 minutes old (not only each bag's newest), and rechecks unfinished ones on a backoff: `paid_no_order`, `amount_mismatch`, `pending` (still being rechecked) or `stale` (unfinished or uncheckable for a week). Failed attempts and ones that became orders drop off. Up to 100, newest first; `payments_count` is the total. `support_open`: support requests waiting on staff. `emails_to_review`: how many sends await review. `returns`: requested returns not received after three days. `unshipped`: paid, uncanceled orders from the last 60 days with nothing shipped after three days. Up to 50 of each, oldest first.",
     auth: "admin",
     policies: ["order:read"],
     response: {
@@ -2819,6 +2820,7 @@ export const ROUTES: RouteDoc[] = [
         emails_to_review: z.number(),
         payments: z.array(
           z.object({
+            id: z.string(),
             session_id: z.string(),
             reference: z.string().nullable(),
             provider_id: z.string(),
@@ -2826,9 +2828,15 @@ export const ROUTES: RouteDoc[] = [
             currency_code: z.string(),
             email: z.string().nullable(),
             created_at: z.string(),
-            verdict: z.enum(["paid_no_order", "amount_mismatch", "pending"]),
+            verdict: z.enum([
+              "paid_no_order",
+              "amount_mismatch",
+              "pending",
+              "stale",
+            ]),
           }),
         ),
+        payments_count: z.number(),
         returns: z.array(
           z.object({
             id: z.string(),
@@ -2847,6 +2855,22 @@ export const ROUTES: RouteDoc[] = [
         ),
       }),
     },
+  },
+  {
+    method: "POST",
+    path: "/admin/payment-checks/{id}/resolve",
+    tag: "Support",
+    summary: "Mark a flagged payment handled",
+    description:
+      "For a payment in Needs attention that staff dealt with outside the store, such as a refund in the gateway's dashboard. The note says what was done and is kept with who did it. An attempt that becomes an order clears itself.",
+    auth: "admin",
+    policies: ["order:update"],
+    body: AdminResolvePaymentCheck,
+    response: {
+      description: "The payment check.",
+      schema: z.object({ payment_check: z.record(z.string(), z.unknown()) }),
+    },
+    errors: [{ status: 404, description: "No such payment check." }],
   },
   {
     method: "GET",

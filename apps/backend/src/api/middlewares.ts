@@ -699,6 +699,15 @@ export const StoreSearchTrending = z.object({
 
 export type StoreSearchTrendingType = z.infer<typeof StoreSearchTrending>;
 
+export const AdminResolvePaymentCheck = z.object({
+  /** What was done, e.g. "Refunded in Paystack, customer told". */
+  note: z.string().trim().min(3).max(500),
+});
+
+export type AdminResolvePaymentCheckType = z.infer<
+  typeof AdminResolvePaymentCheck
+>;
+
 export default defineMiddlewares({
   // Reports 5xx responses to Sentry, then answers exactly as Medusa would.
   errorHandler: (error, req, res, next) => {
@@ -706,6 +715,12 @@ export default defineMiddlewares({
     return defaultErrorHandler()(error, req, res, next);
   },
   routes: [
+    {
+      matcher: "/admin/payment-checks/:id/resolve",
+      method: ["POST"],
+      middlewares: [validateAndTransformBody(AdminResolvePaymentCheck)],
+      policies: [{ resource: "order", operation: "update" }],
+    },
     {
       matcher: "/admin/orders/:id/paystack-refunds",
       method: ["POST"],

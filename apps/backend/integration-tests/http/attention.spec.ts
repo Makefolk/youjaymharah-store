@@ -11,6 +11,9 @@ import {
 import { provisionRbacRoles } from "../../src/lib/rbac-roles";
 import { requireIsolatedDatabase } from "../helpers/isolated-database";
 import { physicalCheckoutFixture } from "../helpers/physical-checkout";
+import { PAYMENT_RECONCILIATION_MODULE } from "../../src/modules/payment-reconciliation";
+import type PaymentReconciliationModuleService from "../../src/modules/payment-reconciliation/service";
+import { reconcilePaymentsWorkflow } from "../../src/workflows/reconcile-payments";
 
 requireIsolatedDatabase();
 jest.setTimeout(120_000);
@@ -27,10 +30,6 @@ medusaIntegrationTestRunner({
       beforeEach(async () => {
         gatewayStatus = "success";
         await provisionRbacRoles(getContainer());
-        // The payment check is cached for minutes; each test starts fresh.
-        await getContainer()
-          .resolve(Modules.CACHING)
-          .clear({ key: "attention:payments" });
         jest.spyOn(global, "fetch").mockImplementation(async (url, options) => {
           const target = new URL(String(url));
           if (target.origin === "https://api.resend.com")
@@ -137,6 +136,7 @@ medusaIntegrationTestRunner({
         });
         await age("return", change.return_id!, 4 * DAY_MS);
 
+        await reconcilePaymentsWorkflow(container).run();
         const support = await login("role_support");
         const { data } = await api.get("/admin/attention", support);
 
@@ -159,6 +159,79 @@ medusaIntegrationTestRunner({
         expect(data.emails_to_review).toBe(0);
       });
 
+      it("keeps a flagged payment until it becomes an order or staff mark it handled", async () => {
+        const container = getContainer();
+        const fixture = await physicalCheckoutFixture(container);
+        const first = await fixture.cart();
+        await age("payment_session", first.sessionId, 60 * 60 * 1000);
+        await reconcilePaymentsWorkflow(container).run();
+
+        const support = await login("role_support");
+        const marketing = await login("role_marketing");
+        const before = await api.get("/admin/attention", support);
+        const flagged = before.data.payments.find(
+          (payment: { session_id: string }) =>
+            payment.session_id === first.sessionId,
+        );
+        expect(flagged).toMatchObject({ verdict: "paid_no_order" });
+
+        // Marketing can't touch payments.
+        await expect(
+          api.post(
+            `/admin/payment-checks/${flagged.id}/resolve`,
+            { note: "Refunded" },
+            marketing,
+          ),
+        ).rejects.toMatchObject({ response: { status: 403 } });
+        await api.post(
+          `/admin/payment-checks/${flagged.id}/resolve`,
+          { note: "Refunded in Paystack, customer told." },
+          support,
+        );
+        const after = await api.get("/admin/attention", support);
+        expect(
+          after.data.payments.map((payment: { id: string }) => payment.id),
+        ).not.toContain(flagged.id);
+        const check = await container
+          .resolve<PaymentReconciliationModuleService>(
+            PAYMENT_RECONCILIATION_MODULE,
+          )
+          .retrievePaymentCheck(flagged.id);
+        expect(check).toMatchObject({
+          status: "resolved",
+          resolution: "handled",
+          note: "Refunded in Paystack, customer told.",
+          resolved_by: expect.stringMatching(/^user_/),
+        });
+      });
+
+      it("clears a flagged payment once its bag becomes an order", async () => {
+        const container = getContainer();
+        const fixture = await physicalCheckoutFixture(container);
+        const bag = await fixture.cart();
+        await age("payment_session", bag.sessionId, 60 * 60 * 1000);
+        await reconcilePaymentsWorkflow(container).run();
+        const checks = container.resolve<PaymentReconciliationModuleService>(
+          PAYMENT_RECONCILIATION_MODULE,
+        );
+        const [flagged] = await checks.listPaymentChecks({
+          session_id: bag.sessionId,
+        });
+        expect(flagged).toMatchObject({ status: "needs_staff" });
+
+        await completeCartWorkflow(container).run({ input: { id: bag.id } });
+        // Due again now, as if five minutes had passed.
+        await checks.updatePaymentChecks({
+          id: flagged.id,
+          next_check_at: new Date(),
+        });
+        await reconcilePaymentsWorkflow(container).run();
+        expect(await checks.retrievePaymentCheck(flagged.id)).toMatchObject({
+          status: "resolved",
+          resolution: "order_placed",
+        });
+      });
+
       it("leaves out unpaid bags and keeps Marketing out", async () => {
         gatewayStatus = "abandoned";
         const container = getContainer();
@@ -166,6 +239,7 @@ medusaIntegrationTestRunner({
         const unpaid = await fixture.cart();
         await age("payment_session", unpaid.sessionId, 60 * 60 * 1000);
 
+        await reconcilePaymentsWorkflow(container).run();
         const support = await login("role_support");
         const { data } = await api.get("/admin/attention", support);
         expect(data.payments).toEqual([]);
