@@ -175,10 +175,30 @@
   }
 }
 
-/* The thin bar app/(main)/loading.tsx shows while a page loads. */
-@keyframes loading {
+
+/* components/layout/brand-loader.tsx */
+@keyframes brand-loader-in {
   from {
-    left: -33%;
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes brand-loader-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes brand-loader-sweep {
+  from {
+    left: -50%;
   }
   to {
     left: 100%;

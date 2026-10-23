@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import Image from "next/image"
 import Link from "next/link"
 
+import { BrandLoader } from "@/components/layout/brand-loader"
 import { formatDate } from "@/components/orders/format"
 import { toast } from "@/components/ui/toaster"
 import {
@@ -37,7 +38,7 @@ export function StockAlerts() {
   const byId = new Map((products.data ?? []).map((p) => [p.id, p]))
 
   if (alerts.isPending) {
-    return <p className="text-[13px] text-muted-foreground">Loading…</p>
+    return <BrandLoader />
   }
   if (!waiting.length) {
     return (

@@ -1,6 +1,7 @@
 "use client"
 
 import { FormAlert } from "@/components/account/account-shell"
+import { BrandLoader } from "@/components/layout/brand-loader"
 import { toast } from "@/components/ui/toaster"
 import {
   useMarketingPreference,
@@ -24,7 +25,7 @@ export function NewsletterPreference() {
   const set = useSetMarketingPreference()
 
   if (preference.isPending) {
-    return <p className="text-[13px] text-muted-foreground">Loading…</p>
+    return <BrandLoader />
   }
   if (preference.isError) {
     return <FormAlert>We couldn&apos;t load your email preferences.</FormAlert>

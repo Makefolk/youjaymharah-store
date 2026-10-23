@@ -5,6 +5,7 @@ import {
   primaryButtonClass,
 } from "@/components/account/account-shell"
 import { useAppForm, validateOnSubmitThenChange } from "@/components/form"
+import { BrandLoader } from "@/components/layout/brand-loader"
 import { toast } from "@/components/ui/toaster"
 import {
   useChangePassword,
@@ -24,7 +25,7 @@ export function PasswordSection() {
   const methods = useSignInMethods()
 
   if (methods.isPending) {
-    return <p className="text-[13px] text-muted-foreground">Loading…</p>
+    return <BrandLoader />
   }
   if (methods.isError) {
     return (

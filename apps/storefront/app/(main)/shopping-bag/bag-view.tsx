@@ -13,6 +13,7 @@ import Link from "next/link"
 import { useState } from "react"
 
 import { PromoCode } from "@/components/cart/promo-code"
+import { BrandLoader } from "@/components/layout/brand-loader"
 import { Button } from "@/components/ui/button"
 import {
   useAddToCart,
@@ -56,19 +57,7 @@ export function BagView() {
   const [removed, setRemoved] = useState<Removed | null>(null)
 
   if (isPending) {
-    return (
-      <div className="mt-10 grid gap-6" aria-busy>
-        {[0, 1].map((index) => (
-          <div key={index} className="flex gap-5">
-            <div className="aspect-4/5 w-24 animate-pulse bg-muted sm:w-32" />
-            <div className="flex-1 space-y-3 pt-1">
-              <div className="h-4 w-1/2 animate-pulse bg-muted" />
-              <div className="h-3 w-1/4 animate-pulse bg-muted" />
-            </div>
-          </div>
-        ))}
-      </div>
-    )
+    return <BrandLoader label="Loading your bag" />
   }
 
   const items = cart?.items ?? []

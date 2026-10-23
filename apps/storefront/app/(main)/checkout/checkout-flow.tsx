@@ -9,6 +9,7 @@ import { useId, useState, type ReactNode } from "react"
 import { FormAlert } from "@/components/account/account-shell"
 import { PromoCode } from "@/components/cart/promo-code"
 import { useAppForm, validateOnSubmitThenChange } from "@/components/form"
+import { BrandLoader } from "@/components/layout/brand-loader"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/toaster"
 import { useCart } from "@/features/cart/hooks"
@@ -401,11 +402,7 @@ function DeliveryOptions({ cart }: { cart: Cart }) {
     : cart.shipping_methods?.[0]?.shipping_option_id
 
   if (options.isPending) {
-    return (
-      <p className="text-[13px] text-muted-foreground">
-        Loading delivery options…
-      </p>
-    )
+    return <BrandLoader label="Loading delivery options" />
   }
 
   // The store couldn't be asked: not the same as an address it can't reach.
@@ -497,11 +494,7 @@ function Payment({ cart }: { cart: Cart }) {
   const leaving = start.isSuccess && start.data.kind === "redirect"
 
   if (providers.isPending) {
-    return (
-      <p className="text-[13px] text-muted-foreground">
-        Loading payment options…
-      </p>
-    )
+    return <BrandLoader label="Loading payment options" />
   }
 
   if (!options.length) {

@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 
+import { BrandLoader } from "@/components/layout/brand-loader"
 import { formatDate } from "@/components/orders/format"
 import { useSupportRequests } from "@/features/support/hooks"
 import { formatOrderNumber } from "@/lib/medusa/order"
@@ -30,7 +31,7 @@ export function SupportRequestList() {
   const requests = useSupportRequests()
 
   if (requests.isPending) {
-    return <p className="py-6 text-[13px] text-muted-foreground">Loading…</p>
+    return <BrandLoader />
   }
   if (!requests.data?.length) {
     return (
