@@ -2,7 +2,14 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useState, type ReactNode, type RefObject } from "react"
+import {
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+  type RefObject,
+} from "react"
+import { createPortal } from "react-dom"
 
 import { Button } from "@/components/ui/button"
 import { CHECKOUT_PATH, SHOPPING_BAG_PATH } from "@/lib/seo/routes"
@@ -10,16 +17,16 @@ import { cn } from "@/lib/util/cn"
 
 /**
  * Shows once `anchor` (the page's own buttons) has scrolled up off the
- * screen, and hides while the footer is on screen so it never covers it.
- * Scrolling back up to the buttons hides it again, so the two never show
- * at once.
+ * screen; scrolling back up to the buttons hides it again, so the two never
+ * show at once. When the footer comes into view, `lift` is how far the bar
+ * rises so it rests on the footer's top edge instead of covering it.
  *
  * Measured on scroll rather than with IntersectionObserver: a fast flick can
  * carry the buttons from below the screen to above it without them ever
  * intersecting, and the observer then never reports anything.
  */
-function useStickyBarVisible(anchor: RefObject<HTMLElement | null>) {
-  const [visible, setVisible] = useState(false)
+function useStickyBarPosition(anchor: RefObject<HTMLElement | null>) {
+  const [position, setPosition] = useState({ visible: false, lift: 0 })
 
   useEffect(() => {
     let frame = 0
@@ -28,11 +35,15 @@ function useStickyBarVisible(anchor: RefObject<HTMLElement | null>) {
       const element = anchor.current
       const footer = document.querySelector("footer")
       if (!element) return
-      const anchorAbove = element.getBoundingClientRect().bottom < 0
-      const footerInView = footer
-        ? footer.getBoundingClientRect().top < window.innerHeight
-        : false
-      setVisible(anchorAbove && !footerInView)
+      const visible = element.getBoundingClientRect().bottom < 0
+      const lift = footer
+        ? Math.max(0, window.innerHeight - footer.getBoundingClientRect().top)
+        : 0
+      setPosition((current) =>
+        current.visible === visible && current.lift === lift
+          ? current
+          : { visible, lift },
+      )
     }
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(measure)
@@ -47,7 +58,17 @@ function useStickyBarVisible(anchor: RefObject<HTMLElement | null>) {
     }
   }, [anchor])
 
-  return visible
+  return position
+}
+
+/** Only in the browser, where there is a document.body to portal into. */
+const subscribeNever = () => () => {}
+function useMounted() {
+  return useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  )
 }
 
 const compactButton = "h-10 px-4 text-[12px] tracking-[0.06em] uppercase"
@@ -87,16 +108,23 @@ export function ProductStickyBar({
   /** Back up to the options. */
   onChange: () => void
 }) {
-  const visible = useStickyBarVisible(anchor)
+  const { visible, lift } = useStickyBarPosition(anchor)
+  const mounted = useMounted()
 
-  return (
+  if (!mounted) return null
+
+  // Portalled to the body: inside the page it shares the sticky product
+  // column's stacking context, and content further down paints over it.
+  // Above the page and header (z-40), below dialogs and drawers (z-50).
+  return createPortal(
     <div
       inert={!visible}
       aria-label="Quick add"
       role="region"
+      style={{ bottom: lift }}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 border-t border-border bg-secondary text-secondary-foreground shadow-[0_-10px_30px_-18px_rgb(0_0_0/0.35)] transition-transform duration-300 ease-out motion-reduce:transition-none",
-        visible ? "translate-y-0" : "translate-y-full",
+        "fixed inset-x-0 z-45 border-t border-border bg-secondary text-secondary-foreground shadow-[0_-10px_30px_-18px_rgb(0_0_0/0.35)] transition-[translate,opacity] duration-300 ease-out motion-reduce:transition-none",
+        visible ? "translate-y-0" : "translate-y-full opacity-0",
       )}
     >
       <div className="container-wrapper flex items-center gap-3 px-4 py-2.5 sm:gap-4 sm:px-6 lg:px-12">
@@ -171,6 +199,7 @@ export function ProductStickyBar({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
