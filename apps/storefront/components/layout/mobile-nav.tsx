@@ -139,6 +139,7 @@ function Header({
         </button>
       ) : (
         <DrawerClose
+          nativeButton={false}
           render={
             <NextLink
               href={"/"}

@@ -48,7 +48,11 @@ export function DesktopNav({
   // Derived rather than synced: when search or the drawer takes the slot this
   // falls to null on the same render and the panel closes with it, instead of
   // an effect racing the panel that replaced it.
-  const value = overlay.open ? item : null
+  const value =
+    overlay.open &&
+    (item !== "collections" || collectionMenu.display === "menu")
+      ? item
+      : null
 
   const departments = menu.showDepartments
     ? menu.departments
