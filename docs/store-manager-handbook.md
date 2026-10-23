@@ -203,8 +203,8 @@ Every order task starts from `Orders` → open the order.
 
 With "Send notifications" on, **Mark as shipped** emails the customer the
 tracking number and link, and **Mark as delivered** emails a delivery
-confirmation. The customer's account page shows "Shipped" but not the link, so
-point them to the email.
+confirmation. The order's page on the site shows each shipment with its
+tracking number and link too.
 Guide: <https://docs.medusajs.com/user-guide/orders/fulfillments>
 
 **Order links.** Each order email links to the order's page, and each link
