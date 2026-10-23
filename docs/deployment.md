@@ -316,10 +316,16 @@ It replaces Medusa's built-in `/health`, which answers `200` whenever the
 process is up. The deploy's rollback, the public checks and the uptime probe
 all read it, so a release that cannot reach its database now fails the deploy
 instead of going live. `redis` reads `not_configured` without `REDIS_URL`
-(local development). The worker has no HTTP route and is not covered yet.
+(local development). `/health/operations` separately reports worker heartbeat
+and overdue payment checks; see the uptime section below.
 
 The storefront's `/api/health` stays a liveness check: it answers without
 calling Medusa, so a backend restart does not also mark the storefront down.
+`/api/ready` checks backend health, the Nigeria region and a Store API catalog
+request using the storefront's publishable key, with a five-second deadline.
+It returns only `ok` (200) or `unavailable` (503), without connection details.
+Storefront deployment checks both endpoints before accepting the new image.
+This does not replace a rendered-page or checkout acceptance test.
 
 - **Migrations run before the new code starts**, so for a short time the old
   code runs against the new schema. Keep migrations backward compatible: add
@@ -422,7 +428,7 @@ VPS through OVH if you want faster rebuilds.
   `SENTRY_AUTH_TOKEN` (secret) on the Environment.
 - `.github/workflows/uptime.yml` probes both repository variables `HEALTH_URL`
   (`https://api.<domain>/health`) and `STOREFRONT_HEALTH_URL`
-  (`https://<domain>/api/health`) every 15 minutes and opens an issue when either
+  (`https://<domain>/api/ready`) every 15 minutes and opens an issue when either
   fails. Both must return HTTP 200 over HTTPS. Missing configuration fails the
   check. It also probes `HEALTH_URL` + `/operations`, which fails when the
   worker has been quiet for 5 minutes or payment checks are over 30 minutes

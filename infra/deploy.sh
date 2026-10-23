@@ -164,7 +164,8 @@ if [[ "$target" == "backend" ]]; then
   { check "api.$domain" /health && check "admin.$domain" /; } \
     || rollback "health checks through Caddy failed."
 else
-  check "$domain" /api/health || rollback "health checks through Caddy failed."
+  { check "$domain" /api/health && check "$domain" /api/ready; } \
+    || rollback "storefront readiness checks through Caddy failed."
 fi
 
 env_set "PREVIOUS_$tag_var" "$previous"

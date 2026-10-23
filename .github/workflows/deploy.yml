@@ -283,7 +283,7 @@ jobs:
         env:
           DOMAIN: ${{ vars.DOMAIN }}
         run: |
-          for url in "https://$DOMAIN/api/health" "https://$DOMAIN/" "https://api.$DOMAIN/health" "https://admin.$DOMAIN/"; do
+          for url in "https://$DOMAIN/api/health" "https://$DOMAIN/api/ready" "https://$DOMAIN/" "https://api.$DOMAIN/health" "https://admin.$DOMAIN/"; do
             curl -fsS -o /dev/null --max-time 15 --retry 10 --retry-delay 6 --retry-all-errors "$url"
             echo "ok $url"
           done
