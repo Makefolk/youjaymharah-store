@@ -7,7 +7,7 @@ import {
 } from "@/lib/seo/routes"
 
 import { getCategoryTrail, sortCategoryTree } from "./category"
-import { getCollectionContent } from "./collection"
+import { getCollectionContent, hasCollectionPage } from "./collection"
 
 /**
  * The site navigation, built from the admin's category tree so new categories
@@ -282,6 +282,7 @@ export function getCollectionMenu(
   limit = 4,
 ): CollectionMenu {
   const tiles = collections
+    .filter(hasCollectionPage)
     .map((collection): CollectionTile => {
       const content = getCollectionContent(collection)
 

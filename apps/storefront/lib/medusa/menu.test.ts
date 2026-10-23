@@ -252,6 +252,25 @@ describe("getCollectionMenu", () => {
     expect(getCollectionMenu([], null).display).toBe("hidden")
   })
 
+  it("omits collections without a usable page, including a stale featured selection", () => {
+    const unavailable = [
+      { ...collection("old"), handle: "" },
+      { ...collection("unfinished"), handle: "   " },
+    ]
+    expect(getCollectionMenu(unavailable, "old")).toEqual({
+      display: "hidden",
+      href: "/collections",
+      tiles: [],
+    })
+    expect(
+      getCollectionMenu([...unavailable, collection("new")], "old"),
+    ).toMatchObject({
+      display: "link",
+      href: "/collections/new",
+      tiles: [{ id: "new", featured: false }],
+    })
+  })
+
   it("links straight to a single collection", () => {
     expect(getCollectionMenu([collection("aw")], null)).toMatchObject({
       display: "link",

@@ -21,6 +21,7 @@ import {
   SEARCH_PATH,
 } from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
+import { hasCollectionPage } from "@/lib/medusa/collection"
 
 interface SearchOverlayProps {
   open: boolean
@@ -84,11 +85,12 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
   }, [pathname, onOpenChange])
 
   const results = suggestions.data
+  const collections = results?.collections.filter(hasCollectionPage) ?? []
   const hasResults = Boolean(
     results &&
     (results.products.length ||
       results.categories.length ||
-      results.collections.length),
+      collections.length),
   )
 
   const clear = () => {
@@ -269,8 +271,7 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
                   </section>
                 )}
 
-                {(results.categories.length > 0 ||
-                  results.collections.length > 0) && (
+                {(results.categories.length > 0 || collections.length > 0) && (
                   <section className="space-y-4">
                     <h2 className={sectionLabelClass}>Browse</h2>
 
@@ -287,7 +288,7 @@ export function SearchOverlay({ open, onOpenChange }: SearchOverlayProps) {
                         </li>
                       ))}
 
-                      {results.collections.map((collection) => (
+                      {collections.map((collection) => (
                         <li key={collection.id}>
                           <Link
                             href={collectionPath(collection.handle)}

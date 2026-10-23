@@ -2,6 +2,10 @@ import type { HttpTypes } from "@medusajs/types"
 
 import { metaImage, metaText } from "./metadata"
 
+export function hasCollectionPage(collection: { handle?: string | null }) {
+  return Boolean(collection.handle?.trim())
+}
+
 export type CollectionContent = {
   id: string
   title: string

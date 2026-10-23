@@ -39,26 +39,28 @@ incident.
 
 ## Staff operations
 
-| ID  | Situation                                                       | Procedure                                              |
-| --- | --------------------------------------------------------------- | ------------------------------------------------------ |
-| S01 | Start/end a shift and assign outstanding work                   | [Daily operations](/staff/daily)                       |
-| S02 | Invite staff, choose a role or remove access                    | [Roles](/staff/roles)                                  |
-| S03 | Create products, variants, prices and stock                     | [Catalog operations](/staff/catalog)                   |
-| S04 | Correct an image, size guide, category or collection            | [Catalog operations](/staff/catalog)                   |
-| S05 | Sell the last unit, manage backorders or correct stock          | [Catalog operations](/staff/catalog)                   |
-| S06 | Create a promotion or inspect a discounted total                | [Catalog operations](/staff/catalog)                   |
-| S07 | Configure shipping coverage/rates and fulfill an order          | [Fulfillment](/staff/fulfillment)                      |
-| S08 | Ship partially, add tracking or mark delivery                   | [Fulfillment](/staff/fulfillment)                      |
-| S09 | Handle an unshipped, lost, damaged or canceled order            | [Fulfillment](/staff/fulfillment)                      |
-| S10 | Receive a return or arrange an exchange/claim                   | [Returns and refunds](/staff/refunds)                  |
-| S11 | Record a full/partial Paystack or Credo refund                  | [Returns and refunds](/staff/refunds)                  |
-| S12 | Recover an ambiguous or duplicate refund record                 | [Returns and refunds](/staff/refunds)                  |
-| S13 | Triage, assign, reply to or resolve support                     | [Support inbox](/staff/support)                        |
-| S14 | Keep staff notes private and handle photo/access problems       | [Support inbox](/staff/support)                        |
-| S15 | Update branding, navigation, policies or the homepage           | [Content and marketing](/staff/content)                |
-| S16 | Schedule an announcement or configure newsletter/reminders      | [Content and marketing](/staff/content)                |
-| S17 | Investigate missing email, bounce, complaint or retry ambiguity | [Email delivery](/staff/email)                         |
-| S18 | Find a payment and recover a paid bag with no order             | [Payment recovery](/customers/payments#staff-recovery) |
+| ID  | Situation                                                       | Procedure                                                                     |
+| --- | --------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| S01 | Start/end a shift and assign outstanding work                   | [Daily operations](/staff/daily)                                              |
+| S02 | Invite staff, choose a role or remove access                    | [Roles](/staff/roles)                                                         |
+| S03 | Create products, variants, prices and stock                     | [Catalog operations](/staff/catalog)                                          |
+| S04 | Correct an image, size guide, category or collection            | [Catalog operations](/staff/catalog)                                          |
+| S05 | Sell the last unit, manage backorders or correct stock          | [Catalog operations](/staff/catalog)                                          |
+| S06 | Create a promotion or inspect a discounted total                | [Catalog operations](/staff/catalog)                                          |
+| S07 | Configure shipping coverage/rates and fulfill an order          | [Fulfillment](/staff/fulfillment)                                             |
+| S08 | Ship partially, add tracking or mark delivery                   | [Fulfillment](/staff/fulfillment)                                             |
+| S09 | Handle an unshipped, lost, damaged or canceled order            | [Fulfillment](/staff/fulfillment)                                             |
+| S10 | Receive a return or arrange an exchange/claim                   | [Returns and refunds](/staff/refunds)                                         |
+| S11 | Record a full/partial Paystack or Credo refund                  | [Returns and refunds](/staff/refunds)                                         |
+| S12 | Recover an ambiguous or duplicate refund record                 | [Returns and refunds](/staff/refunds)                                         |
+| S13 | Triage, assign, reply to or resolve support                     | [Support inbox](/staff/support)                                               |
+| S14 | Keep staff notes private and handle photo/access problems       | [Support inbox](/staff/support)                                               |
+| S15 | Update branding, navigation, policies or the homepage           | [Content and marketing](/staff/content)                                       |
+| S16 | Schedule an announcement or configure newsletter/reminders      | [Content and marketing](/staff/content)                                       |
+| S17 | Investigate missing email, bounce, complaint or retry ambiguity | [Email delivery](/staff/email)                                                |
+| S18 | Find a payment and recover a paid bag with no order             | [Payment recovery](/customers/payments#staff-recovery)                        |
+| S19 | Edit, hide or replace the image in the homepage About section   | [Homepage About](/staff/content#homepage-about-section)                       |
+| S20 | Change or disable the newsletter section above the footer       | [Newsletter settings](/staff/content#newsletter-reminders-and-product-alerts) |
 
 ## Production and development
 

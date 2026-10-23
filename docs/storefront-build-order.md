@@ -97,6 +97,10 @@ Backend:
     `GET /store/collections/{id}?fields=+metadata` for `metadata.description`,
     `metadata.hero_image` and `metadata.hero_image_mobile`. When it's null,
     hide the section.
+  - `about`: the introduction below the collections. Render only when enabled;
+    use the optional image with its alt text, or the brand panel without an image.
+    Heading, paragraphs and the optional link are editable in Settings › Storefront
+    › Homepage About. The full About page has separate content.
   - The layout itself stays in code. Category sections use the category tree.
 
 **Done when:** you can walk from the home page into a category, filter by
@@ -364,7 +368,7 @@ in, and the list survives logging out and back in.
 
 **Goal:** collect email addresses, which the store currently cannot do at all.
 
-Build: footer signup, an opt-in at checkout, and landing pages for the confirm
+Build: a standalone signup section above the footer, an opt-in at checkout, and landing pages for the confirm
 and unsubscribe links in the emails.
 
 Backend (custom, already built): `POST /store/newsletter/subscribe`,

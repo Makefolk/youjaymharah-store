@@ -5,6 +5,7 @@ import Link from "next/link"
 import { listCollections, listProducts } from "@/lib/medusa/catalog"
 import {
   getCollectionContent,
+  hasCollectionPage,
   type CollectionContent,
 } from "@/lib/medusa/collection"
 import { getStorefrontSettings } from "@/lib/medusa/storefront-settings"
@@ -16,13 +17,12 @@ export async function Collections() {
     listCollections(),
     getStorefrontSettings(),
   ])
-  const ordered = records
-    .filter((collection) => collection.handle)
-    .map(getCollectionContent)
+  const ordered = records.filter(hasCollectionPage).map(getCollectionContent)
   const featured = ordered.findIndex(
     (collection) => collection.id === homepage.featured_collection_id,
   )
   if (featured > 0) ordered.unshift(...ordered.splice(featured, 1))
+  if (!ordered.length) return null
 
   const collections = await Promise.all(
     ordered.slice(0, 3).map(async (collection) => {
@@ -39,8 +39,6 @@ export async function Collections() {
       }
     }),
   )
-
-  if (!collections.length) return null
 
   return (
     <section

@@ -154,9 +154,9 @@ Work through these in order; each relies on the ones before it.
      product first to copy its columns).
 9. **Set up newsletter sign-up.** `Settings › Newsletter`. Sign-up is **off**
    until you switch it on, and until then the sign-up form doesn't appear in
-   the site's footer. Then review:
+   its section immediately above the site's footer. Then review:
    - **Heading** and **Description**: the text above the sign-up field in the
-     footer. Leave either empty to use the default shown in grey.
+     standalone newsletter section. Leave either empty to use the default shown in grey.
    - **Consent text**: shown under the field, and saved with each subscriber
      as the wording they agreed to.
    - **Audience**: the Resend audience confirmed subscribers are added to.
@@ -401,6 +401,17 @@ page. The layout and the order of sections are set by the website itself.
   the collection's own description and images. Set these on the collection
   itself, in its **Website content** box under `Products › Collections`.
   Deleting the featured collection hides the section until you pick another.
+- **About introduction:** edit **Settings › Storefront › Homepage About**.
+  Marketing, Store Manager and the owner can change its small heading, heading,
+  introduction, image and link. The starter copy is editable. A photo is optional;
+  without one, the website shows a panel with the store's logo and name.
+  Upload a portrait PNG, JPEG or WebP image up to 10 MB and describe it for screen
+  readers. Use blank lines between paragraphs. The link needs both a label and a
+  destination; clear both to remove it. The starter link goes to `/products`.
+  Use `/about` only after publishing the full page under **Settings › Pages**.
+  Turn **Show on homepage** off to hide the section while retaining the copy.
+  Heading and introduction are required before showing it. About revisions are
+  not included in hero history, so keep a separate copy before replacing text.
 - Changes reach the website within a few minutes.
 
 ### Bag reminders
@@ -544,14 +555,14 @@ someone leaves, remove their user in **Settings › Users**.
 
 ## 6. Known gaps
 
-| Area                                     | Status        | Meanwhile                                                            |
-| ---------------------------------------- | ------------- | -------------------------------------------------------------------- |
-| Paystack and Credo refunds               | Two steps     | Refund in the gateway dashboard, then **Record refund** on the order |
-| Customer exchanges and claims            | Not built     | Customers email you; you create the exchange or claim                |
-| POS app                                  | Workaround    | Draft orders with a separate shop location                           |
-| Gift cards, store credit, loyalty points | Not available | One-off promo codes as a substitute                                  |
-| Abandoned-cart reminders                 | Built         | Settings › Bag reminders (see "Bag reminders")                       |
-| Newsletter success message               | Not shown     | The footer shows its own "Check your inbox" message after sign-up    |
+| Area                                     | Status        | Meanwhile                                                              |
+| ---------------------------------------- | ------------- | ---------------------------------------------------------------------- |
+| Paystack and Credo refunds               | Two steps     | Refund in the gateway dashboard, then **Record refund** on the order   |
+| Customer exchanges and claims            | Not built     | Customers email you; you create the exchange or claim                  |
+| POS app                                  | Workaround    | Draft orders with a separate shop location                             |
+| Gift cards, store credit, loyalty points | Not available | One-off promo codes as a substitute                                    |
+| Abandoned-cart reminders                 | Built         | Settings › Bag reminders (see "Bag reminders")                         |
+| Newsletter success message               | Not shown     | The newsletter section shows its own confirmation dialog after sign-up |
 
 ## 7. Medusa guides
 

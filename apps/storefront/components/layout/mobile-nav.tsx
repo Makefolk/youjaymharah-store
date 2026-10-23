@@ -68,6 +68,8 @@ export function MobileNav() {
   const active = useActiveMenuItem()
   const { open, setOpen } = useOverlay("mobile-nav")
   const { view, canGoBack, push, back, reset } = useDrillStack()
+  const visibleView =
+    view.kind === "collections" && !collectionMenu.tiles.length ? ROOT : view
 
   return (
     <Drawer
@@ -92,13 +94,13 @@ export function MobileNav() {
         >
           <div className="flex flex-col pb-10">
             <Header
-              title={titleFor(view, menu.departments)}
-              canGoBack={canGoBack}
+              title={titleFor(visibleView, menu.departments)}
+              canGoBack={visibleView.kind !== "root" && canGoBack}
               onBack={back}
             />
             <nav aria-label="Catalogue">
               <Panel
-                view={view}
+                view={visibleView}
                 menu={menu}
                 collectionMenu={collectionMenu}
                 activeHref={active.href ?? "#"}
@@ -375,6 +377,8 @@ function CollectionsPanel({
   collectionMenu,
   onNavigate,
 }: Pick<NavProps, "collectionMenu" | "onNavigate">) {
+  if (!collectionMenu.tiles.length) return null
+
   const lead = collectionMenu.tiles.length > 2
 
   return (

@@ -212,6 +212,8 @@ function ColumnHeading({
 }
 
 export function CollectionsPanel({ menu }: { menu: CollectionMenu }) {
+  if (!menu.tiles.length) return null
+
   const emphasise = menu.tiles.length > 2 && menu.tiles.some((t) => t.featured)
 
   return (

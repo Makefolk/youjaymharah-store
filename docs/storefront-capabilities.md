@@ -83,6 +83,16 @@ Response shape:
       "google_site_verification": null
     },
     "homepage": {
+      "about": {
+        "enabled": true,
+        "eyebrow": "A little about us",
+        "title": "Pieces you love.\nStyle that’s yours.",
+        "description": "Editable starter introduction",
+        "image_url": null,
+        "image_alt": null,
+        "cta_label": "Explore the collection",
+        "cta_url": "/products"
+      },
       "hero": {
         "enabled": false,
         "eyebrow": null,
@@ -145,6 +155,26 @@ the banner. There is one banner, not a carousel.
   `cta_url` is either a store path starting with `/` (use Next `<Link>`) or a
   full `http(s)://` address (use a plain `<a>`).
 
+### Homepage About: Ready
+
+An introduction below the homepage collections, with a portrait image or a
+brand panel using the admin-managed logo and name.
+
+- **Admin:** Settings › Storefront › Homepage About, owner, Marketing or Store Manager.
+  Support has read access only.
+- **Storefront reads:** `settings.homepage.about`. Render only when `enabled`
+  is true. A visible section requires a heading and introduction. Plain text is
+  rendered safely; line breaks in the heading and paragraph breaks are preserved.
+- **Admin writes:** `POST /admin/storefront-settings` with `homepage_about`.
+  Sending this field replaces the entire section; omitted optional values are
+  cleared. Sending other settings leaves it unchanged.
+- An image is optional; when present it needs an `http(s)` URL and `image_alt`.
+  Uploaded images use the existing file service and storefront image host configuration.
+- `cta_label` and `cta_url` must be set together or both cleared. The destination
+  is a store path or a full `http(s)` address, without embedded credentials.
+- Starter content is seeded by the migration. The default link is `/products`;
+  the standalone About page remains separately managed under Settings › Pages.
+
 ### Featured collection: Ready
 
 One collection staff pick to feature on the home page.
@@ -186,7 +216,7 @@ How many days a product counts as new (30 by default).
 Home, category, collection, search and listing pages.
 
 The home page's structure belongs to the storefront. Staff control only the
-hero and the featured collection (above). Category sections come straight from
+hero, About introduction and the featured collection (above). Category sections come straight from
 the category tree; there's no admin setting to choose or order them yet.
 
 ### Category tree: Backend ready
@@ -556,7 +586,7 @@ Would need a backend job; offer it to signed-in customers only when built.
 
 ### Signup form: Backend ready
 
-Footer or pop-up signup with double opt-in. The "send me offers" box on Notify
+Signup in a standalone section immediately above the footer, with optional double opt-in. The "send me offers" box on Notify
 me and the account switch use the same signup.
 
 - **Admin:** Settings › Newsletter (consent wording, success message, double
