@@ -121,13 +121,17 @@ export default async function initial_data_seed({
   });
   const region = regionResult[0];
 
+  // The test provider takes no money, so it is only offered outside
+  // production (and refused there regardless: api/payment-guard.ts).
+  const providers = ["pp_credo_credo", "pp_paystack_paystack"];
+  if (process.env.NODE_ENV !== "production") {
+    providers.unshift("pp_system_default");
+  }
   await link.create(
-    ["pp_system_default", "pp_credo_credo", "pp_paystack_paystack"].map(
-      (payment_provider_id) => ({
-        [Modules.REGION]: { region_id: region.id },
-        [Modules.PAYMENT]: { payment_provider_id },
-      }),
-    ),
+    providers.map((payment_provider_id) => ({
+      [Modules.REGION]: { region_id: region.id },
+      [Modules.PAYMENT]: { payment_provider_id },
+    })),
   );
 
   await createTaxRegionsWorkflow(container).run({

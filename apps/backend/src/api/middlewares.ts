@@ -12,6 +12,7 @@ import { errorHandler as defaultErrorHandler } from "@medusajs/framework/http";
 
 import { rateLimit } from "./rate-limit";
 import { requireOrderAccess } from "./order-access";
+import { refuseTestPaymentsInProduction } from "./payment-guard";
 import { enforcePasswordPolicy } from "./password-policy";
 import { refuseEndedSessions } from "./session-revocation";
 import {
@@ -995,6 +996,11 @@ export default defineMiddlewares({
         rateLimit("order-lookup-email", 3, "account"),
         validateAndTransformBody(StoreOrderLookup),
       ],
+    },
+    {
+      matcher: "/store/payment-collections/:id/payment-sessions",
+      method: ["POST"],
+      middlewares: [refuseTestPaymentsInProduction],
     },
     // An order ID alone opens nothing: the signed-in owner, or a key from
     // an order link (src/api/order-access.ts).
