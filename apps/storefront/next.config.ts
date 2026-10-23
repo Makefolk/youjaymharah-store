@@ -3,6 +3,8 @@ import path from "node:path"
 import { withSentryConfig } from "@sentry/nextjs"
 import type { NextConfig } from "next"
 
+import { securityHeaders } from "./lib/http/security-headers"
+
 type RemotePattern = NonNullable<
   NonNullable<NextConfig["images"]>["remotePatterns"]
 >[number]
@@ -50,6 +52,18 @@ if (!remotePatterns.length) {
 
 const nextConfig: NextConfig = {
   images: { remotePatterns },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: securityHeaders({
+          imageOrigins: process.env.IMAGE_REMOTE_URLS,
+          sentryDsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+          development: process.env.NODE_ENV !== "production",
+        }),
+      },
+    ]
+  },
   // Set by the Docker build only, so `next start` keeps working locally.
   // Standalone traces just the files the server needs into .next/standalone,
   // from the workspace root so hoisted pnpm packages are included.
