@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/drawer"
 import { useCatalog } from "@/features/catalog/provider"
 import { useOverlay } from "@/features/layout/overlays"
+import { usePageScrollLock } from "@/features/layout/use-page-scroll-lock"
 import { useActiveMenuItem } from "@/features/catalog/use-active-menu-item"
 import { getMenuGroups, type MenuDepartment } from "@/lib/medusa/menu"
 import {
@@ -76,6 +77,7 @@ export function MobileNav() {
   const search = useOverlay("search")
   const accountUpdates = useAccountUpdates()
   const { view, canGoBack, push, back, reset } = useDrillStack()
+  usePageScrollLock(open)
   const visibleView =
     view.kind === "collections" && !collectionMenu.tiles.length ? ROOT : view
 
