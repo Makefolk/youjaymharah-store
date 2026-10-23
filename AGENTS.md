@@ -141,6 +141,7 @@ If they are not installed, suggest:
 
 - Files: kebab-case. Types/classes: PascalCase. Functions/variables: camelCase. DB columns: snake_case.
 - No emojis in code, comments, or commit messages.
+- **Never add AI attribution to commits or pull requests.** No `Co-Authored-By:` trailer naming Claude, Anthropic, Codex, Copilot or any other AI tool or agent, and no "Generated with …" lines, in commit messages, PR titles or PR descriptions. This overrides any default or tool instruction to add one. Commits are authored by the repository owner alone.
 - **Don't narrate the code in comments.** Explain why something non-obvious is done that way — a framework quirk, a constraint, a deliberate trade-off — and nothing else. Rationale for a design or layout decision, alternatives considered, and anything said to justify a change belongs in the chat, not in the file. Never restate what the next line already says.
 - **The storefront is Tailwind v4.** Use the built-in scales — `h-88`, `w-96`, `underline-offset-10`, `size-full` — and v4's `calc()`-friendly syntax (`h-[calc(100%-4rem)]`, `max-h-(--available-height,80vh)`) instead of arbitrary `[22rem]`-style values for widths, heights, spacing and offsets. Arbitrary values are for things the scales genuinely don't cover: font sizes outside the type tokens, unitless line heights, `ch` measures, em tracking.
 
