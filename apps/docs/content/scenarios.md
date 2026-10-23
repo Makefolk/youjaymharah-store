@@ -67,6 +67,7 @@ incident.
 | S24 | Cancel a forwarded support link or reissue one                  | [Support inbox](/staff/support#photos-links-and-private-data)                 |
 | S25 | Enrol staff in two-factor sign-in and enforce it                | [Two-factor sign-in](/staff/roles#two-factor-sign-in)                         |
 | S26 | Edit Store menu cards, support details or policy pages          | [Navigation and support](/staff/content#navigation-and-support-details)       |
+| S27 | Sell to a walk-in customer or take a phone/WhatsApp order       | [In-store and phone sales](/staff/fulfillment#in-store-and-phone-sales)       |
 
 ## Production and development
 
@@ -89,7 +90,7 @@ incident.
 ## Features requiring manual work or additional implementation
 
 Self-service exchanges/claims, courier integrations, automatic refund
-reconciliation, POS, gift cards/store credit, loyalty, product reviews and
+reconciliation, a till/POS app (counter sales use draft orders), gift cards/store credit, loyalty, product reviews and
 international checkout are not promises made by this handbook. Use the named
 manual procedure where one exists. The current storefront is designed for
 Nigeria/NGN. Enable new business offerings only after their customer and

@@ -407,19 +407,53 @@ Guides: [Draft orders](https://docs.medusajs.com/user-guide/orders/draft-orders)
 [Create](https://docs.medusajs.com/user-guide/orders/draft-orders/create) ·
 [Manage & convert](https://docs.medusajs.com/user-guide/orders/draft-orders/manage)
 
-### In-store sales (POS)
+### In-store sales (walk-in customers)
 
-Medusa has no built-in till app.
+There is no till app. Record each counter sale as a **draft order**: it becomes
+a normal order, so stock, reports, returns and refunds work as they do online.
 
-- **Now:** create a shop location (`Settings › Locations & Shipping › Create`)
-  and ideally an "In-store" sales channel linked to it, so shop stock is
-  separate and the website can't oversell. Record each sale as a draft order,
-  take payment on your card terminal or by transfer, convert and **Mark as
-  paid**.
-- **Later:** a dedicated POS app on the same backend (barcode scanning,
-  terminal integration, receipts) — a development project. See the
-  [POS recipe](https://docs.medusajs.com/resources/recipes/pos) and
-  [omnichannel recipe](https://docs.medusajs.com/resources/recipes/omnichannel).
+**Set up once (Store Manager):**
+
+1. **Shop stock (recommended):** `Settings › Locations & Shipping › Create` a
+   "Shop" location with the shop's address, and an "In-store" sales channel
+   (`Settings › Sales Channels`) linked to it. Add the products to that channel
+   and enter the shop's stock under `Inventory`. The website then can't sell
+   the piece on your shelf. Skip this only if the shop sells from the Lagos
+   Warehouse stock.
+2. **A "Collected in store" option:** on the Shop location, enable
+   **Pickup** (or create a ₦0 option named "Collected in store"), so a counter
+   sale has no delivery charge and is fulfilled from the shop.
+3. **A walk-in email:** an address the shop owns, such as the support inbox,
+   for customers who don't want to give theirs. Their receipt then goes to you.
+
+**Each sale:**
+
+1. `Orders › Drafts › Create`: region Nigeria, the **In-store** sales channel,
+   and the customer's email (or the walk-in email). Use the shop's address if
+   the form asks for one. **Save**.
+2. Add the items and quantities. Apply a promo code if they have one. Add the
+   **Collected in store** option.
+3. Check the total with the customer and take payment: cash, transfer, or the
+   card terminal. Wait for the transfer alert or the terminal's approval.
+4. **Convert to order**. The customer is emailed the order confirmation, their
+   receipt, at the email you entered.
+5. On the order, **Mark as paid**, and add a note with how they paid and the
+   terminal or transfer reference.
+6. **Fulfill items** from the Shop location, then **Mark as delivered**, so
+   stock comes off the shop's count and the order doesn't wait in "paid orders
+   not shipped".
+
+**Returns and exchanges** for counter sales use the order's normal Return and
+Exchange screens. Refund cash or transfer yourself, then record it with the
+refund form.
+
+**End of day:** filter `Orders` by the **In-store** sales channel and today's
+date, and check the total against the cash drawer, transfer alerts and the
+terminal's daily report.
+
+A till app (barcode scanning, faster checkout, printed receipts) is a separate
+development project if counter sales grow. See the
+[POS recipe](https://docs.medusajs.com/resources/recipes/pos).
 
 ### Promotions, codes and sales
 
@@ -709,7 +743,7 @@ someone leaves, remove their user in **Settings › Users**.
 | ---------------------------------------- | ------------- | ---------------------------------------------------------------------- |
 | Paystack and Credo refunds               | Two steps     | Refund in the gateway dashboard, then **Record refund** on the order   |
 | Customer exchanges and claims            | Not built     | Customers email you; you create the exchange or claim                  |
-| POS app                                  | Workaround    | Draft orders with a separate shop location                             |
+| POS app                                  | Workaround    | Draft orders with a shop location (see "In-store sales")               |
 | Gift cards, store credit, loyalty points | Not available | One-off promo codes as a substitute                                    |
 | Abandoned-cart reminders                 | Built         | Settings › Bag reminders (see "Bag reminders")                         |
 | Newsletter success message               | Not shown     | The newsletter section shows its own confirmation dialog after sign-up |
