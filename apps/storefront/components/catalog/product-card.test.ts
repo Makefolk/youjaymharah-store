@@ -93,7 +93,7 @@ describe("product card merchandising", () => {
     ).not.toContain(">−33%<")
   })
 
-  it("shows four colour swatches and links the rest as +N", () => {
+  it("says how many colours there are, without swatches", () => {
     const colours = ["Black", "Navy", "Cream", "Red", "Green", "Blue"]
     const html = render({
       ...product(
@@ -105,9 +105,8 @@ describe("product card merchandising", () => {
       ),
       options: [{ id: "colour", title: "Colour" }],
     } as unknown as HttpTypes.StoreProduct)
-    expect(html.match(/aria-pressed=/g)).toHaveLength(4)
-    expect(html).toContain('aria-label="2 more colours of Wool coat"')
-    expect(html).toContain(">+2<")
+    expect(html).toContain("6 colours")
+    expect(html).not.toContain("aria-pressed=")
   })
 
   it("shows one status label on the photo", () => {

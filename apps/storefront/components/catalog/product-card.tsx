@@ -28,9 +28,8 @@ export type ProductCardProps = {
   /** Add to the bag from the card, on hover (mouse only). */
   showQuickAdd?: boolean
   showNotifyMe?: boolean
-  /** Colour choices or a count, shown only for more than one colour. */
+  /** "3 colours", shown only for more than one colour. */
   showColours?: boolean
-  showColourSelector?: boolean
   showCarouselArrows?: boolean
   showCarouselDots?: boolean
   /**
@@ -46,12 +45,12 @@ export type ProductCardProps = {
 
 /**
  * Newness is computed on the server to avoid browser clock differences.
- * Gallery position and colour selection are local to each card.
+ * Gallery position is local to each card.
  *
  * Control visibility contract (to implement alongside the controls): callers
  * must be able to hide any control, or any combination, independently via
  * props. Expose optional booleans such as showQuickView, showWishlist,
- * showQuickAdd, showNotifyMe, showShare, showColourSelector, showSizeSelector,
+ * showQuickAdd, showNotifyMe, showShare, showSizeSelector,
  * showCarouselArrows and showCarouselDots. Every future control must also
  * have a visibility prop; do not limit callers to fixed card presets.
  * For example, showShare={false} and showNotifyMe={false} hide only those two
@@ -61,7 +60,7 @@ export type ProductCardProps = {
  * solely by it. showQuickView={false} must also suppress a supplied quickView
  * slot. Hiding carousel arrows/dots must not disable swipe gestures. Hiding
  * option selectors must never silently choose a size for quick add. These
- * showQuickView, showWishlist, showNotifyMe, showColourSelector,
+ * showQuickView, showWishlist, showNotifyMe,
  * showCarouselArrows and showCarouselDots are implemented.
  *
  * Backend-supported presentation and extension points:
@@ -73,8 +72,8 @@ export type ProductCardProps = {
  *   getSelectionImages from lib/medusa/variants after choosing options. Keep
  *   the image frame when no photo exists; size images for their actual grid.
  * - Carousel: use PRODUCT_CARD_MEDIA_FIELDS for product and variant media.
- *   getCardGallery keeps every distinct photo; colour swatches jump to that
- *   colour's thumbnail without changing the route or selecting a size.
+ *   getCardGallery keeps every distinct photo. Cards show a colour count,
+ *   not swatches; colours are chosen on the product page.
  *   Arrow/dot visibility never disables swipe. There is no autoplay.
  * - Price: getProductPrice returns the cheapest priced variant and isRange
  *   for a "From" prefix; pass a chosen variant id for its exact price.

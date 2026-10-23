@@ -6,22 +6,17 @@ import { useState } from "react"
 import type { CarouselApi } from "@/components/ui/carousel"
 import { formatPrice, getProductPrice } from "@/lib/medusa/price"
 import {
-  getCardColourImage,
-  getCardColourProduct,
   getCardGallery,
   getCardStatus,
   getQuickAdd,
 } from "@/lib/medusa/product-card"
-import { getColourChoices, type OptionChoice } from "@/lib/medusa/variants"
+import { getColourChoices } from "@/lib/medusa/variants"
 import { productPath } from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
 import type { ProductCardProps } from "./product-card"
 import { ProductCardControls } from "./product-card-controls"
 import { ProductCardGallery } from "./product-card-gallery"
 import { ProductCardQuickAdd } from "./product-card-quick-add"
-
-/** More than this and the rest show as "+N", linking to the product page. */
-const MAX_SWATCHES = 4
 
 export function ProductCardView({
   product,
@@ -37,20 +32,16 @@ export function ProductCardView({
   showQuickAdd = false,
   showNotifyMe = false,
   showColours = true,
-  showColourSelector = true,
   showCarouselArrows = true,
   showCarouselDots = true,
   inset = false,
   priority = false,
   sizes = "(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw",
 }: Omit<ProductCardProps, "newBadgeDays"> & { newProduct: boolean }) {
-  const [colour, setColour] = useState<string | null>(null)
   const [api, setApi] = useState<CarouselApi>()
   const gallery = getCardGallery(product)
-  const displayedProduct = getCardColourProduct(product, colour)
-  const price =
-    showPrice || showBadges ? getProductPrice(displayedProduct) : null
-  const status = getCardStatus(displayedProduct, newProduct)
+  const price = showPrice || showBadges ? getProductPrice(product) : null
+  const status = getCardStatus(product, newProduct)
   const productStatus = getCardStatus(product)
   const canNotify =
     productStatus === "Coming soon" || productStatus === "Sold out"
@@ -61,15 +52,7 @@ export function ProductCardView({
   const overlay = detailsPlacement === "overlay"
   const secondaryText = overlay ? "text-white/80" : "text-muted-foreground"
   const href = productPath(product.handle)
-  const quickAdd =
-    showQuickAdd && !overlay ? getQuickAdd(product, colour) : null
-
-  function selectColour(value: string) {
-    setColour(value)
-    const image = getCardColourImage(product, value)
-    const index = gallery.findIndex((entry) => entry.url === image)
-    if (index >= 0) api?.scrollTo(index, true)
-  }
+  const quickAdd = showQuickAdd && !overlay ? getQuickAdd(product, null) : null
 
   const details = (
     <div
@@ -132,44 +115,9 @@ export function ProductCardView({
         </p>
       )}
       {colours.length > 1 && (
-        <div className={cn("mt-2", secondaryText)}>
-          {showDetails && showColourSelector ? (
-            <div
-              role="group"
-              aria-label={`Choose a colour of ${product.title}`}
-              className="flex flex-wrap gap-1"
-            >
-              {colours.slice(0, MAX_SWATCHES).map((choice) => (
-                <button
-                  key={choice.value}
-                  type="button"
-                  aria-pressed={colour === choice.value}
-                  aria-label={`${choice.value}${choice.available ? "" : " (unavailable)"}`}
-                  title={choice.value}
-                  disabled={!api && gallery.length > 0}
-                  onClick={() => selectColour(choice.value)}
-                  className={cn(
-                    "flex min-h-8 min-w-8 items-center justify-center border border-transparent p-1 text-[11px] outline-offset-2 focus-visible:outline-1",
-                    colour === choice.value && "border-current",
-                  )}
-                >
-                  <Swatch colour={choice} />
-                </button>
-              ))}
-              {colours.length > MAX_SWATCHES && (
-                <Link
-                  href={href}
-                  aria-label={`${colours.length - MAX_SWATCHES} more colours of ${product.title}`}
-                  className="flex min-h-8 items-center px-1 text-[11px] tabular-nums hover:underline hover:underline-offset-4"
-                >
-                  +{colours.length - MAX_SWATCHES}
-                </Link>
-              )}
-            </div>
-          ) : (
-            <p className="text-[11px]">{colours.length} colours</p>
-          )}
-        </div>
+        <p className={cn("mt-2 text-[11px]", secondaryText)}>
+          {colours.length} colours
+        </p>
       )}
     </div>
   )
@@ -211,30 +159,5 @@ export function ProductCardView({
       {!overlay && details}
       {showQuickView && quickView}
     </article>
-  )
-}
-
-function Swatch({ colour }: { colour: OptionChoice }) {
-  if (!colour.hex && !colour.swatchImage)
-    return (
-      <span className={cn(!colour.available && "line-through")}>
-        {colour.value}
-      </span>
-    )
-  return (
-    <span
-      aria-hidden
-      className="relative size-3 bg-cover bg-center ring-1 ring-current/20 ring-inset"
-      style={{
-        backgroundColor: colour.hex ?? undefined,
-        backgroundImage: colour.swatchImage
-          ? `url(${JSON.stringify(colour.swatchImage)})`
-          : undefined,
-      }}
-    >
-      {!colour.available && (
-        <span className="absolute inset-x-0 top-1/2 h-px -rotate-45 bg-current" />
-      )}
-    </span>
   )
 }

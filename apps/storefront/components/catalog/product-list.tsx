@@ -15,7 +15,6 @@ type CardOptions = Pick<
   | "showWishlist"
   | "showNotifyMe"
   | "showColours"
-  | "showColourSelector"
   | "showCarouselArrows"
   | "showCarouselDots"
   | "sizes"

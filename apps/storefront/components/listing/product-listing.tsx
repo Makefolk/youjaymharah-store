@@ -252,7 +252,6 @@ export function ProductListing({
                 }
                 showCarouselArrows={details}
                 showCarouselDots={details}
-                showColourSelector={details}
                 sizes={
                   layout === 2
                     ? "(min-width: 1024px) 10vw, (min-width: 768px) 17vw, 33vw"
