@@ -7,7 +7,7 @@ production database to its first shipped order, then keeping it running.
 - Region: Nigeria, NGN
 - Warehouse: Lagos Warehouse
 - Payments: Paystack, Credo (hosted checkout)
-- Platform: Medusa 2.19
+- Platform: Medusa 2.20
 
 Menu paths are written as `Settings › Tax Regions`. Steps marked
 **(Super Admin)** need the owner's account.
@@ -52,6 +52,20 @@ The store manager can't do these; whoever deploys must.
    refunds; email verification and password resets; and team invites.
    Configure the [Resend webhook](resend-webhooks.md) and its separate signing
    secret so provider unsubscribes and delivery problems reach the store.
+8. **Support photos.** Create a second R2 bucket with **no public access** and
+   set `SUPPORT_FILES_BUCKET` to its name (the same R2 token must cover it).
+   Customers' photos of damaged or wrong items are kept there and shown only to
+   staff and the customer. Until it is set, customers can't attach photos.
+9. **Instant website updates.** Set the same `STOREFRONT_REVALIDATE_SECRET` on
+   the backend and the storefront. Without it, admin changes take up to five
+   minutes to show on the site.
+10. **Google sign-in (optional).** Set `GOOGLE_CLIENT_ID`,
+    `GOOGLE_CLIENT_SECRET` and `GOOGLE_CALLBACK_URL`
+    (`https://<storefront>/api/auth/google/callback`, registered in Google
+    Cloud as an authorised redirect URI). Leave them empty to offer email and
+    password only.
+11. **Two-factor for staff.** Once every staff member has set it up (see
+    "Two-factor sign-in"), set `ADMIN_MFA_REQUIRED=true`.
 
 See [Security and reliability](security-and-reliability.md) for deployment
 checks, test coverage, remaining dependency advisories, and operational limits.
@@ -79,7 +93,7 @@ See [Search privacy](search-privacy.md).
 | Record                  | Created as                                                         | You still need to                                                                               |
 | ----------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
 | Store                   | "Youjaymharah", NGN default, USD secondary                         | Check the name; remove USD if you won't sell in dollars                                         |
-| Region                  | Nigeria, NGN, payment providers: Manual, Credo, Paystack           | Decide on tax-inclusive pricing; remove Manual Payment                                          |
+| Region                  | Nigeria, NGN, payment providers: Credo, Paystack                   | Decide on tax-inclusive pricing                                                                 |
 | Tax region              | Nigeria, no rate set (0%)                                          | Set 7.5% VAT                                                                                    |
 | Location                | Lagos Warehouse, city only, manual fulfilment                      | Add the full address; set up delivery options                                                   |
 | Sales channel           | Default Sales Channel, linked to the warehouse and storefront key  | Nothing, but every product must be in it                                                        |
@@ -107,8 +121,10 @@ Work through these in order; each relies on the ones before it.
      means ₦45,000 at checkout). Off means VAT is added at checkout.
    - Decide this **before** entering prices, and confirm with your accountant.
 5. **Review payment methods.** `Settings › Regions › Nigeria › ⋯ › Edit`,
-   field **Payment Providers**. Remove **Manual Payment** before launch: it lets
-   customers place orders without paying. Paystack and Credo charge the
+   field **Payment Providers**: Paystack and Credo. **Manual Payment** is for
+   testing only: it places orders without taking money. The live store refuses
+   it even if it is listed, but remove it from the list if you see it. Paystack
+   and Credo charge the
    customer on the gateway's page, so orders arrive already _captured_; you
    never press "Capture payment".
 6. **Complete the warehouse and create delivery options.**
@@ -131,8 +147,17 @@ Work through these in order; each relies on the ones before it.
    Damaged in delivery, Changed mind, Wrong item sent.
 8. **Build the catalogue.**
    1. **Categories** first (`Products › Categories`), nested: Women › Dresses,
-      Women › Accessories › Bags. Keep them Active and Public.
-   2. **Collections** for edits and seasons.
+      Women › Accessories › Bags. Keep them Active and Public. Each category
+      has three boxes on the right:
+      - **Home page picture:** the photo on its tile in the home page's "Shop
+        by wardrobe" section, which shows the subcategories of each top-level
+        category. Without one, the tile uses the newest product's photo.
+      - **Search & sharing:** its own title and description for Google and
+        shared links (see "Search & sharing").
+      - **Size guide:** the guide its products show (see "Size guides").
+   2. **Collections** for edits and seasons, such as "The Autumn Edit". They
+      are optional: the store works without any (see "Collections" in
+      section 4).
    3. **Colours and sizes** are shared options (`Products › Options`):
       each colour is defined once and reused by every product. Open a colour
       value and use the **Swatch** panel to set its colour (or upload a
@@ -152,6 +177,8 @@ Work through these in order; each relies on the ones before it.
      Default Sales Channel, or has no stock at Lagos Warehouse.
    - Many products: `Products › Import` with a CSV (export one finished
      product first to copy its columns).
+   - New and changed products show on the site straight away when
+     `STOREFRONT_REVALIDATE_SECRET` is set, otherwise within a minute.
 9. **Set up newsletter sign-up.** `Settings › Newsletter`. Sign-up is **off**
    until you switch it on, and until then the sign-up form doesn't appear in
    its section immediately above the site's footer. Then review:
@@ -180,7 +207,20 @@ Work through these in order; each relies on the ones before it.
    **Webhook processing** counts received provider updates still being
    processed. Recovery runs every minute; report a persistent backlog.
 
-10. **Run one real test order end to end.** Buy a cheap item on the live site
+10. **Contact details, policies and returns.**
+    - `Settings › Customer support` (Store Manager or owner): support hours,
+      typical reply time, phone and WhatsApp numbers (international form,
+      starting with +), and the delivery information. These show on the
+      website's Contact and Delivery pages. Prices at checkout still come from
+      your delivery options.
+    - `Settings › Pages`: the **About**, **Privacy policy** and **Terms of
+      sale** pages. A page with no text isn't linked from the site. Have the
+      privacy policy checked against Nigeria's data protection law, and the
+      terms by a lawyer.
+    - `Settings › Returns`: switch online return requests on or off, and set
+      the return window (counted from delivery). Off, customers are asked to
+      contact you instead.
+11. **Run one real test order end to end.** Buy a cheap item on the live site
     through Paystack; confirm the order, the captured payment and the
     confirmation email; fulfil, ship with tracking (check the shipping email),
     mark delivered; refund it in full and confirm the money returns.
@@ -301,6 +341,46 @@ still unfinished after a week shows as **Unfinished for a week**.
 - **Unfinished for a week:** look it up in the gateway's dashboard. If nothing
   came in, mark it handled with a note.
 
+### "I paid but got no order": Payment lookup
+
+Open **Payment lookup** and paste the reference from the customer's Paystack
+or Credo receipt (it starts with "payses"), or their email to list their
+recent attempts. The store asks the gateway what happened and says what to do:
+
+| Result                  | What it means and what to do                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Order placed            | Nothing is missing. Send the customer their order number.                                                                       |
+| Paid, no order          | The money arrived but the customer left before the order was made. **Create the order**; they get the usual confirmation email. |
+| Paid a different amount | No order can be made from it. Refund it in the gateway's dashboard and ask them to order again.                                 |
+| Not finished            | The payment may still go through (a transfer on its way). Don't ask them to pay again; check later.                             |
+| Not paid                | Failed or cancelled; nothing was charged. They can check out again.                                                             |
+| Couldn't check          | The gateway didn't answer. Try again in a minute, or look it up in the gateway's dashboard.                                     |
+
+Creating an order needs order access (Store Manager, Support or the owner).
+
+### Customer emails
+
+Every order has a **Customer emails** box listing what was sent and whether it
+was delivered.
+
+- **Resend** sends the **order confirmation** again, or a shipment's
+  **shipping email**. Use it when a customer lost an email or you corrected
+  their address. The confirmation carries a fresh 60-day order link.
+- **Email review** lists emails whose outcome is unknown: sending stopped
+  because the store couldn't tell whether Resend accepted it. Check Resend's
+  email log, then choose **It was sent** (paste the email's ID from Resend) or
+  **It wasn't sent**. The page says how to send a replacement for each kind,
+  such as resending the confirmation from the order.
+- If a customer says an email never came, check the order's box first, then
+  their spam folder, then Email review.
+
+Email retries reuse the same prepared message. A new password-reset link,
+renewed invitation, partial refund or confirmed order edit is a separate
+message. Verification emails show an expiry time in UTC; requesting a new
+link is safer than using an old email that arrived late. If a send remains
+failed, ask the developer to review it before repeatedly resending. See
+[Email retry behavior](email-reliability.md) for technical limits.
+
 ### Editing or cancelling an order
 
 Before shipping you can edit an order (swap a size, add or remove items). With
@@ -367,6 +447,33 @@ available count can be lower than the shelf. Adjust under
 Guides: [Inventory](https://docs.medusajs.com/user-guide/inventory/inventory) ·
 [Reservations](https://docs.medusajs.com/user-guide/inventory/reservations)
 
+### Collections
+
+Collections group products for an edit, a season or a story, such as "The
+Autumn Edit". A product can be in one collection.
+
+1. `Products › Collections › Create`: enter the title. The handle becomes its
+   address on the site, `/collections/<handle>`; keep it short and lowercase,
+   like `autumn-edit`.
+2. Add products from the collection's **Products** section, or set
+   **Collection** under **Organize** on each product.
+3. Fill in its **Website content** box:
+   - **Description:** shown on the collection's page and on the home page.
+   - **Banner image:** landscape, at least 2400 x 1200px.
+   - **Mobile banner image** (optional): portrait, at least 1080 x 1350px.
+     Without one, phones show a crop of the banner.
+4. To feature it on the home page, pick it as the **Featured collection** under
+   `Settings › Storefront › Homepage`. To give it a picture card in the Store
+   menu, see "Store menu cards" below.
+5. Check the home page, the Collections menu on desktop and phone, and
+   `/collections/<handle>`.
+
+With one collection, the menu links straight to it; with several, it shows a
+Collections menu. A collection with no published products shows an empty page,
+so add products before promoting it. Deleting a collection doesn't delete its
+products. Links to it then show a "not found" page, and home page buttons that
+point to it are hidden.
+
 ### Home page
 
 `Settings › Storefront › Homepage` (Marketing or Store Manager) fills in the home
@@ -416,7 +523,20 @@ page. The layout and the order of sections are set by the website itself.
   Turn **Show on homepage** off to hide the section while retaining the copy.
   Heading and introduction are required before showing it. About revisions are
   not included in hero history, so keep a separate copy before replacing text.
-- Changes reach the website within a few minutes.
+- **Store menu cards:** `Settings › Storefront › Navigation` (Marketing or
+  Store Manager). Up to two picture cards in the Store menu on large screens,
+  each linking to a collection, category or product you pick from a list, with
+  a desktop image and an optional mobile image. Pick destinations rather than
+  typing addresses, so the cards keep working when handles change.
+- **Announcement bar:** `Settings › Storefront › Announcements`. Up to 20 short
+  messages above the header, shown in your order, each with its own switch,
+  optional start and end dates, a link to a page you pick, and optionally a
+  promotion whose code it shows. One switch hides the whole bar while keeping
+  the messages. An announcement whose link or promotion no longer exists is
+  hidden. Creating a promotion doesn't announce it; add the announcement
+  yourself.
+- Changes reach the website within a few minutes, or straight away when
+  `STOREFRONT_REVALIDATE_SECRET` is set.
 
 ### Bag reminders
 
@@ -461,8 +581,14 @@ store owner edits **Brand**.
 - **Home page title** (about 60 characters) and **description** (about 155):
   what search results show for the store. Other pages show "Page name | Store
   name".
-- **Share image:** 1200 x 630px, shown when someone shares a link to the store.
-  Product links use the product's photo instead.
+- **Share image:** 1200 x 630px, shown when someone shares a link to the
+  home page or a page without its own card.
+- **Link cards are automatic:** a shared product, collection or search link
+  shows a designed card with the photos, the name, the price ("From" for
+  collections), what's true right now (on sale, only a few left, new in,
+  coming soon) and a button such as **Buy now**. Nothing to set up; keep
+  product photos and collection banners good. WhatsApp and Facebook keep a
+  shared link's card for a while; Facebook's Sharing Debugger refreshes it.
 - **Products and categories:** each product and each category has a **Search &
   sharing** box for its own title and description. Leave it empty to use the
   product or category name and description.
@@ -526,15 +652,35 @@ store owner edits **Brand**.
 
 Customers and guest orders are under `Customers`. Use groups (VIP, stylists,
 staff) to target promotions and price lists. Export orders and products to CSV
-for bookkeeping. If a customer never received an email, a Super Admin can
-check `Settings › Workflows` for the failed send.
+for bookkeeping. If a customer never received an email, start with the order's
+**Customer emails** box and **Email review** (see "Customer emails").
 
-Email retries reuse the same prepared message. A new password-reset link,
-renewed invitation, partial refund or confirmed order edit is a separate
-message. Verification emails show an expiry time in UTC; requesting a new
-link is safer than using an old email that arrived late. If a send remains
-failed, ask the developer to review it before repeatedly resending. See
-[Email retry behavior](email-reliability.md) for technical limits.
+A customer's page has a **Support** box with what you need before answering
+them: their support requests, saved (wishlist) items, bag reminders sent or
+stopped, newsletter status, and whether their address is blocked from
+receiving email after a bounce or complaint.
+
+### What customers can do themselves
+
+Point customers to these before doing it for them:
+
+- **Account:** sign up with email or Google and verify their email. In their
+  account: **Your details** (name, phone, password, **Sign out of all
+  devices**), **Addresses**, **Preferences** (marketing emails), **Orders**,
+  **Support** and **Wishlist**. Changing their password, or resetting it by
+  email, signs them out everywhere else.
+- **Orders:** signed in, under **Orders** in their account. As a guest, from
+  the link in any order email (60 days), or **Track your order** with the order
+  number and email, which emails a fresh link.
+- **Returns:** from the order's page, while returns are on and the window is
+  open. Guests confirm by a link sent to the order's email.
+- **Help with an order:** **Get help** on the order's page (cancel, change the
+  address, exchange, damaged or missing item, question), with up to three
+  photos. It arrives in the Support inbox.
+- **Support conversations:** from the emailed link (90 days) or **Support** in
+  their account, where they can read your replies and answer.
+- **Saved items, Notify me and the newsletter:** a heart on any product; an
+  email when a size is back or a product launches; sign-up above the footer.
 
 ## 5. Team roles
 
