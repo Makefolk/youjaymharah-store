@@ -1,4 +1,4 @@
-import { createElement } from "react"
+import { createElement, type ComponentType, type ReactNode } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 
@@ -6,6 +6,12 @@ import { StorefrontSettingsProvider } from "@/features/site-settings/provider"
 import type { StorefrontSettings } from "@/lib/medusa/storefront-settings"
 
 import { BrandLoader } from "./brand-loader"
+
+/** The provider, with children passed as createElement's third argument. */
+const Provider = StorefrontSettingsProvider as ComponentType<{
+  settings: StorefrontSettings
+  children?: ReactNode
+}>
 
 function render(
   brand: Partial<StorefrontSettings["brand"]>,
@@ -15,10 +21,7 @@ function render(
     brand: { name: "YouJaymharah Trends", logo_url: null, ...brand },
   } as StorefrontSettings
   return renderToStaticMarkup(
-    createElement(StorefrontSettingsProvider, {
-      settings,
-      children: createElement(BrandLoader, props),
-    }),
+    createElement(Provider, { settings }, createElement(BrandLoader, props)),
   )
 }
 

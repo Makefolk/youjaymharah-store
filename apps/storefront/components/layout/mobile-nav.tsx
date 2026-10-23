@@ -5,7 +5,7 @@ import {
   ArrowRightIcon,
   CaretLeftIcon,
   CaretRightIcon,
-  ListIcon,
+  MagnifyingGlassIcon,
   XIcon,
 } from "@phosphor-icons/react"
 import Image from "next/image"
@@ -23,6 +23,7 @@ import { useOverlay } from "@/features/layout/overlays"
 import { useActiveMenuItem } from "@/features/catalog/use-active-menu-item"
 import { getMenuGroups, type MenuDepartment } from "@/lib/medusa/menu"
 import {
+  ACCOUNT_PATH,
   CONTACT_PATH,
   NEW_ARRIVALS_PATH,
   TRACK_ORDER_PATH,
@@ -31,6 +32,8 @@ import {
 import { cn } from "@/lib/util/cn"
 import NextLink from "next/link"
 import { useStorefrontSettings } from "@/features/site-settings/provider"
+
+import { UpdateDot, useAccountUpdates } from "./account-updates"
 
 type View =
   | { kind: "root" }
@@ -50,6 +53,8 @@ type NavProps = {
   activeHref: string | undefined
   onDrill: (view: View) => void
   onNavigate: () => void
+  onSearch: () => void
+  accountUpdates: number
 }
 
 const rowClass =
@@ -59,14 +64,17 @@ const actionClass =
   "mt-6 px-4 inline-flex items-center gap-2 text-[12px] font-medium tracking-[0.06em] uppercase font-medium underline underline-offset-4"
 
 /**
- * The mobile menu: a drawer from the left that drills down one level at a
- * time. With one department its groups (Clothing, Accessories) are the first
- * level; with several, the departments are.
+ * The phone menu: "Menu" beside the bag opens a panel that drops down from
+ * the top, with search, the catalogue (drilling down one level at a time) and
+ * the account links. With one department its groups (Clothing, Accessories)
+ * are the first level; with several, the departments are.
  */
 export function MobileNav() {
   const { menu, collectionMenu } = useCatalog()
   const active = useActiveMenuItem()
   const { open, setOpen } = useOverlay("mobile-nav")
+  const search = useOverlay("search")
+  const accountUpdates = useAccountUpdates()
   const { view, canGoBack, push, back, reset } = useDrillStack()
   const visibleView =
     view.kind === "collections" && !collectionMenu.tiles.length ? ROOT : view
@@ -78,14 +86,20 @@ export function MobileNav() {
       onOpenChangeComplete={(isOpen) => {
         if (!isOpen) reset()
       }}
-      swipeDirection="left"
+      swipeDirection="up"
     >
       <DrawerTrigger
-        aria-label="Open menu"
-        className="-ml-2 inline-flex w-10 items-center justify-center md:hidden"
+        aria-label={
+          accountUpdates
+            ? `Menu (${accountUpdates} account ${accountUpdates === 1 ? "update" : "updates"})`
+            : "Menu"
+        }
+        className="relative inline-flex items-center px-2 text-[12px] font-medium tracking-[0.06em] uppercase md:hidden"
       >
-        <ListIcon size={20} />
-        <span className="sr-only">toggle side menu</span>
+        Menu
+        {accountUpdates > 0 && (
+          <UpdateDot className="absolute top-1/2 right-0.5 -mt-2.5" />
+        )}
       </DrawerTrigger>
       <DrawerContent>
         <ScrollArea
@@ -106,6 +120,8 @@ export function MobileNav() {
                 activeHref={active.href ?? "#"}
                 onDrill={push}
                 onNavigate={() => setOpen(false)}
+                onSearch={() => search.setOpen(true)}
+                accountUpdates={accountUpdates}
               />
             </nav>
           </div>
@@ -115,6 +131,10 @@ export function MobileNav() {
   )
 }
 
+/**
+ * Lines up with the header it covers: the store name on the left and Close
+ * where Menu was, so the panel reads as the header opening downwards.
+ */
 function Header({
   title,
   canGoBack,
@@ -127,50 +147,48 @@ function Header({
   const { brand } = useStorefrontSettings()
 
   return (
-    <div className="sticky top-0 z-50 flex h-12 shrink-0 items-center justify-between bg-popover px-3">
+    <div className="sticky top-0 z-50 flex h-12 shrink-0 items-center justify-between border-b bg-popover px-5">
       {canGoBack ? (
         <button
           type="button"
           onClick={onBack}
-          className="-ml-2 inline-flex size-10 items-center justify-center"
-          aria-label="Back"
+          className="-ml-2 inline-flex h-10 items-center gap-1 pr-2"
         >
-          <CaretLeftIcon size={18} />
+          <CaretLeftIcon size={18} aria-hidden />
+          <DrawerTitle className="text-[15px] font-medium">{title}</DrawerTitle>
+          <span className="sr-only">, back</span>
         </button>
       ) : (
-        <DrawerClose
-          nativeButton={false}
-          render={
-            <NextLink
-              href={"/"}
-              className="relative z-10 py-1 transition-[filter] *:brightness-0"
-            />
-          }
-        >
-          {brand.logo_url ? (
-            <Image
-              src={brand.logo_url}
-              alt={brand.name}
-              width={150}
-              height={150}
-              className="h-auto w-8"
-              title={brand.name}
-            />
-          ) : (
-            <span className="text-[15px] font-medium">{brand.name}</span>
-          )}
-
-          <span className="sr-only">Home</span>
-        </DrawerClose>
+        <>
+          <DrawerTitle className="sr-only">{title}</DrawerTitle>
+          <DrawerClose
+            nativeButton={false}
+            render={
+              <NextLink
+                href={"/"}
+                className="relative z-10 py-1 font-display text-base font-semibold"
+              />
+            }
+          >
+            {brand.logo_url ? (
+              <Image
+                src={brand.logo_url}
+                alt={brand.name}
+                width={150}
+                height={150}
+                className="h-auto w-8 brightness-0"
+                title={brand.name}
+              />
+            ) : (
+              brand.name
+            )}
+            <span className="sr-only">Home</span>
+          </DrawerClose>
+        </>
       )}
-      <DrawerTitle className="text-display-lg font-medium tracking-[0.02em] uppercase">
-        {title}
-      </DrawerTitle>
-      <DrawerClose
-        aria-label="Close menu"
-        className="-mr-2 inline-flex size-10 items-center justify-center"
-      >
-        <XIcon size={18} />
+      <DrawerClose className="-mr-2 inline-flex h-10 items-center gap-1.5 px-2 text-[12px] font-medium tracking-[0.06em] uppercase">
+        Close
+        <XIcon size={14} aria-hidden />
       </DrawerClose>
     </div>
   )
@@ -195,11 +213,26 @@ function Panel({ view, ...nav }: NavProps & { view: View }) {
   }
 }
 
-function RootPanel({ menu, collectionMenu, onDrill, onNavigate }: NavProps) {
+function RootPanel({
+  menu,
+  collectionMenu,
+  onDrill,
+  onNavigate,
+  onSearch,
+  accountUpdates,
+}: NavProps) {
   const sole = menu.showDepartments ? undefined : menu.departments[0]
 
   return (
     <ul>
+      <li>
+        <button type="button" className={rowClass} onClick={onSearch}>
+          <span className="flex items-center gap-3">
+            <MagnifyingGlassIcon size={16} aria-hidden />
+            Search
+          </span>
+        </button>
+      </li>
       <CatalogEntries menu={menu} onDrill={onDrill} onNavigate={onNavigate} />
       <li>
         <LinkRow href={NEW_ARRIVALS_PATH} onNavigate={onNavigate}>
@@ -228,8 +261,23 @@ function RootPanel({ menu, collectionMenu, onDrill, onNavigate }: NavProps) {
           </ActionLink>
         </li>
       )}
-      {/* The header hides the wishlist on phones; these are its way in. */}
+      {/* The header shows only Menu and the bag on phones; the rest is here. */}
       <li className="mt-6 border-t border-border/70 pt-2">
+        <LinkRow href={ACCOUNT_PATH} onNavigate={onNavigate}>
+          <span className="relative">
+            Account
+            {accountUpdates > 0 && (
+              <>
+                <UpdateDot className="absolute top-0 -right-2.5" />
+                <span className="sr-only">
+                  {` (${accountUpdates} ${accountUpdates === 1 ? "update" : "updates"})`}
+                </span>
+              </>
+            )}
+          </span>
+        </LinkRow>
+      </li>
+      <li>
         <LinkRow href={WISHLIST_PATH} onNavigate={onNavigate}>
           Wishlist
         </LinkRow>

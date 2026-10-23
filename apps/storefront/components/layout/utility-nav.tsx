@@ -16,8 +16,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useCart } from "@/features/cart/hooks"
-import { useCustomer, useEmailVerification } from "@/features/customer/hooks"
-import { useSupportRequests } from "@/features/support/hooks"
 import { useOverlay } from "@/features/layout/overlays"
 import { getBagCount } from "@/lib/medusa/product-page"
 import {
@@ -26,6 +24,9 @@ import {
   WISHLIST_PATH,
 } from "@/lib/seo/routes"
 import { cn } from "@/lib/util/cn"
+
+import { UpdateDot, useAccountUpdates } from "./account-updates"
+import { MobileNav } from "./mobile-nav"
 
 export function UtilityNav({ className }: { className?: string }) {
   const search = useOverlay("search")
@@ -50,6 +51,8 @@ export function UtilityNav({ className }: { className?: string }) {
       </UtilityItem>
 
       <AccountItem />
+
+      <MobileNav />
 
       <BagItem />
     </nav>
@@ -131,18 +134,11 @@ function UtilityItem({
 }
 
 /**
- * The account icon, with a dot when something there needs the customer: an
- * email to verify, or a support reply waiting. Guests get no dot.
+ * The account icon, with a dot when something there needs the customer. On
+ * phones the account is in the menu instead, which carries the dot.
  */
 function AccountItem() {
-  const { data: customer } = useCustomer()
-  const verification = useEmailVerification({ enabled: Boolean(customer) })
-  const requests = useSupportRequests()
-  const replies = (requests.data ?? []).filter(
-    (request) => request.status === "awaiting_customer",
-  ).length
-  const unverified = verification.data?.verified === false
-  const updates = replies + (unverified ? 1 : 0)
+  const updates = useAccountUpdates()
 
   return (
     <UtilityItem
@@ -152,19 +148,11 @@ function AccountItem() {
           : "Account"
       }
       href={ACCOUNT_PATH}
+      className="max-md:hidden"
     >
       <UserIcon />
       {updates > 0 && (
-        <>
-          <span
-            aria-hidden
-            className="absolute bottom-1/5 left-1/2 inline-block size-1 -translate-x-1/2 rounded-full bg-gold"
-          />
-          <span
-            aria-hidden
-            className="absolute bottom-1/5 left-1/2 inline-block size-1 -translate-x-1/2 animate-ping rounded-full bg-gold motion-reduce:animate-none"
-          />
-        </>
+        <UpdateDot className="absolute bottom-1/5 left-1/2 -translate-x-1/2" />
       )}
     </UtilityItem>
   )
