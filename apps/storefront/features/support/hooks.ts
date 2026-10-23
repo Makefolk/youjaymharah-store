@@ -87,3 +87,17 @@ export function useReplyToRequest(requestId: string, access: string | null) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: requestsKey }),
   })
 }
+
+/**
+ * Emails the request's own address a fresh link, for an expired or
+ * cancelled one. Succeeds whether or not the request exists.
+ */
+export function useRequestSupportLink(requestId: string) {
+  return useMutation({
+    mutationFn: () =>
+      getBrowserSdk().client.fetch<{ sent: true }>(
+        `/store/support-requests/${encodeURIComponent(requestId)}/access-link`,
+        { method: "POST" },
+      ),
+  })
+}

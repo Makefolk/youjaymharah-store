@@ -1,4 +1,4 @@
-import { Button, Container, Img, Section, Text } from "react-email";
+import { Button, Container, Section, Text } from "react-email";
 
 import { EmailLayout } from "./components/layout";
 import type { BrandSummary } from "./constants";
@@ -14,7 +14,11 @@ export type SupportStaffEmailProps = {
   /** For contact-page requests: whether the order number matched their email. */
   order_matched?: boolean | null;
   message: string;
-  photos?: { url: string; name: string }[];
+  /**
+   * How many photos came with the message. They are private, so the email
+   * says so rather than linking them; staff see them in the inbox.
+   */
+  photo_count?: number;
   admin_url: string;
   brand?: BrandSummary;
 };
@@ -30,7 +34,7 @@ function SupportStaffEmailComponent(props: SupportStaffEmailProps) {
     order_number,
     order_matched,
     message,
-    photos = [],
+    photo_count = 0,
     admin_url,
     brand,
   } = props;
@@ -66,15 +70,13 @@ function SupportStaffEmailComponent(props: SupportStaffEmailProps) {
           ) : null}
         </Section>
         <Text className="whitespace-pre-wrap text-gray-800">{message}</Text>
-        {photos.map((photo) => (
-          <Img
-            key={photo.url}
-            src={photo.url}
-            alt={photo.name}
-            width="240"
-            className="my-2 rounded"
-          />
-        ))}
+        {photo_count > 0 && (
+          <Text className="text-gray-600">
+            {photo_count === 1
+              ? "1 photo attached. Open the request to see it."
+              : `${photo_count} photos attached. Open the request to see them.`}
+          </Text>
+        )}
         <Section className="my-6 text-center">
           <Button
             href={admin_url}
@@ -102,6 +104,7 @@ export default function SupportStaffEmailPreview() {
       email="ada@example.com"
       order_number={1042}
       message={"The heel came loose on the first wear."}
+      photo_count={2}
       admin_url="https://admin.example.com/support-inbox/sreq_123"
     />
   );

@@ -3,6 +3,7 @@ import {
   createSupportAccessToken,
   isValidSupportAccessToken,
   newSupportReference,
+  SUPPORT_ACCESS_TTL_MS,
 } from "../support";
 
 describe("support helpers", () => {
@@ -14,16 +15,57 @@ describe("support helpers", () => {
 
   it("opens only its own request, for its own email", () => {
     const token = createSupportAccessToken("sreq_1", "Ada@Example.com");
-    expect(isValidSupportAccessToken(token, "sreq_1", "ada@example.com")).toBe(
-      true,
-    );
-    expect(isValidSupportAccessToken(token, "sreq_2", "ada@example.com")).toBe(
+    const request = { id: "sreq_1", email: "ada@example.com" };
+    expect(isValidSupportAccessToken(token, request)).toBe(true);
+    expect(isValidSupportAccessToken(token, { ...request, id: "sreq_2" })).toBe(
       false,
     );
-    expect(isValidSupportAccessToken(token, "sreq_1", "eve@example.com")).toBe(
-      false,
+    expect(
+      isValidSupportAccessToken(token, {
+        ...request,
+        email: "eve@example.com",
+      }),
+    ).toBe(false);
+    expect(isValidSupportAccessToken(undefined, request)).toBe(false);
+  });
+
+  it("expires, and stops working once staff cancel the links", () => {
+    const now = Date.UTC(2026, 9, 23);
+    const request = { id: "sreq_1", email: "ada@example.com" };
+    const token = createSupportAccessToken(request.id, request.email, now);
+    expect(
+      isValidSupportAccessToken(
+        token,
+        request,
+        now + SUPPORT_ACCESS_TTL_MS + 1,
+      ),
+    ).toBe(false);
+
+    const cancelled = { ...request, links_revoked_at: new Date(now + 1000) };
+    expect(isValidSupportAccessToken(token, cancelled, now + 2000)).toBe(false);
+    const fresh = createSupportAccessToken(
+      request.id,
+      request.email,
+      now + 3000,
     );
-    expect(isValidSupportAccessToken(undefined, "sreq_1", "a@b.c")).toBe(false);
+    expect(isValidSupportAccessToken(fresh, cancelled, now + 4000)).toBe(true);
+  });
+
+  it("refuses a tampered expiry", () => {
+    const now = Date.UTC(2026, 9, 23);
+    const request = { id: "sreq_1", email: "ada@example.com" };
+    const [, signature] = createSupportAccessToken(
+      request.id,
+      request.email,
+      now,
+    ).split(".");
+    expect(
+      isValidSupportAccessToken(
+        `${now + 10 * SUPPORT_ACCESS_TTL_MS}.${signature}`,
+        request,
+        now,
+      ),
+    ).toBe(false);
   });
 
   it("accepts images by their bytes only", () => {

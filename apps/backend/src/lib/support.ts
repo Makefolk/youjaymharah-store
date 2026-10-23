@@ -52,28 +52,56 @@ function secret(): string {
   return process.env.JWT_SECRET || "supersecret";
 }
 
-function sign(requestId: string, email: string): string {
+/**
+ * How long an emailed request link works. Every email about the request
+ * carries a fresh one, so an active conversation never loses its link.
+ */
+export const SUPPORT_ACCESS_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+
+function sign(requestId: string, email: string, expires: number): string {
   return createHmac("sha256", secret())
-    .update(`support-access:${requestId}:${email.trim().toLowerCase()}`)
+    .update(
+      `support-access:${requestId}:${email.trim().toLowerCase()}:${expires}`,
+    )
     .digest("base64url");
 }
 
 /**
  * The key in a request's email links that lets a guest read and answer it.
- * Bound to the request and its email; it doesn't expire, as a conversation
- * can run for weeks, but it only ever opens that one request.
+ * Bound to the request and its email, and expires; staff can also cancel
+ * every link issued so far ("Cancel guest links" in the inbox).
  */
-export const createSupportAccessToken = (requestId: string, email: string) =>
-  sign(requestId, email);
+export function createSupportAccessToken(
+  requestId: string,
+  email: string,
+  now = Date.now(),
+): string {
+  const expires = now + SUPPORT_ACCESS_TTL_MS;
+  return `${expires}.${sign(requestId, email, expires)}`;
+}
 
 export function isValidSupportAccessToken(
   token: string | null | undefined,
-  requestId: string,
-  email: string,
+  request: {
+    id: string;
+    email: string;
+    links_revoked_at?: Date | string | null;
+  },
+  now = Date.now(),
 ): boolean {
   if (!token) return false;
-  const actual = Buffer.from(token);
-  const expected = Buffer.from(sign(requestId, email));
+  const [expiresText, given] = token.split(".");
+  const expires = Number(expiresText);
+  if (!given || !Number.isSafeInteger(expires) || expires <= now) return false;
+  // Issued before the links were cancelled.
+  const revokedAt = request.links_revoked_at
+    ? new Date(request.links_revoked_at).getTime()
+    : null;
+  if (revokedAt !== null && expires - SUPPORT_ACCESS_TTL_MS < revokedAt) {
+    return false;
+  }
+  const actual = Buffer.from(given);
+  const expected = Buffer.from(sign(request.id, request.email, expires));
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 

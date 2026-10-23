@@ -14,6 +14,7 @@ export type SupportRequest = {
   assigned_to: string | null;
   created_at: string;
   last_message_at: string;
+  links_revoked_at: string | null;
 };
 
 export type SupportMessage = {

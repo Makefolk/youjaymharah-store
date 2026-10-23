@@ -42,6 +42,11 @@ export const SupportRequest = model
     /** The admin user working it. */
     assigned_to: model.text().nullable(),
     last_message_at: model.dateTime(),
+    /**
+     * Emailed links issued before this stop working ("Cancel guest links" in
+     * the inbox). Signed-in owners are unaffected.
+     */
+    links_revoked_at: model.dateTime().nullable(),
     messages: model.hasMany(() => SupportMessage, { mappedBy: "request" }),
   })
   .indexes([

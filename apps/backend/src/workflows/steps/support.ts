@@ -1,8 +1,13 @@
+import { randomUUID } from "node:crypto";
 import type {
   CreateNotificationDTO,
   IFileModuleService,
 } from "@medusajs/framework/types";
-import { MedusaError, Modules } from "@medusajs/framework/utils";
+import {
+  ContainerRegistrationKeys,
+  MedusaError,
+  Modules,
+} from "@medusajs/framework/utils";
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk";
 
 import {
@@ -13,6 +18,11 @@ import {
   SUPPORT_KIND_LABELS,
   type SupportKind,
 } from "../../lib/support";
+import {
+  type PrivatePhoto,
+  type StoredPhoto,
+  supportFileStore,
+} from "../../lib/support-files";
 import { BRANDING_MODULE } from "../../modules/branding";
 import type BrandingModuleService from "../../modules/branding/service";
 import { EmailTemplates } from "../../modules/resend/emails";
@@ -29,11 +39,15 @@ import { SUPPORT_MODULE } from "../../modules/support";
 import type SupportModuleService from "../../modules/support/service";
 
 export type PhotoUpload = { name: string; data: string };
-export type StoredPhoto = { url: string; name: string };
+export type { StoredPhoto };
+
+type StoredIds = { private: string[]; public: string[] };
 
 /**
- * Checks each photo by its bytes, then stores it. Undone by deleting what
- * was stored, if a later step fails.
+ * Checks each photo by its bytes, then stores it in the private support
+ * bucket. Outside production without that bucket, the file module stores it
+ * publicly instead, for local testing; production refuses photos rather
+ * than publish them. Undone by deleting what was stored.
  */
 export const uploadSupportPhotosStep = createStep(
   "upload-support-photos",
@@ -49,32 +63,79 @@ export const uploadSupportPhotosStep = createStep(
       const result = checkAttachment(photo.data);
       if (!result.ok)
         throw new MedusaError(MedusaError.Types.INVALID_DATA, result.error);
-      return { ...photo, type: result.type };
+      return {
+        ...photo,
+        type: result.type,
+        filename: photo.name.replace(/[^\w.-]+/g, "-").slice(0, 80) || "photo",
+      };
     });
     if (!checked.length)
-      return new StepResponse<StoredPhoto[], string[]>([], []);
+      return new StepResponse<StoredPhoto[], StoredIds>([], {
+        private: [],
+        public: [],
+      });
+
+    const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
+    const privateStore = supportFileStore(logger);
+    if (privateStore) {
+      const stored: PrivatePhoto[] = [];
+      try {
+        for (const photo of checked) {
+          const { key } = await privateStore.upload({
+            filename: photo.filename,
+            mimeType: photo.type,
+            content: photo.data,
+          });
+          stored.push({ key, name: photo.name, type: photo.type });
+        }
+      } catch (error) {
+        await privateStore
+          .delete(stored.map((photo) => ({ fileKey: photo.key })))
+          .catch(() => undefined);
+        throw error;
+      }
+      return new StepResponse<StoredPhoto[], StoredIds>(stored, {
+        private: stored.map((photo) => photo.key),
+        public: [],
+      });
+    }
+
+    if (process.env.NODE_ENV === "production") {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "Photos can't be attached right now. Describe the problem in words and we'll ask for photos by email if we need them.",
+      );
+    }
 
     const files: IFileModuleService = container.resolve(Modules.FILE);
     const stored = await files.createFiles(
       checked.map((photo) => ({
-        filename: photo.name.replace(/[^\w.-]+/g, "-").slice(0, 80) || "photo",
+        filename: photo.filename,
         mimeType: photo.type,
         content: photo.data,
         access: "public" as const,
       })),
     );
-    return new StepResponse(
+    return new StepResponse<StoredPhoto[], StoredIds>(
       stored.map((file, index) => ({
         url: file.url,
         name: checked[index].name,
       })),
-      stored.map((file) => file.id),
+      { private: [], public: stored.map((file) => file.id) },
     );
   },
   async (ids, { container }) => {
-    if (!ids?.length) return;
-    const files: IFileModuleService = container.resolve(Modules.FILE);
-    await files.deleteFiles(ids);
+    if (!ids) return;
+    if (ids.private.length) {
+      const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
+      await supportFileStore(logger)?.delete(
+        ids.private.map((fileKey) => ({ fileKey })),
+      );
+    }
+    if (ids.public.length) {
+      const files: IFileModuleService = container.resolve(Modules.FILE);
+      await files.deleteFiles(ids.public);
+    }
   },
 );
 
@@ -246,7 +307,7 @@ export const prepareSupportEmailsStep = createStep(
         order_number: request.order_display_id,
         order_matched: input.order_matched ?? null,
         message: message.body,
-        photos,
+        photo_count: photos.length,
         admin_url: adminUrl,
         // Replying from the support inbox answers the customer.
         reply_to: request.email,
@@ -316,5 +377,69 @@ export const updateSupportRequestStep = createStep(
     if (!previous) return;
     const service: SupportModuleService = container.resolve(SUPPORT_MODULE);
     await service.updateSupportRequests(previous);
+  },
+);
+
+/**
+ * "Cancel guest links": every emailed link to the request issued until now
+ * stops working. The signed-in owner keeps access, and the next email to
+ * the customer carries a working link again.
+ */
+export const revokeSupportLinksStep = createStep(
+  "revoke-support-links",
+  async (input: { id: string }, { container }) => {
+    const service: SupportModuleService = container.resolve(SUPPORT_MODULE);
+    const previous = await service.retrieveSupportRequest(input.id);
+    const updated = await service.updateSupportRequests({
+      id: input.id,
+      links_revoked_at: new Date(),
+    });
+    return new StepResponse(updated, {
+      id: previous.id,
+      links_revoked_at: previous.links_revoked_at,
+    });
+  },
+  async (previous, { container }) => {
+    if (!previous) return;
+    const service: SupportModuleService = container.resolve(SUPPORT_MODULE);
+    await service.updateSupportRequests(previous);
+  },
+);
+
+/**
+ * A fresh link to the request, emailed to the request's own address only,
+ * for a customer whose link expired or was cancelled. Nothing for a request
+ * that doesn't exist; the route answers the same either way.
+ */
+export const prepareSupportLinkEmailStep = createStep(
+  "prepare-support-link-email",
+  async (input: { request_id: string }, { container }) => {
+    const service: SupportModuleService = container.resolve(SUPPORT_MODULE);
+    const [request] = await service.listSupportRequests(
+      { id: input.request_id },
+      { take: 1 },
+    );
+    if (!request) return new StepResponse<CreateNotificationDTO[]>([]);
+    const brand = await container
+      .resolve<BrandingModuleService>(BRANDING_MODULE)
+      .retrieveSettings();
+    return new StepResponse<CreateNotificationDTO[]>([
+      {
+        to: request.email,
+        channel: "email",
+        template: EmailTemplates.SUPPORT_CUSTOMER,
+        resource_type: request.order_id ? "order" : undefined,
+        resource_id: request.order_id ?? undefined,
+        ...emailIdempotency(`support-link:${request.id}:${randomUUID()}`),
+        data: {
+          event: "link",
+          reference: request.reference,
+          name: request.name,
+          message: "",
+          url: `${STOREFRONT_URL.replace(/\/$/, "")}/support/${request.id}?access=${createSupportAccessToken(request.id, request.email)}`,
+          brand,
+        },
+      },
+    ]);
   },
 );

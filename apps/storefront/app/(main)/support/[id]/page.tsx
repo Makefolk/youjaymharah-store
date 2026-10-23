@@ -6,6 +6,7 @@ import { fetchSupportRequestOnServer } from "@/features/support/server"
 import { formatOrderNumber } from "@/lib/medusa/order"
 import { CONTACT_PATH, orderPath, SIGN_IN_PATH } from "@/lib/seo/routes"
 
+import { FreshLink } from "./fresh-link"
 import { SupportThread } from "./support-thread"
 
 export const metadata: Metadata = {
@@ -25,9 +26,13 @@ export default async function SupportRequestPage({
 
   if (!request) {
     return (
-      <AccountShell title="Request not found">
+      <AccountShell
+        title={key ? "This link no longer works" : "Request not found"}
+      >
         <p className="text-[15px] text-muted-foreground">
-          Open it from the link in our email, or{" "}
+          {key
+            ? "Links to a request work for 90 days, and we can cancel them. We can email a fresh one to the address the request was made with, or "
+            : "Open it from the link in our email, or "}
           <Link
             href={SIGN_IN_PATH}
             className="text-foreground underline underline-offset-4"
@@ -43,6 +48,11 @@ export default async function SupportRequestPage({
           </Link>
           .
         </p>
+        {key && (
+          <div className="mt-6">
+            <FreshLink requestId={id} />
+          </div>
+        )}
       </AccountShell>
     )
   }

@@ -2651,6 +2651,41 @@ export const ROUTES: RouteDoc[] = [
   },
   {
     method: "GET",
+    path: "/store/support-requests/{id}/photos/{message_id}/{index}",
+    tag: "Support",
+    summary: "A photo from a support conversation",
+    description:
+      "The image itself, for the request's signed-in customer or with `access`. Photos are kept in a private bucket and only served this way; the `url` of a message's photo points here. Never cached beyond the browser. Rate limited to 120 a minute.",
+    auth: "public",
+    query: [
+      {
+        name: "access",
+        description: "The key from the email link.",
+        schema: z.string(),
+      },
+    ],
+    response: {
+      description: "A JPEG, PNG or WebP image.",
+      schema: z.unknown(),
+    },
+    errors: [{ status: 404, description: "Not found, or not yours." }],
+  },
+  {
+    method: "POST",
+    path: "/store/support-requests/{id}/access-link",
+    tag: "Support",
+    summary: "Email a fresh link to a request",
+    description:
+      "For a customer whose emailed link expired (links last 90 days) or was cancelled by staff. The link goes only to the request's own email; the answer is the same whether or not the request exists. Rate limited to 5 a minute.",
+    auth: "public",
+    response: {
+      description: "Accepted.",
+      schema: z.object({ sent: z.literal(true) }),
+    },
+    errors: [{ status: 429, description: "Too many requests." }],
+  },
+  {
+    method: "GET",
     path: "/admin/support-requests",
     tag: "Support",
     summary: "Support inbox",
@@ -2721,6 +2756,35 @@ export const ROUTES: RouteDoc[] = [
     body: AdminUpdateSupportRequest,
     response: {
       description: "The request after the change.",
+      schema: z.object({ request: z.record(z.string(), z.unknown()) }),
+    },
+  },
+  {
+    method: "GET",
+    path: "/admin/support-requests/{id}/photos/{message_id}/{index}",
+    tag: "Support",
+    summary: "A photo from a support conversation",
+    description:
+      "The image itself, for staff who can read support requests. The `url` of a message's photo in GET /admin/support-requests/{id} points here.",
+    auth: "admin",
+    policies: ["support_request:read"],
+    response: {
+      description: "A JPEG, PNG or WebP image.",
+      schema: z.unknown(),
+    },
+    errors: [{ status: 404, description: "No such photo." }],
+  },
+  {
+    method: "POST",
+    path: "/admin/support-requests/{id}/revoke-links",
+    tag: "Support",
+    summary: "Cancel the customer's emailed links",
+    description:
+      "Every link to the request emailed so far stops working, for a link that was forwarded or leaked. The signed-in owner keeps access, and the next email to the customer carries a new link.",
+    auth: "admin",
+    policies: ["support_request:update"],
+    response: {
+      description: "The request.",
       schema: z.object({ request: z.record(z.string(), z.unknown()) }),
     },
   },

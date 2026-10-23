@@ -12,7 +12,10 @@ export const SupportMessage = model
     body: model.text(),
     /** A staff note the customer never sees. */
     internal: model.boolean().default(false),
-    /** Photos: { files: [{ url, name }] }. */
+    /**
+     * Photos: { files: [{ key, name, type }] } in the private support bucket
+     * (lib/support-files.ts), or { url, name } stored publicly in development.
+     */
     attachments: model.json().nullable(),
     request: model.belongsTo(() => SupportRequest, { mappedBy: "messages" }),
   })

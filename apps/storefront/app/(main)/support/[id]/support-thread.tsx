@@ -22,6 +22,15 @@ export const STATUS_TEXT: Record<SupportStatus, string> = {
   resolved: "Resolved",
 }
 
+/**
+ * Photos are private: their URL is a backend path, fetched through the
+ * proxy with this browser's sign-in or the request's link key.
+ */
+function photoSrc(url: string, access: string | null) {
+  if (!url.startsWith("/store/")) return url
+  return `/api/medusa${url}${access ? `?access=${encodeURIComponent(access)}` : ""}`
+}
+
 export function SupportThread({
   request,
   access,
@@ -78,13 +87,13 @@ export function SupportThread({
                 {message.photos.map((photo) => (
                   <a
                     key={photo.url}
-                    href={photo.url}
+                    href={photoSrc(photo.url, access)}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- customer photos from storage */}
+                    {/* eslint-disable-next-line @next/next/no-img-element -- private photos, served after an access check */}
                     <img
-                      src={photo.url}
+                      src={photoSrc(photo.url, access)}
                       alt={photo.name}
                       className="size-20 object-cover"
                     />

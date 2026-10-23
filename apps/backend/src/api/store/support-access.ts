@@ -2,6 +2,7 @@ import type { AuthenticatedMedusaRequest } from "@medusajs/framework/http";
 import { MedusaError } from "@medusajs/framework/utils";
 
 import { isValidSupportAccessToken } from "../../lib/support";
+import { photoLinks } from "../support-photos";
 import { SUPPORT_MODULE } from "../../modules/support";
 import type SupportModuleService from "../../modules/support/service";
 
@@ -23,7 +24,7 @@ export async function loadAccessibleRequest(
     request &&
     ((req.auth_context?.actor_id &&
       request.customer_id === req.auth_context.actor_id) ||
-      isValidSupportAccessToken(access, request.id, request.email));
+      isValidSupportAccessToken(access, request));
   if (!request || !allowed) {
     throw new MedusaError(MedusaError.Types.NOT_FOUND, "Request not found.");
   }
@@ -46,12 +47,7 @@ export async function publicThread(
     // Staff are "the team" to customers; the name is their own choice.
     author_name: message.author === "customer" ? message.author_name : null,
     body: message.body,
-    photos:
-      (
-        message.attachments as {
-          files?: { url: string; name: string }[];
-        } | null
-      )?.files ?? [],
+    photos: photoLinks(`/store/support-requests/${requestId}`, message),
     created_at: new Date(message.created_at).toISOString(),
   }));
 }

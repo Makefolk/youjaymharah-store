@@ -7,6 +7,7 @@ import type { AdminUpdateSupportRequestType } from "../../../middlewares";
 import { SUPPORT_MODULE } from "../../../../modules/support";
 import type SupportModuleService from "../../../../modules/support/service";
 import { updateSupportRequestWorkflow } from "../../../../workflows/support";
+import { photoLinks } from "../../../support-photos";
 
 /** A request with its whole conversation, staff notes included. */
 export const GET = async (
@@ -19,7 +20,22 @@ export const GET = async (
     { request_id: request.id },
     { order: { created_at: "ASC" } },
   );
-  res.json({ request: { ...request, messages } });
+  res.json({
+    request: {
+      ...request,
+      messages: messages.map((message) => ({
+        ...message,
+        attachments: message.attachments
+          ? {
+              files: photoLinks(
+                `/admin/support-requests/${request.id}`,
+                message,
+              ),
+            }
+          : null,
+      })),
+    },
+  });
 };
 
 /** Status, priority and who is working it. */

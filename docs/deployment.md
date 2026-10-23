@@ -391,13 +391,13 @@ docker compose run --rm medusa-server medusa user -e someone@example.com -p '<pa
 
 **State on the VPS.**
 
-| Data                                                    | Where                                  | If lost                                                                     |
-| ------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------- |
-| Orders, customers, catalogue, search index              | Neon                                   | Not on the VPS; covered by Neon's restore window                            |
-| Uploaded images and files                               | S3/R2 bucket                           | Not on the VPS                                                              |
-| Queued jobs, in-flight workflows, admin sessions, cache | `redis_data` volume (append-only file) | Pending emails and retries are lost; admins sign in again. No business data |
-| TLS certificates, ACME account                          | `caddy_data` volume                    | Reissued automatically, subject to Let's Encrypt rate limits                |
-| Configuration and secrets                               | `.env`, `backend.env`                  | Keep a copy in a password manager                                           |
+| Data                                                    | Where                                                                                                | If lost                                                                     |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Orders, customers, catalogue, search index              | Neon                                                                                                 | Not on the VPS; covered by Neon's restore window                            |
+| Uploaded images and files                               | S3/R2 bucket; support photos in a separate private bucket (`SUPPORT_FILES_BUCKET`, no public access) | Not on the VPS                                                              |
+| Queued jobs, in-flight workflows, admin sessions, cache | `redis_data` volume (append-only file)                                                               | Pending emails and retries are lost; admins sign in again. No business data |
+| TLS certificates, ACME account                          | `caddy_data` volume                                                                                  | Reissued automatically, subject to Let's Encrypt rate limits                |
+| Configuration and secrets                               | `.env`, `backend.env`                                                                                | Keep a copy in a password manager                                           |
 
 No local backup job is needed. Back up the two env files, and snapshot the
 VPS through OVH if you want faster rebuilds.

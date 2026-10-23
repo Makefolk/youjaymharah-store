@@ -15,6 +15,8 @@ import {
   uploadSupportPhotosStep,
   type PhotoUpload,
   type UpdateSupportRequestInput,
+  prepareSupportLinkEmailStep,
+  revokeSupportLinksStep,
 } from "./steps/support";
 
 export type CreateSupportRequestWorkflowInput = {
@@ -113,5 +115,23 @@ export const linkSupportRequestsWorkflow = createWorkflow(
   "link-support-requests",
   function (input: { customer_id: string; email: string }) {
     return new WorkflowResponse(linkSupportRequestsStep(input));
+  },
+);
+
+/** Staff cancel every emailed link to a request issued so far. */
+export const revokeSupportLinksWorkflow = createWorkflow(
+  "revoke-support-links",
+  function (input: { id: string }) {
+    return new WorkflowResponse(revokeSupportLinksStep(input));
+  },
+);
+
+/** Emails the request's address a fresh link to it. */
+export const sendSupportLinkWorkflow = createWorkflow(
+  "send-support-link",
+  function (input: { request_id: string }) {
+    const notifications = prepareSupportLinkEmailStep(input);
+    sendPreparedEmailsStep(notifications);
+    return new WorkflowResponse({ sent: true });
   },
 );

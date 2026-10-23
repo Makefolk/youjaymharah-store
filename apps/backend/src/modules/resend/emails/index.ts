@@ -198,7 +198,9 @@ const registry: Record<EmailTemplate, TemplateEntry> = {
       subject:
         event === "reply"
           ? `Re: your message (${reference})`
-          : brandName(data, `We've got your message (${reference})`),
+          : event === "link"
+            ? `Your link to request ${reference}`
+            : brandName(data, `We've got your message (${reference})`),
       react: supportCustomerEmail(
         data as Parameters<typeof supportCustomerEmail>[0],
       ),

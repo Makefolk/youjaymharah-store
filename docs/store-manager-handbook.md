@@ -267,6 +267,22 @@ Guides: [Returns](https://docs.medusajs.com/user-guide/orders/returns) ·
 [Exchanges](https://docs.medusajs.com/user-guide/orders/exchanges) ·
 [Claims](https://docs.medusajs.com/user-guide/orders/claims)
 
+### Support inbox
+
+Messages from the contact page and each order's **Get help** form arrive in
+**Support inbox**, and are also emailed to the support address. Reply in the
+inbox, so the conversation stays in one place. The customer is emailed your
+reply with a link back to the conversation. Use **staff notes** for anything
+the customer mustn't see. Set the status, priority and who is working on it
+in the side panel.
+
+- Requests about cancelling, changing an address, exchanges or damaged items
+  don't change the order by themselves. Do it on the order, then reply.
+- Customer photos are private. They show in the inbox only, never in emails.
+- Emailed links to a conversation work for 90 days. If one was forwarded or
+  leaked, use **Cancel guest links**. Your next reply sends a new one, and the
+  customer can ask for one from the expired page.
+
 ### Editing or cancelling an order
 
 Before shipping you can edit an order (swap a size, add or remove items). With

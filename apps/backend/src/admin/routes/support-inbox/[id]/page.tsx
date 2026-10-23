@@ -9,6 +9,7 @@ import {
   Text,
   Textarea,
   toast,
+  usePrompt,
 } from "@medusajs/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -41,6 +42,7 @@ const SupportRequestPage = () => {
   const queryClient = useQueryClient();
   const { can } = usePermissions();
   const canUpdate = can("support_request", "update");
+  const prompt = usePrompt();
   const key = ["support-request", id];
 
   const request = useQuery({
@@ -76,6 +78,29 @@ const SupportRequestPage = () => {
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
+  const revokeLinks = useMutation({
+    mutationFn: () =>
+      sdk.client.fetch(`/admin/support-requests/${id}/revoke-links`, {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      toast.success("Earlier links no longer work.");
+      refresh();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const confirmRevokeLinks = async () => {
+    const confirmed = await prompt({
+      title: "Cancel the customer's links?",
+      description:
+        "Every link to this request we've emailed so far stops working, for a link that was forwarded or leaked. The customer can still open it signed in, and your next reply emails a new link.",
+      confirmText: "Cancel links",
+      cancelText: "Keep them",
+    });
+    if (confirmed) revokeLinks.mutate();
+  };
 
   if (request.isLoading) {
     return (
@@ -211,10 +236,36 @@ const SupportRequestPage = () => {
             Open customer
           </Link>
         )}
+        {canUpdate && (
+          <div className="flex flex-col gap-1 border-t pt-4">
+            <Button
+              size="small"
+              variant="secondary"
+              isLoading={revokeLinks.isPending}
+              onClick={confirmRevokeLinks}
+            >
+              Cancel guest links
+            </Button>
+            <Text size="small" className="text-ui-fg-subtle">
+              {r.links_revoked_at
+                ? `Links sent before ${when(r.links_revoked_at)} no longer work.`
+                : "Emailed links work for 90 days."}
+            </Text>
+          </div>
+        )}
       </Container>
     </div>
   );
 };
+
+/**
+ * Private photos come as backend paths (`/admin/support-requests/...`),
+ * served after a permission check with the dashboard's session cookie.
+ */
+const photoSrc = (url: string) =>
+  url.startsWith("/")
+    ? `${(import.meta.env.VITE_BACKEND_URL || "").replace(/\/$/, "")}${url}`
+    : url;
 
 const Message = ({ message }: { message: SupportMessage }) => (
   <div
@@ -241,9 +292,14 @@ const Message = ({ message }: { message: SupportMessage }) => (
     {(message.attachments?.files ?? []).length > 0 && (
       <div className="mt-3 flex flex-wrap gap-2">
         {message.attachments!.files!.map((file) => (
-          <a key={file.url} href={file.url} target="_blank" rel="noreferrer">
+          <a
+            key={file.url}
+            href={photoSrc(file.url)}
+            target="_blank"
+            rel="noreferrer"
+          >
             <img
-              src={file.url}
+              src={photoSrc(file.url)}
               alt={file.name}
               className="h-24 w-24 rounded-md object-cover"
             />

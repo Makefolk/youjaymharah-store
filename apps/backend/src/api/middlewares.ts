@@ -1176,6 +1176,22 @@ export default defineMiddlewares({
       ],
     },
     {
+      matcher: "/store/support-requests/:id/photos/:message_id/:index",
+      method: ["GET"],
+      middlewares: [
+        rateLimit("support-photo", 120),
+        authenticate("customer", ["session", "bearer"], {
+          allowUnauthenticated: true,
+        }),
+        validateAndTransformQuery<BaseEntity>(StoreSupportAccess, {}),
+      ],
+    },
+    {
+      matcher: "/store/support-requests/:id/access-link",
+      method: ["POST"],
+      middlewares: [rateLimit("support-access-link", 5)],
+    },
+    {
       matcher: "/store/support-requests/:id/messages",
       method: ["POST"],
       bodyParser: { sizeLimit: "15mb" },
@@ -1204,6 +1220,16 @@ export default defineMiddlewares({
       matcher: "/admin/support-requests/:id",
       method: ["POST"],
       middlewares: [validateAndTransformBody(AdminUpdateSupportRequest)],
+      policies: [{ resource: "support_request", operation: "update" }],
+    },
+    {
+      matcher: "/admin/support-requests/:id/photos/:message_id/:index",
+      method: ["GET"],
+      policies: [{ resource: "support_request", operation: "read" }],
+    },
+    {
+      matcher: "/admin/support-requests/:id/revoke-links",
+      method: ["POST"],
       policies: [{ resource: "support_request", operation: "update" }],
     },
     {

@@ -13295,6 +13295,157 @@
         }
       }
     },
+    "/store/support-requests/{id}/photos/{message_id}/{index}": {
+      "get": {
+        "operationId": "getStoreSupportRequestsIdPhotosMessageIdIndex",
+        "tags": [
+          "Support"
+        ],
+        "summary": "A photo from a support conversation",
+        "description": "The image itself, for the request's signed-in customer or with `access`. Photos are kept in a private bucket and only served this way; the `url` of a message's photo points here. Never cached beyond the browser. Rate limited to 120 a minute.",
+        "security": [
+          {
+            "publishableKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "description": "The message_id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "description": "The index of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "access",
+            "in": "query",
+            "required": false,
+            "description": "The key from the email link.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A JPEG, PNG or WebP image.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid publishable API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not yours.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/store/support-requests/{id}/access-link": {
+      "post": {
+        "operationId": "postStoreSupportRequestsIdAccessLink",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Email a fresh link to a request",
+        "description": "For a customer whose emailed link expired (links last 90 days) or was cancelled by staff. The link goes only to the request's own email; the answer is the same whether or not the request exists. Rate limited to 5 a minute.",
+        "security": [
+          {
+            "publishableKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sent": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "sent"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid publishable API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/support-requests": {
       "get": {
         "operationId": "getAdminSupportRequests",
@@ -13580,6 +13731,153 @@
         "responses": {
           "200": {
             "description": "The request after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "request"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/support-requests/{id}/photos/{message_id}/{index}": {
+      "get": {
+        "operationId": "getAdminSupportRequestsIdPhotosMessageIdIndex",
+        "tags": [
+          "Support"
+        ],
+        "summary": "A photo from a support conversation",
+        "description": "The image itself, for staff who can read support requests. The `url` of a message's photo in GET /admin/support-requests/{id} points here.",
+        "x-required-policies": [
+          "support_request:read"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "description": "The message_id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "description": "The index of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A JPEG, PNG or WebP image.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid admin token or session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such photo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/support-requests/{id}/revoke-links": {
+      "post": {
+        "operationId": "postAdminSupportRequestsIdRevokeLinks",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Cancel the customer's emailed links",
+        "description": "Every link to the request emailed so far stops working, for a link that was forwarded or leaked. The signed-in owner keeps access, and the next email to the customer carries a new link.",
+        "x-required-policies": [
+          "support_request:update"
+        ],
+        "security": [
+          {
+            "adminJwt": []
+          },
+          {
+            "adminSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the resource.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request.",
             "content": {
               "application/json": {
                 "schema": {
