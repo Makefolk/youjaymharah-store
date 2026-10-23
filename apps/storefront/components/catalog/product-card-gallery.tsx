@@ -77,14 +77,7 @@ export function ProductCardGallery({
     () => 0,
   )
 
-  // A mouse over the card shows its second photo, faded in over the first,
-  // and the lines and arrows follow as if the carousel had moved.
-  const [hovering, setHovering] = useState(false)
-  const peeking = hovering && current === 0 && images.length > 1
-  const shown = peeking ? 1 : current
-
   function goTo(index: number) {
-    setHovering(false)
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches
@@ -108,15 +101,11 @@ export function ProductCardGallery({
             0,
             Math.min(
               images.length - 1,
-              shown + (event.key === "ArrowRight" ? 1 : -1),
+              current + (event.key === "ArrowRight" ? 1 : -1),
             ),
           ),
         )
       }}
-      onPointerEnter={(event) => {
-        if (event.pointerType === "mouse") setHovering(true)
-      }}
-      onPointerLeave={() => setHovering(false)}
       onPointerDownCapture={(event) => {
         gesture.current = { x: event.clientX, y: event.clientY, dragged: false }
       }}
@@ -170,56 +159,37 @@ export function ProductCardGallery({
           Image coming soon
         </Link>
       )}
-      {images.length > 1 && (
-        <div
-          aria-hidden
-          className={cn(
-            "pointer-events-none absolute inset-0 transition-opacity duration-500 ease-out motion-reduce:transition-none",
-            peeking ? "opacity-100" : "opacity-0",
-          )}
-        >
-          <Image
-            src={images[1].url}
-            alt=""
-            fill
-            sizes={sizes}
-            loading="lazy"
-            draggable={false}
-            className="object-cover"
-          />
-        </div>
-      )}
       {images.length > 1 && showArrows && (
         <>
-          {shown > 0 && (
+          {current > 0 && (
             <button
               type="button"
               aria-label={`Previous image of ${title}`}
               className={cn(arrowClass, "left-2")}
               onClick={(event) => {
                 if (
-                  shown === 1 &&
+                  current === 1 &&
                   event.currentTarget.matches(":focus-visible")
                 )
                   root.current?.focus({ preventScroll: true })
-                goTo(shown - 1)
+                goTo(current - 1)
               }}
             >
               <CaretLeftIcon aria-hidden className="size-5" />
             </button>
           )}
-          {shown < images.length - 1 && (
+          {current < images.length - 1 && (
             <button
               type="button"
               aria-label={`Next image of ${title}`}
               className={cn(arrowClass, "right-2")}
               onClick={(event) => {
                 if (
-                  shown === images.length - 2 &&
+                  current === images.length - 2 &&
                   event.currentTarget.matches(":focus-visible")
                 )
                   root.current?.focus({ preventScroll: true })
-                goTo(shown + 1)
+                goTo(current + 1)
               }}
             >
               <CaretRightIcon aria-hidden className="size-5" />
@@ -243,7 +213,7 @@ export function ProductCardGallery({
               key={image.url}
               type="button"
               aria-label={`Show image ${index + 1} of ${images.length}`}
-              aria-current={index === shown ? "true" : undefined}
+              aria-current={index === current ? "true" : undefined}
               // The line is 2px; the button is taller so it's easy to tap.
               className="flex h-6 min-w-0 flex-1 items-end pb-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white"
               onClick={() => goTo(index)}
@@ -252,7 +222,7 @@ export function ProductCardGallery({
                 aria-hidden
                 className={cn(
                   "h-0.5 w-full shadow-[0_0_2px_rgb(0_0_0/0.3)] transition-colors duration-300",
-                  index === shown ? "bg-gold" : "bg-white/80",
+                  index === current ? "bg-gold" : "bg-white/80",
                 )}
               />
             </button>
