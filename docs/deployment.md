@@ -424,7 +424,10 @@ VPS through OVH if you want faster rebuilds.
   (`https://api.<domain>/health`) and `STOREFRONT_HEALTH_URL`
   (`https://<domain>/api/health`) every 15 minutes and opens an issue when either
   fails. Both must return HTTP 200 over HTTPS. Missing configuration fails the
-  check. It is a backstop: pair it with an external monitor on both endpoints.
+  check. It also probes `HEALTH_URL` + `/operations`, which fails when the
+  worker has been quiet for 5 minutes or payment checks are over 30 minutes
+  overdue: background work stopping doesn't show on `/health`. It is a
+  backstop: pair it with an external monitor on all three endpoints.
 
 ## Before going live
 

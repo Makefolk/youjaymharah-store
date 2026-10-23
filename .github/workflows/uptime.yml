@@ -27,7 +27,12 @@ jobs:
         run: |
           failed=0
           status=""
-          for variable in HEALTH_URL STOREFRONT_HEALTH_URL; do
+          # Background work (worker heartbeat, overdue payment checks), next to
+          # the API's /health: https://api.example.com/health/operations.
+          if [ -n "$HEALTH_URL" ]; then
+            export OPERATIONS_HEALTH_URL="${HEALTH_URL%/}/operations"
+          fi
+          for variable in HEALTH_URL STOREFRONT_HEALTH_URL OPERATIONS_HEALTH_URL; do
             url="${!variable}"
             if [ -z "$url" ]; then
               echo "::error::$variable is not configured."

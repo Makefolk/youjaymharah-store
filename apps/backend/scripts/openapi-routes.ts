@@ -3107,6 +3107,29 @@ export const ROUTES: RouteDoc[] = [
     ],
   },
   {
+    method: "GET",
+    path: "/health/operations",
+    tag: "Operations",
+    summary: "Background work check",
+    description:
+      "Whether background work is running: `worker` fails when the worker's once-a-minute heartbeat is over 5 minutes old, `payment_checks` when payment reconciliation has a check over 30 minutes overdue. The uptime probe reads it; the deploy gate does not, so a restarting worker can't fail a release. States only, never counts. Never cached.",
+    auth: "public",
+    response: {
+      description: "Background work is running.",
+      schema: z.object({
+        status: z.enum(["ok", "unavailable"]),
+        checks: z.record(z.string(), z.enum(["ok", "fail", "not_configured"])),
+      }),
+    },
+    errors: [
+      {
+        status: 503,
+        description:
+          "The worker is quiet or checks are overdue; the body has the same shape with `status: unavailable`.",
+      },
+    ],
+  },
+  {
     method: "POST",
     path: "/auth/{actor_type}/{auth_provider}/update",
     tag: "Accounts",
