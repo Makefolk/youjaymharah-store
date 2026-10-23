@@ -1,0 +1,16 @@
+.git
+**/node_modules
+**/.next
+**/.medusa
+**/.turbo
+**/dist
+**/.vitepress/cache
+**/.vitepress/.temp
+apps/docs/.vitepress/theme/generated
+apps/docs/content/reference/generated
+apps/docs/content/public/api
+**/.env
+**/.env.*
+infra/*.env
+**/*.pem
+**/coverage

@@ -1,0 +1,45 @@
+{
+  admin off
+  auto_https off
+}
+
+:8080 {
+  basic_auth {
+    {$DOCS_USERNAME} {$DOCS_PASSWORD_HASH}
+  }
+  header {
+    X-Robots-Tag "noindex, nofollow, noarchive"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "no-referrer"
+    X-Frame-Options "DENY"
+    Content-Security-Policy "frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+    Cache-Control "private, no-cache"
+    -Server
+  }
+  encode zstd gzip
+  handle /api/branding {
+    @unsupported not method GET HEAD
+    respond @unsupported 405
+    reverse_proxy {$DOCS_MEDUSA_BACKEND_URL:http://127.0.0.1:9} {
+      rewrite /store/storefront-settings?
+      header_up -Authorization
+      header_up -Cookie
+      header_up X-Publishable-Api-Key "{$DOCS_MEDUSA_PUBLISHABLE_KEY}"
+      header_down -Set-Cookie
+      transport http {
+        dial_timeout 3s
+        response_header_timeout 5s
+      }
+    }
+  }
+  handle {
+    root * /srv
+    try_files {path} {path}.html {path}/index.html
+    file_server
+  }
+  handle_errors 404 {
+    root * /srv
+    rewrite * /404.html
+    file_server
+  }
+}

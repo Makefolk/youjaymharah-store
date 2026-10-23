@@ -8,3 +8,8 @@ apps/*/static
 .turbo
 
 docs/api/openapi.json
+apps/docs/.vitepress/cache
+apps/docs/.vitepress/.temp
+apps/docs/.vitepress/theme/generated
+apps/docs/content/reference/generated
+apps/docs/content/public/api

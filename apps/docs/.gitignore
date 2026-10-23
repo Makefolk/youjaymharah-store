@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.vitepress/cache/
+.vitepress/.temp/
+.vitepress/theme/generated/
+content/reference/generated/
+content/public/api/

@@ -1,0 +1,60 @@
+---
+title: Catalog, inventory and pricing
+---
+
+# Catalog, inventory and pricing
+
+**Audience:** merchandising and Store Managers.
+
+**Prerequisites:** the correct
+sales channel, Nigeria region, NGN pricing, stock location and shipping profile.
+Use the admin's supported product and inventory screens.
+
+## Publish a product
+
+1. Prepare its title, handle, description, categories/collection and media.
+2. Define the actual sellable color/size variants and their identifiers.
+3. Assign the correct images and size guide. Check mobile as well as desktop
+   framing, legibility and color accuracy.
+4. Set prices for the active currency and intended price lists. Confirm whether
+   configured prices include tax; the storefront total must match that choice.
+5. Link tracked variants to inventory and enter accurate stock at a location
+   connected to the storefront's fulfillment setup.
+6. Check shipping profile, publish the product and assign the storefront sales
+   channel. Verify it through the customer journey before promotion.
+
+## Price and promotion changes
+
+Use price lists/promotions for deliberate campaigns. Check dates, currency,
+eligibility, usage limits, minimum spend and stacking conditions. A percentage
+label is not enough: test the resulting bag total and gateway amount with the
+intended items and customer conditions.
+
+Changing a catalog price does not rewrite historical order totals. If an old
+price remains on a listing, verify cache refresh and region/price-list selection
+before changing the price again.
+
+## Inventory cases
+
+| Case                              | Action                                                                                        |
+| --------------------------------- | --------------------------------------------------------------------------------------------- |
+| Physical count differs from admin | Investigate reservations, returns and location before making a documented adjustment          |
+| Last unit is in two bags          | Only successful order completion should reserve/sell the available stock; test this race      |
+| Backorders are requested          | Enable only with an approved fulfillment promise; do not use them to mask inaccurate stock    |
+| Returned item can be resold       | Receive/inspect it through the return workflow and confirm the resulting location/stock       |
+| Stock is at another location      | Use the supported inventory/fulfillment process; verify the sales channel can fulfill from it |
+
+## Catalog presentation
+
+Use the custom size-guide, coming-soon and product-alert controls where
+appropriate. Category/collection assignments drive navigation and filters.
+New-arrival badges depend on their configured age window. Approved search terms
+and synonyms should represent the catalog without publishing customer searches.
+
+## Verification and recovery
+
+Open the product as a guest, select each variant, inspect media and guide, add
+to the bag and check delivery eligibility. Test one invalid promotion and one
+unavailable stock case. If publication breaks the store, unpublish the affected
+product or revert the precise content change while preserving existing orders.
+Escalate search-index or image-service failures to engineering.

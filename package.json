@@ -14,6 +14,8 @@
     "backend:seed": "turbo seed --filter=@youjaymharah/backend",
     "backend:dev": "turbo dev --filter=@youjaymharah/backend",
     "storefront:dev": "turbo dev --filter=@youjaymharah/storefront",
+    "docs:dev": "turbo dev --filter=@youjaymharah/docs",
+    "docs:build": "turbo build --filter=@youjaymharah/docs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

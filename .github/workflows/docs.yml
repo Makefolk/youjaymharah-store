@@ -1,0 +1,42 @@
+name: Internal documentation
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - "apps/docs/**"
+      - "apps/storefront/app/globals.css"
+      - "docs/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "apps/docs/**"
+      - "apps/storefront/app/globals.css"
+      - "docs/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/docs.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --filter @youjaymharah/docs --frozen-lockfile
+      - run: pnpm --dir apps/docs run lint
+      - run: pnpm --dir apps/docs run test
+      - run: pnpm --dir apps/docs run build
