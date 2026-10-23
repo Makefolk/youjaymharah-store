@@ -1,6 +1,6 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 import type { ICachingModuleService } from "@medusajs/framework/types";
-import { Modules } from "@medusajs/framework/utils";
+import { MedusaError, Modules } from "@medusajs/framework/utils";
 
 import {
   WORKER_HEARTBEAT_KEY,
@@ -31,7 +31,10 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
         at: number;
       } | null;
       if (!beat || Date.now() - beat.at > WORKER_STALE_MS) {
-        throw new Error("no recent heartbeat");
+        throw new MedusaError(
+          MedusaError.Types.UNEXPECTED_STATE,
+          "No recent worker heartbeat.",
+        );
       }
     },
     payment_checks: async () => {
@@ -47,7 +50,12 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
         },
         { take: 1, select: ["id"] },
       );
-      if (late.length) throw new Error("payment checks overdue");
+      if (late.length) {
+        throw new MedusaError(
+          MedusaError.Types.UNEXPECTED_STATE,
+          "Payment checks are overdue.",
+        );
+      }
     },
   });
 
