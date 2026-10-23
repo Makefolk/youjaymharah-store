@@ -22,6 +22,11 @@ inventory and permitted image hosts.
 The bag must contain the selected variant, quantity and current calculated
 price. Product cards, quick view and the full product page should agree.
 
+Collections are optional. When none are configured, collection sections and menu
+links are hidden; Products, categories, New arrivals and search remain available.
+A direct visit to `/collections` opens Products. An old link to a deleted
+collection shows the normal not-found page.
+
 ## Empty or unexpected results
 
 | Symptom                                    | Check                                                                 | Recovery                                                                      |

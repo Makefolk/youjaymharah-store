@@ -96,8 +96,10 @@ Backend:
   - `featured_collection_id`: fetch it with
     `GET /store/collections/{id}?fields=+metadata` for `metadata.description`,
     `metadata.hero_image` and `metadata.hero_image_mobile`. When it's null,
-    hide the section.
-  - `about`: the introduction below the collections. Render only when enabled;
+    use the other collections in their normal order. Hide collection sections
+    and navigation when no collections with usable handles exist. Direct visits
+    to an empty `/collections` index redirect to `/products`.
+  - `about`: the introduction after the available product and collection sections. Render only when enabled;
     use the optional image with its alt text, or the brand panel without an image.
     Heading, paragraphs and the optional link are editable in Settings › Storefront
     › Homepage About. The full About page has separate content.

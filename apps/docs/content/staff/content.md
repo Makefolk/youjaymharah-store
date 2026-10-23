@@ -43,13 +43,19 @@ provided and can be replaced at any time.
 4. Turn **Show on homepage** on and save. The heading and introduction are
    required while visible. Turn it off to hide the whole section while keeping
    the editor’s content for later.
-5. Check the homepage below the collections on desktop and mobile. Verify the
+5. Check the About section near the bottom of the homepage on desktop and mobile.
+   It follows the available product and collection sections. Verify the
    image crop, paragraph breaks and link destination. Removing the photo restores
    the brand panel; hiding the section leaves no empty block.
 
 This introduction and the full About page have separate content. Hero history
 does not store About revisions. Keep approved copy outside the editor if you
 need to restore an earlier version.
+
+Buttons in the hero and About section that point to this store's collections are
+hidden when their destination is unavailable. Their other content stays visible.
+When removing a collection, review the campaign copy and choose a new destination
+if the button should remain. Product links such as `/products` work without collections.
 
 ## Announcements and campaigns
 

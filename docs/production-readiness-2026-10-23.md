@@ -294,7 +294,7 @@ have named owners.
 ## Implementation follow-up
 
 The internal handbook now lives in `apps/docs`: 28 maintained guides, a
-53-scenario index, seven imported operational runbooks and the generated custom
+56-scenario index, seven imported operational runbooks and the generated custom
 API reference. It covers customer journeys, staff operations, exceptions,
 security, deployment, recovery and development. Known manual or unavailable
 features are called out in the scenario index. It is not a claim that every

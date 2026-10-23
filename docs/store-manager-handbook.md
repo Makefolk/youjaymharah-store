@@ -400,7 +400,11 @@ page. The layout and the order of sections are set by the website itself.
 - **Featured collection:** pick one collection to feature. The website uses
   the collection's own description and images. Set these on the collection
   itself, in its **Website content** box under `Products › Collections`.
-  Deleting the featured collection hides the section until you pick another.
+  Deleting the featured collection leaves the other collections in their normal
+  order. With no collections, the whole collection section and collection menu
+  links disappear. Products remain available, and `/collections` opens Products.
+  Hero and About buttons pointing to unavailable store collections are hidden;
+  review their campaign copy and choose a new link if needed.
 - **About introduction:** edit **Settings › Storefront › Homepage About**.
   Marketing, Store Manager and the owner can change its small heading, heading,
   introduction, image and link. The starter copy is editable. A photo is optional;

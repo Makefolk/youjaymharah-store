@@ -61,6 +61,7 @@ incident.
 | S18 | Find a payment and recover a paid bag with no order             | [Payment recovery](/customers/payments#staff-recovery)                        |
 | S19 | Edit, hide or replace the image in the homepage About section   | [Homepage About](/staff/content#homepage-about-section)                       |
 | S20 | Change or disable the newsletter section above the footer       | [Newsletter settings](/staff/content#newsletter-reminders-and-product-alerts) |
+| S21 | Launch without collections or remove the last collection        | [Optional collections](/staff/catalog#selling-without-collections)            |
 
 ## Production and development
 

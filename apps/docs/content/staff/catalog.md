@@ -12,7 +12,7 @@ Use the admin's supported product and inventory screens.
 
 ## Publish a product
 
-1. Prepare its title, handle, description, categories/collection and media.
+1. Prepare its title, handle, description, categories and media. A collection is optional.
 2. Define the actual sellable color/size variants and their identifiers.
 3. Assign the correct images and size guide. Check mobile as well as desktop
    framing, legibility and color accuracy.
@@ -50,6 +50,27 @@ Use the custom size-guide, coming-soon and product-alert controls where
 appropriate. Category/collection assignments drive navigation and filters.
 New-arrival badges depend on their configured age window. Approved search terms
 and synonyms should represent the catalog without publishing customer searches.
+
+### Selling without collections
+
+Collections are optional. Products, categories, New arrivals, search, filters and
+checkout continue to work without them. You do not need to create a placeholder
+collection to launch the store.
+
+- With no collections, the homepage collection section and collection navigation
+  are hidden on desktop and mobile. Direct visits to `/collections` go to Products.
+- One collection gets a direct navigation link; several get a Collections menu.
+  A collection without a usable handle is omitted from links and cards.
+- Deleted collection URLs show the normal not-found page. Removing all collections
+  does not remove products, the homepage About section or newsletter signup.
+- Hero and About buttons pointing to unavailable store collections are hidden;
+  the surrounding copy and images remain visible.
+- A collection with no products still exists. Its page can show an empty product
+  list; add published products or remove the collection if it should not be promoted.
+
+After creating or deleting collections, verify the storefront after its catalog
+cache refreshes. Check the homepage, desktop menu, mobile menu, search and direct
+collection links. Review manually written campaign links and copy as well.
 
 ## Verification and recovery
 

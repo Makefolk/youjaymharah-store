@@ -157,7 +157,7 @@ the banner. There is one banner, not a carousel.
 
 ### Homepage About: Ready
 
-An introduction below the homepage collections, with a portrait image or a
+An introduction near the bottom of the homepage, with a portrait image or a
 brand panel using the admin-managed logo and name.
 
 - **Admin:** Settings › Storefront › Homepage About, owner, Marketing or Store Manager.
@@ -186,8 +186,9 @@ One collection staff pick to feature on the home page.
   `metadata.hero_image_mobile`. List its products with
   `GET /store/products?collection_id[]={id}&region_id=…`.
 - It's null when none is chosen or the collection has been deleted, so the
-  storefront never requests a collection that returns 404. Hide the section
-  when it's null.
+  storefront never requests a featured collection that returns 404. The homepage
+  uses the remaining collections in their normal order. Hide the section when
+  there are no collections with usable handles.
 - Edits to the collection itself (its description or images) don't refresh the
   settings cache. Cache the collection request on its own.
 
@@ -218,6 +219,17 @@ Home, category, collection, search and listing pages.
 The home page's structure belongs to the storefront. Staff control only the
 hero, About introduction and the featured collection (above). Category sections come straight from
 the category tree; there's no admin setting to choose or order them yet.
+
+Collections are optional: the homepage collection section, desktop/mobile
+collection menus and collection search suggestions render only available entries.
+One collection gets a direct menu link; none hides the collection navigation.
+An empty `/collections` index redirects to `/products`; an unknown or deleted
+collection handle returns the normal not-found page. Products do not require a
+collection assignment.
+
+Hero and About buttons targeting unavailable same-store collections are hidden
+without hiding their other content. Collection availability reads all API pages,
+so a valid destination beyond the first 100 collections remains usable.
 
 ### Category tree: Backend ready
 
