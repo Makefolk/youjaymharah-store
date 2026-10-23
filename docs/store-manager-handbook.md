@@ -530,6 +530,18 @@ failed, ask the developer to review it before repeatedly resending. See
 | Support / Fulfillment | Orders, fulfilment and tracking, returns, refunds, customer details                                                 | Edit products or prices; any settings                            |
 | Marketing             | Promotions, campaigns, price lists, collections and categories, newsletter, search & sharing and New badge settings | See orders, payments or customer records; change the brand       |
 
+### Two-factor sign-in
+
+Everyone with admin access should set up an authenticator app: **Profile ›
+Two-factor authentication**, then scan the code with an app such as Google
+Authenticator, 1Password or Authy. Keep the recovery codes somewhere safe;
+each one works once if the phone is lost. From then on, signing in asks for the
+app's six-digit code.
+
+Once everyone has it set up, ask the developer to set `ADMIN_MFA_REQUIRED` to
+`true`. Anyone without it can then look around but not change anything. When
+someone leaves, remove their user in **Settings › Users**.
+
 ## 6. Known gaps
 
 | Area                                     | Status        | Meanwhile                                                            |

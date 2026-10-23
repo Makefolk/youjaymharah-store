@@ -11,6 +11,7 @@ import { z } from "@medusajs/framework/zod";
 import { errorHandler as defaultErrorHandler } from "@medusajs/framework/http";
 
 import { rateLimit } from "./rate-limit";
+import { requireAdminMfa } from "./admin-mfa";
 import { requireOrderAccess } from "./order-access";
 import { refuseTestPaymentsInProduction } from "./payment-guard";
 import { enforcePasswordPolicy } from "./password-policy";
@@ -734,7 +735,10 @@ export default defineMiddlewares({
     },
     // No method, so these run before every route's own middlewares.
     { matcher: "/store/*", middlewares: [refuseEndedSessions] },
-    { matcher: "/admin/*", middlewares: [refuseEndedSessions] },
+    {
+      matcher: "/admin/*",
+      middlewares: [refuseEndedSessions, requireAdminMfa],
+    },
     { matcher: "/auth/token/refresh", middlewares: [refuseEndedSessions] },
     { matcher: "/auth/session", middlewares: [refuseEndedSessions] },
     {
